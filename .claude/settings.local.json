@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc --track-changes=all \"C:\\\\Users\\\\mtsarabia\\\\Desktop\\\\System Development Instruction for  Budget Tracking.docx\" -o /tmp/system_instructions.md)",
+      "Bash(pandoc --track-changes=all \"C:\\\\Users\\\\mtsarabia\\\\Desktop\\\\Budget Tracking Storypoints.docx\" -o /tmp/storypoints.md)",
+      "Bash(where pandoc:*)",
+      "Bash(python -c \"import docx; print\\(''python-docx available''\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python -c \":*)",
+      "Bash(composer require:*)",
+      "Bash(php artisan:*)",
+      "Bash(mkdir -p app/Http/Controllers/API/V1/Auth app/Http/Controllers/API/V1/Dashboard app/Http/Controllers/API/V1/Income app/Http/Controllers/API/V1/Expense app/Http/Controllers/API/V1/Budget app/Http/Controllers/API/V1/Debt app/Http/Controllers/API/V1/Payment app/Http/Controllers/API/V1/Investment app/Http/Controllers/API/V1/Stock app/Http/Controllers/API/V1/Crypto app/Http/Controllers/API/V1/Plan app/Http/Controllers/API/V1/Insurance app/Http/Controllers/API/V1/Purchase app/Http/Controllers/API/V1/MP2 app/Http/Controllers/API/V1/File app/Http/Controllers/API/V1/Report app/Http/Controllers/API/V1/Category)",
+      "Bash(mkdir -p app/Http/Requests/Auth app/Http/Requests/Income app/Http/Requests/Expense app/Http/Requests/Budget app/Http/Requests/Debt app/Http/Requests/Payment app/Http/Requests/Investment app/Http/Requests/Stock app/Http/Requests/Crypto app/Http/Requests/Plan app/Http/Requests/Insurance app/Http/Requests/Purchase app/Http/Requests/MP2 app/Http/Requests/Category)",
+      "Bash(mkdir -p app/Http/Resources/Auth app/Http/Resources/Income app/Http/Resources/Expense app/Http/Resources/Budget app/Http/Resources/Debt app/Http/Resources/Payment app/Http/Resources/Investment app/Http/Resources/Stock app/Http/Resources/Crypto app/Http/Resources/Plan app/Http/Resources/Insurance app/Http/Resources/Purchase app/Http/Resources/MP2 app/Http/Resources/Category app/Http/Resources/File)",
+      "Bash(mkdir -p app/Services app/Traits)",
+      "Bash(for dir:*)",
+      "Bash(do echo:*)",
+      "Read(//c/laragon/www/budget-tracking-v1/tests/Feature/**)",
+      "Bash(done)",
+      "Bash(php -m)",
+      "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS dev_budget_tracking_test;\")"
+    ]
+  }
+}

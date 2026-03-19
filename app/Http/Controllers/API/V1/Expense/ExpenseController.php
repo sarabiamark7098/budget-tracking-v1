@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Http\Controllers\API\V1\Expense;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Expense\StoreExpenseRequest;
+use App\Http\Requests\Expense\UpdateExpenseRequest;
+use App\Http\Resources\Expense\ExpenseResource;
+use App\Models\Expense;
+use App\Services\ExpenseService;
+use App\Traits\ApiResponseTrait;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class ExpenseController extends Controller
+{
+    use ApiResponseTrait;
+
+    public function __construct(private ExpenseService $service) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $filters = $request->only(['category_id', 'date_from', 'date_to', 'search', 'per_page']);
+        $expenses = $this->service->getAll(auth()->user(), $filters);
+        return $this->respondSuccess(ExpenseResource::collection($expenses)->response()->getData(true));
+    }
+
+    public function store(StoreExpenseRequest $request): JsonResponse
+    {
+        $expense = $this->service->create(auth()->user(), $request->validated());
+        $expense->load('category');
+        return $this->respondCreated(new ExpenseResource($expense), 'Expense created successfully');
+    }
+
+    public function show(Expense $expense): JsonResponse
+    {
+        abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
+        $expense->load(['category', 'files']);
+        return $this->respondSuccess(new ExpenseResource($expense));
+    }
+
+    public function update(UpdateExpenseRequest $request, Expense $expense): JsonResponse
+    {
+        abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
+        $expense = $this->service->update($expense, $request->validated());
+        return $this->respondSuccess(new ExpenseResource($expense), 'Expense updated successfully');
+    }
+
+    public function destroy(Expense $expense): JsonResponse
+    {
+        abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
+        $this->service->delete($expense);
+        return $this->respondSuccess(null, 'Expense deleted successfully');
+    }
+
+    public function monthly(Request $request): JsonResponse
+    {
+        $year = $request->get('year', now()->year);
+        $data = $this->service->getMonthlySummary(auth()->user(), (int) $year);
+        return $this->respondSuccess($data, 'Monthly summary retrieved');
+    }
+}
