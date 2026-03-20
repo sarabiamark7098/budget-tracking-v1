@@ -124,6 +124,11 @@
             <input v-model="form.end_date" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Alert Threshold (%)</label>
+            <input v-model="form.alert_threshold" type="number" min="1" max="100" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Default: 80" />
+            <p class="text-xs text-gray-400 mt-1">Warn when spending reaches this % of the budget</p>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea v-model="form.description" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
           </div>
@@ -169,6 +174,7 @@ const defaultForm = () => ({
   period: 'monthly',
   start_date: new Date().toISOString().split('T')[0],
   end_date: '',
+  alert_threshold: 80,
   description: '',
 });
 

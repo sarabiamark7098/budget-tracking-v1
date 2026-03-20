@@ -37,7 +37,7 @@
                 <td class="px-4 py-3 text-gray-400 font-mono text-xs">{{ item.policy_number ?? '—' }}</td>
                 <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ formatCurrency(item.premium_amount) }}</td>
                 <td class="px-4 py-3 text-gray-500 capitalize">{{ item.payment_frequency }}</td>
-                <td class="px-4 py-3 text-gray-500">{{ item.next_due_date ?? '—' }}</td>
+                <td class="px-4 py-3 text-gray-500">{{ formatDate(item.next_due_date) }}</td>
                 <td class="px-4 py-3">
                   <span class="text-xs px-2 py-1 rounded-full capitalize" :class="statusClass(item.status)">{{ item.status ?? 'active' }}</span>
                 </td>
@@ -74,7 +74,7 @@
             <tr v-for="pay in store.payments" :key="pay.id" class="border-b last:border-0 hover:bg-gray-50">
               <td class="px-4 py-3 text-gray-700">{{ pay.insurance?.provider ?? '—' }}</td>
               <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(pay.amount) }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ pay.payment_date }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ formatDate(pay.payment_date) }}</td>
               <td class="px-4 py-3 text-gray-400 text-xs">{{ pay.note ?? '—' }}</td>
             </tr>
           </tbody>
@@ -208,6 +208,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useInsuranceStore } from '@/stores/insurance';
+import { formatDate } from '@/utils/date';
 
 const store = useInsuranceStore();
 const showModal = ref(false);

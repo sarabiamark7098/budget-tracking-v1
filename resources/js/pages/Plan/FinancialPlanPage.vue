@@ -29,8 +29,8 @@
             <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
               <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
               <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ item.description ?? '—' }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ item.start_date ?? '—' }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ item.end_date ?? '—' }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ formatDate(item.start_date) }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ formatDate(item.end_date) }}</td>
               <td class="px-4 py-3">
                 <span class="text-xs px-2 py-1 rounded-full capitalize" :class="planStatusClass(item.status)">{{ item.status ?? 'active' }}</span>
               </td>
@@ -82,7 +82,7 @@
           </div>
           <div class="flex justify-between text-xs text-gray-400">
             <span>{{ goalPercent(goal).toFixed(1) }}% complete</span>
-            <span v-if="goal.target_date">Target: {{ goal.target_date }}</span>
+            <span v-if="goal.target_date">Target: {{ formatDate(goal.target_date) }}</span>
           </div>
         </div>
       </div>
@@ -199,6 +199,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { usePlanStore } from '@/stores/plan';
+import { formatDate } from '@/utils/date';
 
 const store = usePlanStore();
 const saving = ref(false);

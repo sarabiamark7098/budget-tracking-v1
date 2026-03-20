@@ -42,14 +42,20 @@ class Budget extends Model
 
     public function getSpentAmountAttribute(): float
     {
-        $query = Expense::where('user_id', $this->user_id)
+        // Primary: expenses explicitly linked to this budget via budget_id
+        $explicit = Expense::where('budget_id', $this->id)->sum('amount');
+
+        // Fallback: expenses matched by category + date range that have no budget assigned yet
+        // (covers records created before the budget_id column existed)
+        $fallbackQuery = Expense::where('user_id', $this->user_id)
+            ->whereNull('budget_id')
             ->whereBetween('spent_at', [$this->start_date, $this->end_date]);
 
         if ($this->category_id) {
-            $query->where('category_id', $this->category_id);
+            $fallbackQuery->where('category_id', $this->category_id);
         }
 
-        return (float) $query->sum('amount');
+        return (float) $explicit + (float) $fallbackQuery->sum('amount');
     }
 
     public function getRemainingAmountAttribute(): float

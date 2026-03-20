@@ -25,6 +25,7 @@ class BudgetService
 
     public function update(Budget $budget, array $data): Budget
     {
+        $data['alert_threshold'] ??= $budget->alert_threshold ?? 80;
         $budget->update($data);
         return $budget->fresh(['category']);
     }

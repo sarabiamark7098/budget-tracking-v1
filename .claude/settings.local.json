@@ -18,7 +18,10 @@
       "Read(//c/laragon/www/budget-tracking-v1/tests/Feature/**)",
       "Bash(done)",
       "Bash(php -m)",
-      "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS dev_budget_tracking_test;\")"
+      "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS dev_budget_tracking_test;\")",
+      "Bash(npm run:*)",
+      "Bash(grep -rn \"from ''@/utils/date''\" resources/js --include=\"*.vue\" --include=\"*.js\")",
+      "Bash(find /c/laragon/www/budget-tracking-v1 -type f -name *budget*tracking*)"
     ]
   }
 }

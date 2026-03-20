@@ -5,10 +5,26 @@
       <button @click="openModal()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium">+ Add Expense</button>
     </div>
 
+    <!-- No budgets warning -->
+    <div v-if="!budgetStore.loading && budgets.length === 0" class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+      <span class="text-amber-500 text-lg">⚠</span>
+      <div>
+        <p class="text-sm font-medium text-amber-800">No budgets found</p>
+        <p class="text-sm text-amber-700 mt-0.5">
+          You need to create a budget before adding expenses.
+          <a href="#/budgets" class="underline font-medium hover:text-amber-900">Create a budget →</a>
+        </p>
+      </div>
+    </div>
+
     <!-- Filters -->
     <div class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3">
       <input v-model="filters.date_from" type="date" class="border rounded-lg px-3 py-2 text-sm" />
       <input v-model="filters.date_to" type="date" class="border rounded-lg px-3 py-2 text-sm" />
+      <select v-model="filters.budget_id" class="border rounded-lg px-3 py-2 text-sm bg-white">
+        <option value="">All Budgets</option>
+        <option v-for="b in budgets" :key="b.id" :value="b.id">{{ b.name }}</option>
+      </select>
       <input v-model="filters.search" type="text" class="border rounded-lg px-3 py-2 text-sm min-w-[180px]" placeholder="Search..." />
       <button @click="loadData" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">Filter</button>
       <button @click="resetFilters" class="text-gray-400 text-sm px-2 py-2 hover:text-gray-600">Reset</button>
@@ -21,6 +37,7 @@
         <thead class="bg-gray-50 border-b">
           <tr>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
+            <th class="text-left px-4 py-3 text-gray-500 font-medium">Budget</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Category</th>
             <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
@@ -30,13 +47,19 @@
         </thead>
         <tbody>
           <tr v-if="store.items.length === 0">
-            <td colspan="6" class="text-center py-10 text-gray-400">No expense records found</td>
+            <td colspan="7" class="text-center py-10 text-gray-400">No expense records found</td>
           </tr>
           <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
             <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
+            <td class="px-4 py-3">
+              <span v-if="item.budget" class="text-xs font-medium px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
+                {{ item.budget.name }}
+              </span>
+              <span v-else class="text-gray-400 text-xs">—</span>
+            </td>
             <td class="px-4 py-3 text-gray-500">{{ item.category?.name ?? '—' }}</td>
             <td class="px-4 py-3 text-right text-red-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ item.spent_at }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ formatDate(item.spent_at) }}</td>
             <td class="px-4 py-3">
               <span v-if="item.is_recurring" class="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full">{{ item.recurrence_interval }}</span>
               <span v-else class="text-gray-400 text-xs">One-time</span>
@@ -78,6 +101,36 @@
           <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
         </div>
         <form @submit.prevent="handleSubmit" class="p-5 space-y-4">
+
+          <!-- Budget selector (required) -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Budget *</label>
+            <select
+              v-model="form.budget_id"
+              required
+              class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+              :class="{ 'border-red-400': budgets.length === 0 }"
+            >
+              <option value="">— Select budget —</option>
+              <option v-for="b in budgets" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+            <!-- Budget balance hint -->
+            <div v-if="selectedBudget" class="mt-1.5 flex items-center gap-2 text-xs">
+              <span class="text-gray-500">
+                Budget: {{ formatCurrency(selectedBudget.amount) }} &nbsp;|&nbsp;
+                Spent: {{ formatCurrency(selectedBudget.spent_amount) }} &nbsp;|&nbsp;
+                Remaining:
+              </span>
+              <span :class="selectedBudget.remaining_amount >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
+                {{ formatCurrency(selectedBudget.remaining_amount) }}
+              </span>
+              <span v-if="selectedBudget.remaining_amount < 0" class="text-red-500">(Over budget)</span>
+            </div>
+            <p v-if="budgets.length === 0" class="mt-1 text-xs text-red-500">
+              No budgets available. Please create a budget first.
+            </p>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
             <input v-model="form.title" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
@@ -114,7 +167,11 @@
           <div v-if="formError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ formError }}</div>
           <div class="flex justify-end gap-3 pt-2">
             <button type="button" @click="showModal = false" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-            <button type="submit" :disabled="saving" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-red-700">
+            <button
+              type="submit"
+              :disabled="saving || budgets.length === 0"
+              class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-red-700"
+            >
               {{ saving ? 'Saving...' : 'Save' }}
             </button>
           </div>
@@ -137,24 +194,37 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useExpenseStore } from '@/stores/expense';
+import { useBudgetStore } from '@/stores/budget';
+import { formatDate } from '@/utils/date';
 
-const store = useExpenseStore();
-const showModal = ref(false);
-const editing = ref(null);
+const store       = useExpenseStore();
+const budgetStore = useBudgetStore();
+
+const showModal   = ref(false);
+const editing     = ref(null);
 const deleteTarget = ref(null);
-const saving = ref(false);
-const formError = ref('');
-const filters = ref({ date_from: '', date_to: '', search: '' });
+const saving      = ref(false);
+const formError   = ref('');
+const filters     = ref({ date_from: '', date_to: '', budget_id: '', search: '' });
 
+// ── Budget helpers ─────────────────────────────────────────────────────────
+const budgets = computed(() => budgetStore.items ?? []);
+
+const selectedBudget = computed(() =>
+  budgets.value.find(b => b.id === form.value.budget_id) ?? null
+);
+
+// ── Form ──────────────────────────────────────────────────────────────────
 const defaultForm = () => ({
-  title: '',
-  amount: '',
-  spent_at: new Date().toISOString().split('T')[0],
-  merchant: '',
-  description: '',
-  is_recurring: false,
+  budget_id:           '',
+  title:               '',
+  amount:              '',
+  spent_at:            new Date().toISOString().split('T')[0],
+  merchant:            '',
+  description:         '',
+  is_recurring:        false,
   recurrence_interval: 'monthly',
 });
 
@@ -186,6 +256,8 @@ async function handleSubmit() {
     } else {
       await store.create(form.value);
     }
+    // Refresh budgets so remaining balance stays current after save
+    budgetStore.fetchAll({ per_page: 100 });
     showModal.value = false;
   } catch (e) {
     formError.value = e.response?.data?.message ?? 'Failed to save. Please try again.';
@@ -196,6 +268,7 @@ async function handleSubmit() {
 
 async function handleDelete() {
   await store.remove(deleteTarget.value.id);
+  budgetStore.fetchAll({ per_page: 100 });
   deleteTarget.value = null;
 }
 
@@ -204,7 +277,7 @@ function loadData() {
 }
 
 function resetFilters() {
-  filters.value = { date_from: '', date_to: '', search: '' };
+  filters.value = { date_from: '', date_to: '', budget_id: '', search: '' };
   loadData();
 }
 
@@ -212,5 +285,8 @@ function changePage(page) {
   store.fetchAll({ ...filters.value, page });
 }
 
-onMounted(() => loadData());
+onMounted(() => {
+  loadData();
+  budgetStore.fetchAll({ per_page: 100 });
+});
 </script>

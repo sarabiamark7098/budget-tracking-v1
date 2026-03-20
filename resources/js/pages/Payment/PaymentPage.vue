@@ -27,7 +27,7 @@
               {{ item.debt?.lender_name ?? '—' }}
             </td>
             <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ item.payment_date }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ formatDate(item.payment_date) }}</td>
             <td class="px-4 py-3 text-gray-400 text-xs">{{ item.note ?? '—' }}</td>
             <td class="px-4 py-3">
               <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
@@ -113,6 +113,7 @@
 import { ref, onMounted } from 'vue';
 import { usePaymentStore } from '@/stores/payment';
 import { useDebtStore } from '@/stores/debt';
+import { formatDate } from '@/utils/date';
 
 const store = usePaymentStore();
 const debtStore = useDebtStore();

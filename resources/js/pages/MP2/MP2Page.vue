@@ -147,7 +147,7 @@
               <td class="px-4 py-3 text-right text-blue-600">{{ formatCurrency(plan.monthly_contribution) }}</td>
               <td class="px-4 py-3 text-right text-gray-500">{{ plan.duration_years }} yr{{ plan.duration_years > 1 ? 's' : '' }}</td>
               <td class="px-4 py-3 text-right text-gray-700">{{ formatCurrency(plan.total_contributions) }}</td><td class="px-4 py-3 text-right font-semibold text-green-600">{{ formatCurrency(plan.projected_earnings) }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ plan.start_date ?? '—' }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ formatDate(plan.start_date) }}</td>
               <td class="px-4 py-3">
                 <button @click="confirmDelete(plan)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
               </td>
@@ -202,6 +202,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useMp2Store } from '@/stores/mp2';
+import { formatDate } from '@/utils/date';
 
 const store = useMp2Store();
 const calculating = ref(false);

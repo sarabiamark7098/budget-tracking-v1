@@ -13,9 +13,11 @@ const router = createRouter({
             children: [
                 { path: '', redirect: '/dashboard' },
                 { path: 'dashboard', component: () => import('@/pages/Dashboard/DashboardPage.vue') },
+                { path: 'transactions', component: () => import('@/pages/Dashboard/TransactionsPage.vue') },
                 { path: 'income', component: () => import('@/pages/Income/IncomePage.vue') },
                 { path: 'expenses', component: () => import('@/pages/Expense/ExpensePage.vue') },
                 { path: 'budget', component: () => import('@/pages/Budget/BudgetPage.vue') },
+                { path: 'budget-tracking', component: () => import('@/pages/BudgetTracking/BudgetTrackingPage.vue') },
                 { path: 'debts', component: () => import('@/pages/Debt/DebtPage.vue') },
                 { path: 'payments', component: () => import('@/pages/Payment/PaymentPage.vue') },
                 { path: 'investments', component: () => import('@/pages/Investment/InvestmentPage.vue') },

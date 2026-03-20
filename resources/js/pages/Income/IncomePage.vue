@@ -21,6 +21,7 @@
         <thead class="bg-gray-50 border-b">
           <tr>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
+            <th class="text-left px-4 py-3 text-gray-500 font-medium">Source</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Category</th>
             <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
@@ -30,13 +31,19 @@
         </thead>
         <tbody>
           <tr v-if="store.items.length === 0">
-            <td colspan="6" class="text-center py-10 text-gray-400">No income records found</td>
+            <td colspan="7" class="text-center py-10 text-gray-400">No income records found</td>
           </tr>
           <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
             <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
+            <td class="px-4 py-3">
+              <span v-if="item.source" class="text-xs font-medium px-2 py-1 rounded-full" :class="sourceBadgeClass(item.source)">
+                {{ item.source }}
+              </span>
+              <span v-else class="text-gray-400 text-xs">—</span>
+            </td>
             <td class="px-4 py-3 text-gray-500">{{ item.category?.name ?? '—' }}</td>
             <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ item.received_at }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ formatDate(item.received_at) }}</td>
             <td class="px-4 py-3">
               <span v-if="item.is_recurring" class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">{{ item.recurrence_interval }}</span>
               <span v-else class="text-gray-400 text-xs">One-time</span>
@@ -91,8 +98,12 @@
             <input v-model="form.received_at" type="date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Source</label>
-            <input v-model="form.source" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Employer, Client" />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Source of Income</label>
+            <select v-model="form.source" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+              <option value="">— Select source —</option>
+              <option v-for="s in INCOME_SOURCES" :key="s.value" :value="s.value">{{ s.label }}</option>
+            </select>
+            <p v-if="form.source" class="mt-1 text-xs text-gray-400">{{ INCOME_SOURCES.find(s => s.value === form.source)?.description }}</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -139,6 +150,48 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useIncomeStore } from '@/stores/income';
+import { formatDate } from '@/utils/date';
+
+// ── Income source enum ────────────────────────────────────────────────────
+const INCOME_SOURCES = [
+  {
+    value: 'Compensation Income',
+    label: 'Compensation Income',
+    description: 'Salaries, wages, tips, commissions, and other employee compensation.',
+  },
+  {
+    value: 'Business Income',
+    label: 'Business Income',
+    description: 'Earnings from self-employment, freelance work, or business operations.',
+  },
+  {
+    value: 'Passive Income',
+    label: 'Passive Income',
+    description: 'Dividends, interest, royalties, and rental earnings.',
+  },
+  {
+    value: 'Property Gains',
+    label: 'Property Gains',
+    description: 'Profit from sale of real estate, stocks, or other capital assets.',
+  },
+  {
+    value: 'Other Sources',
+    label: 'Other Sources',
+    description: 'Gifts, inheritance, prizes, or any other income not listed above.',
+  },
+];
+
+const SOURCE_BADGE = {
+  'Compensation Income': 'bg-blue-100 text-blue-700',
+  'Business Income':     'bg-purple-100 text-purple-700',
+  'Passive Income':      'bg-green-100 text-green-700',
+  'Property Gains':      'bg-yellow-100 text-yellow-700',
+  'Other Sources':       'bg-gray-100 text-gray-600',
+};
+
+function sourceBadgeClass(source) {
+  return SOURCE_BADGE[source] ?? 'bg-gray-100 text-gray-600';
+}
 
 const store = useIncomeStore();
 const showModal = ref(false);
@@ -149,12 +202,12 @@ const formError = ref('');
 const filters = ref({ date_from: '', date_to: '', search: '' });
 
 const defaultForm = () => ({
-  title: '',
-  amount: '',
-  received_at: new Date().toISOString().split('T')[0],
-  source: '',
-  description: '',
-  is_recurring: false,
+  title:               '',
+  amount:              '',
+  received_at:         new Date().toISOString().split('T')[0],
+  source:              '',   // one of INCOME_SOURCES values or ''
+  description:         '',
+  is_recurring:        false,
   recurrence_interval: 'monthly',
 });
 

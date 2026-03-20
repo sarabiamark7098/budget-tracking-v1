@@ -14,6 +14,7 @@ class Expense extends Model
     protected $fillable = [
         'user_id',
         'category_id',
+        'budget_id',
         'title',
         'amount',
         'description',
@@ -38,6 +39,11 @@ class Expense extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function budget(): BelongsTo
+    {
+        return $this->belongsTo(Budget::class);
     }
 
     public function files(): MorphMany

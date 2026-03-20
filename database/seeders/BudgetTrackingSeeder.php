@@ -53,26 +53,29 @@ class BudgetTrackingSeeder extends Seeder
     {
         $otherIncome = Category::where('name', 'Other Income')->where('type', 'income')->first();
 
+        // NOTE: 'source' must be one of the valid ENUM values:
+        //   Compensation Income | Business Income | Passive Income | Property Gains | Other Sources
+        // All cash-in / bank-transfer entries are classified as 'Other Sources'.
         $rows = [
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 12016.38, 'source' => 'LandBank #1477 4334 60', 'received_at' => '2025-02-15'],
-            ['title' => 'Landbank #1477 4212 76 Cash-in', 'amount' => 2000.00,   'source' => 'Landbank #1477 4212 76',  'received_at' => '2025-02-15'],
-            ['title' => 'BPI Cash-in',                    'amount' => 11110.06,  'source' => 'BPI',                     'received_at' => '2025-02-15'],
-            ['title' => 'Ownbank Cash-in',                'amount' => 48403.89,  'source' => 'Ownbank',                 'received_at' => '2025-02-15'],
-            ['title' => 'Samulco Cash-in',                'amount' => 1289.61,   'source' => 'Samulco',                 'received_at' => '2025-02-15'],
-            ['title' => 'Gcash Mark Cash-in',             'amount' => 73.42,     'source' => 'Gcash Mark',              'received_at' => '2025-02-15'],
-            ['title' => 'Gcash Gine Cash-in',             'amount' => 571.38,    'source' => 'Gcash Gine',              'received_at' => '2025-02-15'],
-            ['title' => 'BPI Transfer from LandBank',     'amount' => 3000.00,   'source' => 'BPI',                     'received_at' => '2025-02-15'],
-            ['title' => 'Ownbank Transfer in',            'amount' => 3000.00,   'source' => 'Ownbank',                 'received_at' => '2025-02-16'],
-            ['title' => 'Gcash Gine Cash-in',             'amount' => 4000.00,   'source' => 'Gcash Gine',              'received_at' => '2025-02-16'],
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 26326.84,  'source' => 'LandBank #1477 4334 60',  'received_at' => '2025-02-19'],
-            ['title' => 'Ownbank Transfer in',            'amount' => 20000.00,  'source' => 'Ownbank',                 'received_at' => '2025-02-21'],
-            ['title' => 'BPI Cash-in from transfer',      'amount' => 3000.00,   'source' => 'BPI',                     'received_at' => '2025-02-21'],
-            ['title' => 'BPI from Ownbank',               'amount' => 71403.89,  'source' => 'BPI',                     'received_at' => '2025-02-23'],
-            ['title' => 'Gcash Mark Cash-in',             'amount' => 30.29,     'source' => 'Gcash Mark',              'received_at' => '2025-02-23'],
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 100.00,    'source' => 'LandBank #1477 4334 60',  'received_at' => '2025-02-26'],
-            ['title' => 'BPI from LandBank transfer',     'amount' => 1913.22,   'source' => 'BPI',                     'received_at' => '2025-02-27'],
-            ['title' => 'Landbank #1477 4212 76 Cash-in', 'amount' => 822.61,    'source' => 'Landbank #1477 4212 76',  'received_at' => '2025-02-27'],
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 24518.50,  'source' => 'LandBank #1477 4334 60',  'received_at' => '2025-02-27'],
+            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 12016.38, 'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'Landbank #1477 4212 76 Cash-in', 'amount' => 2000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'BPI Cash-in',                    'amount' => 11110.06,  'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'Ownbank Cash-in',                'amount' => 48403.89,  'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'Samulco Cash-in',                'amount' => 1289.61,   'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'Gcash Mark Cash-in',             'amount' => 73.42,     'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'Gcash Gine Cash-in',             'amount' => 571.38,    'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'BPI Transfer from LandBank',     'amount' => 3000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'Ownbank Transfer in',            'amount' => 3000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-16'],
+            ['title' => 'Gcash Gine Cash-in',             'amount' => 4000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-16'],
+            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 26326.84,  'source' => 'Other Sources', 'received_at' => '2025-02-19'],
+            ['title' => 'Ownbank Transfer in',            'amount' => 20000.00,  'source' => 'Other Sources', 'received_at' => '2025-02-21'],
+            ['title' => 'BPI Cash-in from transfer',      'amount' => 3000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-21'],
+            ['title' => 'BPI from Ownbank',               'amount' => 71403.89,  'source' => 'Other Sources', 'received_at' => '2025-02-23'],
+            ['title' => 'Gcash Mark Cash-in',             'amount' => 30.29,     'source' => 'Other Sources', 'received_at' => '2025-02-23'],
+            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 100.00,    'source' => 'Other Sources', 'received_at' => '2025-02-26'],
+            ['title' => 'BPI from LandBank transfer',     'amount' => 1913.22,   'source' => 'Other Sources', 'received_at' => '2025-02-27'],
+            ['title' => 'Landbank #1477 4212 76 Cash-in', 'amount' => 822.61,    'source' => 'Other Sources', 'received_at' => '2025-02-27'],
+            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 24518.50,  'source' => 'Other Sources', 'received_at' => '2025-02-27'],
         ];
 
         foreach ($rows as $row) {

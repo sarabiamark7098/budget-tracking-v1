@@ -43,6 +43,7 @@ Route::prefix('v1')->group(function () {
             Route::put('password', [AuthController::class, 'changePassword']);
         });
 
+        Route::get('dashboard/transactions', [DashboardController::class, 'transactions']);
         Route::get('dashboard', [DashboardController::class, 'index']);
 
         Route::apiResource('categories', CategoryController::class);

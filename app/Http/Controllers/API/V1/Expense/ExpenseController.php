@@ -20,30 +20,45 @@ class ExpenseController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['category_id', 'date_from', 'date_to', 'search', 'per_page']);
+        $filters = $request->only(['budget_id', 'category_id', 'date_from', 'date_to', 'search', 'per_page']);
         $expenses = $this->service->getAll(auth()->user(), $filters);
         return $this->respondSuccess(ExpenseResource::collection($expenses)->response()->getData(true));
     }
 
     public function store(StoreExpenseRequest $request): JsonResponse
     {
-        $expense = $this->service->create(auth()->user(), $request->validated());
-        $expense->load('category');
-        return $this->respondCreated(new ExpenseResource($expense), 'Expense created successfully');
+        $expense      = $this->service->create(auth()->user(), $request->validated());
+        $expense->load(['category', 'budget']);
+        $budgetImpact = $this->service->getBudgetImpact($expense);
+
+        $data = (new ExpenseResource($expense))->toArray($request);
+        $data['budget_impact'] = $budgetImpact;
+
+        return $this->respondCreated($data, 'Expense created successfully');
     }
 
     public function show(Expense $expense): JsonResponse
     {
         abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
-        $expense->load(['category', 'files']);
-        return $this->respondSuccess(new ExpenseResource($expense));
+        $expense->load(['category', 'files', 'budget']);
+        $budgetImpact = $this->service->getBudgetImpact($expense);
+
+        $data = (new ExpenseResource($expense))->toArray($request ?? request());
+        $data['budget_impact'] = $budgetImpact;
+
+        return $this->respondSuccess($data);
     }
 
     public function update(UpdateExpenseRequest $request, Expense $expense): JsonResponse
     {
         abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
-        $expense = $this->service->update($expense, $request->validated());
-        return $this->respondSuccess(new ExpenseResource($expense), 'Expense updated successfully');
+        $expense      = $this->service->update($expense, $request->validated());
+        $budgetImpact = $this->service->getBudgetImpact($expense);
+
+        $data = (new ExpenseResource($expense))->toArray($request);
+        $data['budget_impact'] = $budgetImpact;
+
+        return $this->respondSuccess($data, 'Expense updated successfully');
     }
 
     public function destroy(Expense $expense): JsonResponse

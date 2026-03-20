@@ -12,7 +12,8 @@ export const authService = {
 
 // Dashboard
 export const dashboardService = {
-    getSummary: (params) => api.get('/dashboard', { params }),
+    getSummary:      (params) => api.get('/dashboard',              { params }),
+    getTransactions: (params) => api.get('/dashboard/transactions', { params }),
 };
 
 // Categories
@@ -145,6 +146,28 @@ export const mp2Service = {
     create: (data) => api.post('/mp2-plans', data),
     update: (id, data) => api.put(`/mp2-plans/${id}`, data),
     delete: (id) => api.delete(`/mp2-plans/${id}`),
+};
+
+// Budget Tracking (shared / collaborative)
+export const budgetTrackingService = {
+    get:                  ()         => api.get('/budget-tracking'),
+    create:               (data)     => api.post('/budget-tracking', data),
+    update:               (data)     => api.put('/budget-tracking', data),
+    delete:               ()         => api.delete('/budget-tracking'),
+    join:                 (code)     => api.post('/budget-tracking/join', { join_code: code }),
+    leave:                ()         => api.post('/budget-tracking/leave'),
+    getSummary:           ()         => api.get('/budget-tracking/summary'),
+    getHistory:           (params)   => api.get('/budget-tracking/history', { params }),
+    regenerateCode:       ()         => api.post('/budget-tracking/code/regenerate'),
+    removeMember:         (userId)   => api.delete(`/budget-tracking/members/${userId}`),
+    getAllocations:        ()         => api.get('/budget-tracking/allocations'),
+    createAllocation:     (data)     => api.post('/budget-tracking/allocations', data),
+    updateAllocation:     (id, data) => api.put(`/budget-tracking/allocations/${id}`, data),
+    deleteAllocation:     (id)       => api.delete(`/budget-tracking/allocations/${id}`),
+    getTransactions:      (params)   => api.get('/budget-tracking/transactions', { params }),
+    createTransaction:    (data)     => api.post('/budget-tracking/transactions', data),
+    updateTransaction:    (id, data) => api.put(`/budget-tracking/transactions/${id}`, data),
+    deleteTransaction:    (id)       => api.delete(`/budget-tracking/transactions/${id}`),
 };
 
 // Reports

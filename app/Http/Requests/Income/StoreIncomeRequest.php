@@ -19,7 +19,7 @@ class StoreIncomeRequest extends FormRequest
             'category_id' => ['nullable', 'exists:categories,id'],
             'title' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
-            'source' => ['nullable', 'string', 'max:255'],
+            'source' => ['nullable', 'in:Compensation Income,Business Income,Passive Income,Property Gains,Other Sources'],
             'description' => ['nullable', 'string'],
             'received_at' => ['required', 'date'],
             'is_recurring' => ['boolean'],

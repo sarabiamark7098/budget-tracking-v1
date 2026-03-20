@@ -19,7 +19,7 @@ class UpdateIncomeRequest extends FormRequest
             'category_id' => ['nullable', 'exists:categories,id'],
             'title' => ['nullable', 'string', 'max:255'],
             'amount' => ['nullable', 'numeric', 'min:0'],
-            'source' => ['nullable', 'string', 'max:255'],
+            'source' => ['nullable', 'in:Compensation Income,Business Income,Passive Income,Property Gains,Other Sources'],
             'description' => ['nullable', 'string'],
             'received_at' => ['nullable', 'date'],
             'is_recurring' => ['boolean'],

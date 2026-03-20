@@ -42,7 +42,7 @@
                 </span>
                 <span v-else class="text-gray-400 text-xs">N/A</span>
               </td>
-              <td class="px-4 py-3 text-gray-500">{{ item.purchase_date ?? '—' }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ formatDate(item.purchase_date) }}</td>
               <td class="px-4 py-3">
                 <span class="text-xs px-2 py-1 rounded-full" :class="statusClass(item)">
                   {{ itemStatus(item) }}
@@ -149,6 +149,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { usePurchaseStore } from '@/stores/purchase';
+import { formatDate } from '@/utils/date';
 
 const store = usePurchaseStore();
 const showModal = ref(false);

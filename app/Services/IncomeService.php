@@ -42,13 +42,38 @@ class IncomeService
 
     public function create(User $user, array $data): Income
     {
-        return Income::create(array_merge($data, ['user_id' => $user->id]));
+        $data['user_id'] = $user->id;
+        $data['source']  = $this->sanitizeSource($data['source'] ?? null);
+
+        return Income::create($data);
     }
 
     public function update(Income $income, array $data): Income
     {
+        if (array_key_exists('source', $data)) {
+            $data['source'] = $this->sanitizeSource($data['source']);
+        }
+
         $income->update($data);
         return $income->fresh(['category']);
+    }
+
+    /**
+     * Accept only the five valid enum values; coerce everything else to null.
+     * This prevents a MySQL ENUM truncation error when old free-text data
+     * (e.g. raw bank descriptions) is passed in the source field.
+     */
+    private function sanitizeSource(?string $source): ?string
+    {
+        $allowed = [
+            'Compensation Income',
+            'Business Income',
+            'Passive Income',
+            'Property Gains',
+            'Other Sources',
+        ];
+
+        return in_array($source, $allowed, true) ? $source : null;
     }
 
     public function delete(Income $income): bool

@@ -55,7 +55,7 @@
                   {{ item.status }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-gray-500">{{ item.due_date ?? '—' }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ formatDate(item.due_date) }}</td>
               <td class="px-4 py-3">
                 <div class="flex gap-2 justify-end">
                   <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
@@ -165,6 +165,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useDebtStore } from '@/stores/debt';
+import { formatDate } from '@/utils/date';
 
 const store = useDebtStore();
 const showModal = ref(false);

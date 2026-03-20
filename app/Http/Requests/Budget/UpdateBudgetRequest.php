@@ -22,7 +22,7 @@ class UpdateBudgetRequest extends FormRequest
             'period' => ['nullable', 'in:weekly,monthly,yearly'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date'],
-            'alert_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'alert_threshold' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ];
     }
 
