@@ -81,7 +81,7 @@
           </div>
           <div class="bg-green-50 rounded-lg p-4">
             <p class="text-xs text-green-600 font-medium mb-1">Projected Dividends</p>
-            <p class="text-2xl font-bold text-green-700">{{ formatCurrency(result.total_dividends) }}</p>
+            <p class="text-2xl font-bold text-green-700">{{ formatCurrency(result.projected_earnings) }}</p>
           </div>
           <div class="bg-indigo-50 rounded-lg p-4">
             <p class="text-xs text-indigo-600 font-medium mb-1">Total Projected Value</p>
@@ -112,9 +112,9 @@
           <tbody>
             <tr v-for="row in result.yearly_breakdown" :key="row.year" class="border-b last:border-0 hover:bg-gray-50">
               <td class="py-2 px-3 font-medium text-gray-700">Year {{ row.year }}</td>
-              <td class="py-2 px-3 text-right text-blue-600">{{ formatCurrency(row.contributions) }}</td>
-              <td class="py-2 px-3 text-right text-green-600">{{ formatCurrency(row.dividends) }}</td>
-              <td class="py-2 px-3 text-right font-semibold text-indigo-600">{{ formatCurrency(row.balance) }}</td>
+              <td class="py-2 px-3 text-right text-blue-600">{{ formatCurrency(row.yearly_contribution) }}</td>
+<td class="py-2 px-3 text-right text-green-600">{{ formatCurrency(row.dividends_earned) }}</td>
+<td class="py-2 px-3 text-right font-semibold text-indigo-600">{{ formatCurrency(row.cumulative_value) }}</td>
             </tr>
           </tbody>
         </table>
@@ -143,11 +143,10 @@
               <td colspan="7" class="text-center py-10 text-gray-400">No saved plans yet. Run a calculation and save it.</td>
             </tr>
             <tr v-for="plan in store.items" :key="plan.id" class="border-b last:border-0 hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium text-gray-700">{{ plan.label ?? 'MP2 Plan' }}</td>
+              <td class="px-4 py-3 font-medium text-gray-700">{{ plan.name ?? 'MP2 Plan' }}</td>
               <td class="px-4 py-3 text-right text-blue-600">{{ formatCurrency(plan.monthly_contribution) }}</td>
               <td class="px-4 py-3 text-right text-gray-500">{{ plan.duration_years }} yr{{ plan.duration_years > 1 ? 's' : '' }}</td>
-              <td class="px-4 py-3 text-right text-gray-700">{{ formatCurrency(plan.total_contributions) }}</td>
-              <td class="px-4 py-3 text-right font-semibold text-green-600">{{ formatCurrency(plan.total_value) }}</td>
+              <td class="px-4 py-3 text-right text-gray-700">{{ formatCurrency(plan.total_contributions) }}</td><td class="px-4 py-3 text-right font-semibold text-green-600">{{ formatCurrency(plan.projected_earnings) }}</td>
               <td class="px-4 py-3 text-gray-500">{{ plan.start_date ?? '—' }}</td>
               <td class="px-4 py-3">
                 <button @click="confirmDelete(plan)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
@@ -242,31 +241,35 @@ function openSaveModal() {
 }
 
 async function handleSave() {
-  saving.value = true;
-  formError.value = '';
-  try {
-    await store.create({
-      ...calcForm.value,
-      label: saveLabel.value,
-      total_contributions: result.value?.total_contributions,
-      total_dividends: result.value?.total_dividends,
-      total_value: result.value?.total_value,
-    });
-    showSaveModal.value = false;
-  } catch (e) {
-    formError.value = e.response?.data?.message ?? 'Failed to save plan.';
-  } finally {
-    saving.value = false;
-  }
+    saving.value = true;
+    formError.value = '';
+    try {
+        await store.create({
+            name: saveLabel.value || 'MP2 Plan',
+            monthly_contribution: Number(calcForm.value.monthly_contribution),
+            duration_years: Number(calcForm.value.duration_years),
+            start_date: calcForm.value.start_date,
+        });
+        showSaveModal.value = false;
+        await store.fetchAll();
+    } catch (e) {
+        formError.value = e.response?.data?.message ?? 'Failed to save plan.';
+        console.log(e.response?.data);
+    } finally {
+        saving.value = false;
+    }
 }
-
 function confirmDelete(plan) {
   deleteTarget.value = plan;
 }
 
 async function handleDelete() {
-  await store.remove(deleteTarget.value.id);
-  deleteTarget.value = null;
+    if (!deleteTarget.value?.id) {
+        deleteTarget.value = null;
+        return;
+    }
+    await store.remove(deleteTarget.value.id);
+    deleteTarget.value = null;
 }
 
 onMounted(() => store.fetchAll());

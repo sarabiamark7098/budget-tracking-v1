@@ -140,7 +140,7 @@ export const purchaseService = {
 
 // MP2
 export const mp2Service = {
-    calculate: (data) => api.post('/auth/mp2/calculate', data),
+    calculate: (data) => api.post('/mp2/calculate', data),
     getAll: () => api.get('/mp2-plans'),
     create: (data) => api.post('/mp2-plans', data),
     update: (id, data) => api.put(`/mp2-plans/${id}`, data),

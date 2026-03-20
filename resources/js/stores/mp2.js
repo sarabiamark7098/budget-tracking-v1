@@ -11,7 +11,7 @@ export const useMp2Store = defineStore('mp2', () => {
         loading.value = true;
         try {
             const { data } = await mp2Service.getAll();
-            items.value = data.data ?? [];
+            items.value = data.data.data ?? data.data ?? [];
         } finally {
             loading.value = false;
         }
