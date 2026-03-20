@@ -6,6 +6,8 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+php artisan storage:link
+
 # Run migrations and seeders (The part you specifically asked for)
 php artisan migrate --force --seed
 
