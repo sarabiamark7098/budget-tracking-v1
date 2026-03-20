@@ -121,4 +121,26 @@ class User extends Authenticatable
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    // ─── Budget Tracking (shared/collaborative) ──────────────────────────────────
+
+    public function budgetTrackingMemberships(): HasMany
+    {
+        return $this->hasMany(BudgetTrackingMember::class);
+    }
+
+    /**
+     * The single budget tracking this user belongs to (owned or shared).
+     * A user can only be part of ONE budget tracking at a time.
+     */
+    public function budgetTracking(): ?BudgetTracking
+    {
+        $membership = $this->budgetTrackingMemberships()->with('budgetTracking')->first();
+        return $membership?->budgetTracking;
+    }
+
+    public function hasBudgetTracking(): bool
+    {
+        return $this->budgetTrackingMemberships()->exists();
+    }
 }

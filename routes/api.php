@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\API\V1\Auth\AuthController;
+use App\Http\Controllers\API\V1\BudgetTracking\BudgetTrackingAllocationController;
+use App\Http\Controllers\API\V1\BudgetTracking\BudgetTrackingController;
+use App\Http\Controllers\API\V1\BudgetTracking\BudgetTrackingTransactionController;
 use App\Http\Controllers\API\V1\Budget\BudgetController;
 use App\Http\Controllers\API\V1\Category\CategoryController;
 use App\Http\Controllers\API\V1\Crypto\CryptoController;
@@ -88,6 +91,43 @@ Route::prefix('v1')->group(function () {
 
         Route::apiResource('files', FileController::class)->only(['index', 'store', 'destroy']);
         Route::get('files/{file}/download', [FileController::class, 'download']);
+
+        // ─── Budget Tracking (collaborative / shared) ───────────────────────────
+        Route::prefix('budget-tracking')->group(function () {
+            // Core budget tracking — one per user (owned or shared)
+            Route::get('/',                      [BudgetTrackingController::class, 'show']);
+            Route::post('/',                     [BudgetTrackingController::class, 'store']);
+            Route::put('/',                      [BudgetTrackingController::class, 'update']);
+            Route::delete('/',                   [BudgetTrackingController::class, 'destroy']);
+
+            // Join & leave via unique code
+            Route::post('join',                  [BudgetTrackingController::class, 'join']);
+            Route::post('leave',                 [BudgetTrackingController::class, 'leave']);
+
+            // Summary dashboard
+            Route::get('summary',                [BudgetTrackingController::class, 'summary']);
+
+            // Change history log
+            Route::get('history',                [BudgetTrackingController::class, 'history']);
+
+            // Join code management (owner only)
+            Route::post('code/regenerate',       [BudgetTrackingController::class, 'regenerateCode']);
+
+            // Member management (owner only)
+            Route::delete('members/{userId}',    [BudgetTrackingController::class, 'removeMember']);
+
+            // Budget allocations (owner manages, all members view)
+            Route::get('allocations',            [BudgetTrackingAllocationController::class, 'index']);
+            Route::post('allocations',           [BudgetTrackingAllocationController::class, 'store']);
+            Route::put('allocations/{allocation}',    [BudgetTrackingAllocationController::class, 'update']);
+            Route::delete('allocations/{allocation}', [BudgetTrackingAllocationController::class, 'destroy']);
+
+            // Transactions (all members can add/edit own; owner can edit/delete any)
+            Route::get('transactions',                    [BudgetTrackingTransactionController::class, 'index']);
+            Route::post('transactions',                   [BudgetTrackingTransactionController::class, 'store']);
+            Route::put('transactions/{transaction}',      [BudgetTrackingTransactionController::class, 'update']);
+            Route::delete('transactions/{transaction}',   [BudgetTrackingTransactionController::class, 'destroy']);
+        });
 
         // Reports
         Route::prefix('reports')->group(function () {
