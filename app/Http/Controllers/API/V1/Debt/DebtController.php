@@ -51,4 +51,54 @@ class DebtController extends Controller
         $this->service->delete($debt);
         return $this->respondSuccess(null, 'Debt deleted successfully');
     }
+
+    /**
+     * GET /api/v1/debts/{debt}/amortization
+     * Returns a full monthly amortization schedule for the debt.
+     * Optional query params: duration_months, fixed_payment
+     */
+    public function amortization(Request $request, Debt $debt): JsonResponse
+    {
+        abort_if($debt->user_id !== auth()->id(), 403, 'Unauthorized');
+
+        $durationMonths = (int) ($request->query('duration_months', 12));
+        $fixedPayment   = $request->query('fixed_payment') ? (float) $request->query('fixed_payment') : null;
+
+        $schedule = $this->service->amortizationSchedule(
+            (float) $debt->amount,
+            (float) $debt->interest_rate,
+            $durationMonths,
+            $fixedPayment
+        );
+
+        return $this->respondSuccess([
+            'debt'         => new DebtResource($debt),
+            'amortization' => $schedule,
+        ]);
+    }
+
+    /**
+     * GET /api/v1/debts/{debt}/accrual
+     * Returns daily interest accrual calculation for a business debt.
+     * Query params: days_elapsed, total_paid
+     */
+    public function accrual(Request $request, Debt $debt): JsonResponse
+    {
+        abort_if($debt->user_id !== auth()->id(), 403, 'Unauthorized');
+
+        $daysElapsed = (int) ($request->query('days_elapsed', 0));
+        $totalPaid   = (float) ($request->query('total_paid', $debt->payments()->sum('amount')));
+
+        $accrual = $this->service->dailyInterestAccrual(
+            (float) $debt->amount,
+            (float) $debt->interest_rate,
+            $daysElapsed,
+            $totalPaid
+        );
+
+        return $this->respondSuccess([
+            'debt'    => new DebtResource($debt),
+            'accrual' => $accrual,
+        ]);
+    }
 }

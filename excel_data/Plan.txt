@@ -1,0 +1,15 @@
+SHEET: Plan
+Shape: 11 rows x 1 columns
+
+                                              0
+0                             Work Around Plans
+1   BRRR Strategy - Buy, Renovate, Rent, Repeat
+2                            Tindahan (Bigasan)
+3                                           NaN
+4                               Pastil in a Can
+5                               Office Supplies
+6                                  Lechon Manok
+7                                   Coffee Shop
+8                               Internet Lounge
+9                                           NaN
+10                      Water Refilling Station

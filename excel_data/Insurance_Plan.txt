@@ -1,0 +1,37 @@
+SHEET: Insurance Plan
+Shape: 33 rows x 11 columns
+
+                     0        1        2              3               4                                           5   6       7     8       9        10
+0        Insurance Plan      NaN      NaN            NaN             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+1                  Mark      NaN      NaN            NaN             NaN                                         NaN NaN  Regine   NaN     NaN      NaN
+2                  Date     Plan   Amount  BPI Insurance  BPI Investment                                     Remarks NaN    Date  Plan  Amount  Remarks
+3   2023-10-14 00:00:00  BPI AIA  2022.95        1011.12             NaN                                         NaN NaN       -   NaN     NaN      NaN
+4   2023-10-14 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+5   2025-12-11 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+6   2024-01-15 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+7   2024-02-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+8   2024-03-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+9   2024-04-15 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+10  2024-05-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+11  2024-06-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+12  2024-07-15 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+13  2024-08-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+14  2024-09-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+15  2024-10-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+16  2024-11-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+17  2024-12-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+18  2025-01-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+19  2025-02-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+20  2025-03-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+21  2025-04-14 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+22  2025-05-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+23  2025-06-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+24  2025-07-14 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+25  2025-08-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+26  2025-08-28 00:00:00  BPI AIA      NaN            NaN        23275.27  Latest Balance - BPI-PHILAM PESO BOND FUND NaN     NaN   NaN     NaN      NaN
+27  2025-09-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+28  2025-10-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+29  2025-11-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+30  2025-12-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+31  2026-01-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN
+32  2026-02-13 00:00:00  BPI AIA  2022.94        1011.11             NaN                                         NaN NaN     NaN   NaN     NaN      NaN

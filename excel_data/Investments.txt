@@ -1,0 +1,30 @@
+SHEET: Investments
+Shape: 26 rows x 7 columns
+
+                      0               1       2   3                    4         5       6
+0                   MP2             NaN     NaN NaN                 Land       NaN     NaN
+1                  Date            Name  Amount NaN                 Date  Location  Amount
+2   2025-02-16 00:00:00    Mark Sarabia    2000 NaN  2025-02-15 00:00:00  Tagakpan  194488
+3   2025-02-16 00:00:00  Regine Donaire    2000 NaN  2025-02-24 00:00:00  Bunawan1   70000
+4   2025-03-10 00:00:00    Mark Sarabia    2000 NaN  2025-03-15 00:00:00  Tagakpan   13892
+5   2025-03-10 00:00:00  Regine Donaire    2000 NaN  2025-03-22 00:00:00  Bunawan2   22500
+6   2025-04-21 00:00:00    Mark Sarabia    2000 NaN  2025-03-24 00:00:00  Bunawan1   35000
+7   2025-04-21 00:00:00  Regine Donaire    2000 NaN  2025-04-21 00:00:00  Bunawan2   22500
+8   2025-05-01 00:00:00    Mark Sarabia    2000 NaN  2025-05-22 00:00:00  Bunawan2   22500
+9   2025-05-01 00:00:00  Regine Donaire    2000 NaN  2025-05-31 00:00:00  Tagakpan   13892
+10  2025-06-27 00:00:00    Mark Sarabia    2000 NaN  2025-06-20 00:00:00  Bunawan2   22500
+11  2025-06-27 00:00:00  Regine Donaire    2000 NaN  2025-07-12 00:00:00  Bunawan2   22500
+12  2025-07-29 00:00:00    Mark Sarabia    2000 NaN  2025-08-14 00:00:00  Bunawan2   22500
+13  2025-07-29 00:00:00  Regine Donaire    2000 NaN                  NaN      ----     NaN
+14  2025-08-28 00:00:00    Mark Sarabia    2000 NaN                  NaN      ----     NaN
+15  2025-08-28 00:00:00  Regine Donaire    2000 NaN                  NaN      ----     NaN
+16  2025-09-30 00:00:00    Mark Sarabia    2000 NaN                  NaN      ----     NaN
+17  2025-09-30 00:00:00  Regine Donaire    2000 NaN                  NaN      ----     NaN
+18  2025-10-30 00:00:00    Mark Sarabia    2000 NaN                  NaN       NaN     NaN
+19  2025-10-30 00:00:00  Regine Donaire    2000 NaN                  NaN       NaN     NaN
+20  2025-11-30 00:00:00    Mark Sarabia    2000 NaN                  NaN       NaN     NaN
+21  2025-12-30 00:00:00  Regine Donaire    2000 NaN                  NaN       NaN     NaN
+22  2026-01-31 00:00:00    Mark Sarabia    2000 NaN                  NaN       NaN     NaN
+23  2026-01-31 00:00:00  Regine Donaire    2000 NaN                  NaN       NaN     NaN
+24  2026-03-04 00:00:00    Mark Sarabia    6000 NaN                  NaN       NaN     NaN
+25  2026-03-04 00:00:00  Regine Donaire    6000 NaN                  NaN       NaN     NaN

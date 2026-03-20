@@ -56,6 +56,9 @@ Route::prefix('v1')->group(function () {
         Route::get('budgets/summary', [BudgetController::class, 'summary']);
         Route::apiResource('budgets', BudgetController::class);
 
+        // Debts — amortization and accrual BEFORE apiResource
+        Route::get('debts/{debt}/amortization', [DebtController::class, 'amortization']);
+        Route::get('debts/{debt}/accrual', [DebtController::class, 'accrual']);
         Route::apiResource('debts', DebtController::class);
         Route::apiResource('payments', PaymentController::class)->except(['update']);
 

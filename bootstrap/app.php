@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\URL;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,7 +14,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->trustProxies(at: '*');
+    })
+    ->booting(function () {
+        if (app()->isProduction()) {
+            URL::forceScheme('https');
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
+
     })->create();

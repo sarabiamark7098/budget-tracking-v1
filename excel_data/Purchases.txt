@@ -1,0 +1,21 @@
+SHEET: Purchases
+Shape: 17 rows x 5 columns
+
+                      0              1                                                                                                                                         2        3                 4
+0              Expenses            NaN                                                                                                                                       NaN      NaN               NaN
+1                  Date   Expense Code                                                                                                                                   Details   Amount  Terms of Payment
+2   2025-02-15 00:00:00  Other Expense                                                                                                                         Motor Maintenance     4450              Cash
+3   2025-02-15 00:00:00       Shopping  Watson - Centrum Advance = 176, Luxe Organix Dandruff = 199,  Luxe Organix Scalp = 199,  Body Treats = 199, SOME by me CICA PEPT =  1099     1872               BPI
+4   2025-02-15 00:00:00  Other Expense                                                                                                              Good Luck Plastic - 2x Chair      554              Cash
+5   2025-02-15 00:00:00  Other Expense                                                                                                                    HandyMan Gaisano Davao   2223.7               BPI
+6   2025-02-15 00:00:00        Grocery                                                                                                                       Guisano Mall Davao   2202.13              Cash
+7   2025-02-15 00:00:00           Food                                                                                                                                  Rice 5kg      260              Cash
+8   2025-04-30 00:00:00           Food                                                                                                                                 Rice 25kg      995              Cash
+9   2025-06-15 00:00:00           Food                                                                                                                                 Rice 25kg      935              Cash
+10  2025-08-26 00:00:00           Food                                                                                                                    Rice 2kg - P43 banay2x       86              Cash
+11  2025-09-20 00:00:00           Food                                                                                                                                 Rice 25kg     1015              Cash
+12  2026-02-14 00:00:00        Grocery                                                                                                                                 Groceries   1479.7          EastWest
+13  2026-02-14 00:00:00       Clothing                                                                                                            Long sleeves (white) 2 pieces      1060          EastWest
+14  2026-02-14 00:00:00  Other Expense                                                                                                                         Motor Maintenance     2613              Cash
+15  2026-02-16 00:00:00  Other Expense                                                                                                                                     Gasul     1180              Cash
+16  2026-03-13 00:00:00        Grocery                                                                                                                                 Groceries  3228.05              Cash

@@ -1,0 +1,19 @@
+SHEET: Budgeting
+Shape: 15 rows x 5 columns
+
+              0            1       2                           3       4
+0             W          NaN     NaN                         NaN     NaN
+1   Grand Total  63200.00000  Status                        Date     NaN
+2   1st payment  10533.33333    Paid  2026-01-04 13:31:19.533000      PC
+3   2nd payment  10533.33333    Paid         2026-01-05 11:49:19     NaN
+4   3rd payment  10533.33333    Paid  2026-02-25 15:18:31.778000     NaN
+5   4th payment  10533.33333    Paid  2026-03-11 11:34:01.829000     NaN
+6   5th payment  10533.33333     NaN                         NaN     NaN
+7   6th payment  10533.33333     NaN                         NaN     NaN
+8   1st payment   6450.00000    Paid  2026-02-25 15:18:38.388000  Iphone
+9   2nd payment   6450.00000    Paid  2026-03-11 11:34:00.621000     NaN
+10  3rd payment   6450.00000     NaN                         NaN     NaN
+11  4th payment   6450.00000     NaN                         NaN     NaN
+12  5th payment   6450.00000     NaN                         NaN     NaN
+13  6th payment   6450.00000     NaN                         NaN     NaN
+14          NaN  38700.00000     NaN                         NaN     NaN

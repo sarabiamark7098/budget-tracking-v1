@@ -1,0 +1,12 @@
+SHEET: Utang (Dept)
+Shape: 8 rows x 12 columns
+
+                    0                    1        2         3                  4               5   6                     7                    8       9         10       11
+0         Dept (Utang)                  NaN      NaN       NaN                NaN             NaN NaN  Payment and Interest                  NaN     NaN       NaN      NaN
+1                 Date                 Name   Amount  Interest  Remaining Balance  Balance to Pay NaN                  Date                 Name  Amount  Interest  Balance
+2  2024-12-13 00:00:00  Mark Rezzel Sarabia    10000       0.1              11000           #REF! NaN   2025-01-13 00:00:00  Mark Rezzel Sarabia    2000       0.1    #REF!
+3  2025-01-01 00:00:00  Personal Collection     1670         -               1670            paid NaN   2025-01-15 00:00:00  Mark Rezzel Sarabia    2000       0.1      NaN
+4  2025-02-20 00:00:00  Personal Collection     2560       NaN               2560            paid NaN   2025-02-15 00:00:00  Mark Rezzel Sarabia     NaN       NaN      NaN
+5  2025-04-21 00:00:00  Personal Collection     1891       NaN               1891            paid NaN                   NaN                  NaN     NaN       NaN      NaN
+6  2025-07-30 00:00:00  Personal Collection     2500       NaN               2500            paid NaN                   NaN                  NaN     NaN       NaN      NaN
+7  2025-09-16 00:00:00  Personal Collection  1841.75       NaN                NaN             NaN NaN                   NaN                  NaN     NaN       NaN      NaN
