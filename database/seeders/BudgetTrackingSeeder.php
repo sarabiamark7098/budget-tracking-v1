@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Budget;
+use App\Models\BudgetTracking;
+use App\Models\BudgetTrackingMember;
 use App\Models\Category;
 use App\Models\Debt;
 use App\Models\Expense;
@@ -23,6 +25,7 @@ use Illuminate\Support\Facades\Hash;
 class BudgetTrackingSeeder extends Seeder
 {
     private User $user;
+    private BudgetTracking $budgetTracking;
 
     public function run(): void
     {
@@ -32,6 +35,26 @@ class BudgetTrackingSeeder extends Seeder
                 'name'     => 'Mark Sarabia',
                 'password' => Hash::make('pass@word@123'),
             ]
+        );
+
+        // Create or retrieve the budget tracker for the seeded user
+        $this->budgetTracking = BudgetTracking::firstOrCreate(
+            ['owner_id' => $this->user->id],
+            [
+                'owner_id'   => $this->user->id,
+                'name'       => 'Mark & Gine Family Budget',
+                'currency'   => 'PHP',
+                'period'     => 'monthly',
+                'join_code'  => BudgetTracking::generateJoinCode(),
+                'status'     => 'active',
+                'start_date' => '2025-01-01',
+            ]
+        );
+
+        // Ensure owner is a member
+        BudgetTrackingMember::firstOrCreate(
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id]
         );
 
         $this->seedIncomes();
@@ -57,8 +80,8 @@ class BudgetTrackingSeeder extends Seeder
         //   Compensation Income | Business Income | Passive Income | Property Gains | Other Sources
         // All cash-in / bank-transfer entries are classified as 'Other Sources'.
         $rows = [
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 12016.38, 'source' => 'Other Sources', 'received_at' => '2025-02-15'],
-            ['title' => 'Landbank #1477 4212 76 Cash-in', 'amount' => 2000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'LandBank Mark Cash-in', 'amount' => 12016.38, 'source' => 'Other Sources', 'received_at' => '2025-02-15'],
+            ['title' => 'Landbank Regine Cash-in', 'amount' => 2000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-15'],
             ['title' => 'BPI Cash-in',                    'amount' => 11110.06,  'source' => 'Other Sources', 'received_at' => '2025-02-15'],
             ['title' => 'Ownbank Cash-in',                'amount' => 48403.89,  'source' => 'Other Sources', 'received_at' => '2025-02-15'],
             ['title' => 'Samulco Cash-in',                'amount' => 1289.61,   'source' => 'Other Sources', 'received_at' => '2025-02-15'],
@@ -67,24 +90,25 @@ class BudgetTrackingSeeder extends Seeder
             ['title' => 'BPI Transfer from LandBank',     'amount' => 3000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-15'],
             ['title' => 'Ownbank Transfer in',            'amount' => 3000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-16'],
             ['title' => 'Gcash Gine Cash-in',             'amount' => 4000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-16'],
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 26326.84,  'source' => 'Other Sources', 'received_at' => '2025-02-19'],
+            ['title' => 'LandBank Mark Cash-in', 'amount' => 26326.84,  'source' => 'Other Sources', 'received_at' => '2025-02-19'],
             ['title' => 'Ownbank Transfer in',            'amount' => 20000.00,  'source' => 'Other Sources', 'received_at' => '2025-02-21'],
             ['title' => 'BPI Cash-in from transfer',      'amount' => 3000.00,   'source' => 'Other Sources', 'received_at' => '2025-02-21'],
             ['title' => 'BPI from Ownbank',               'amount' => 71403.89,  'source' => 'Other Sources', 'received_at' => '2025-02-23'],
             ['title' => 'Gcash Mark Cash-in',             'amount' => 30.29,     'source' => 'Other Sources', 'received_at' => '2025-02-23'],
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 100.00,    'source' => 'Other Sources', 'received_at' => '2025-02-26'],
+            ['title' => 'LandBank Mark Cash-in', 'amount' => 100.00,    'source' => 'Other Sources', 'received_at' => '2025-02-26'],
             ['title' => 'BPI from LandBank transfer',     'amount' => 1913.22,   'source' => 'Other Sources', 'received_at' => '2025-02-27'],
-            ['title' => 'Landbank #1477 4212 76 Cash-in', 'amount' => 822.61,    'source' => 'Other Sources', 'received_at' => '2025-02-27'],
-            ['title' => 'LandBank #1477 4334 60 Cash-in', 'amount' => 24518.50,  'source' => 'Other Sources', 'received_at' => '2025-02-27'],
+            ['title' => 'Landbank Regine Cash-in', 'amount' => 822.61,    'source' => 'Other Sources', 'received_at' => '2025-02-27'],
+            ['title' => 'LandBank Mark Cash-in', 'amount' => 24518.50,  'source' => 'Other Sources', 'received_at' => '2025-02-27'],
         ];
 
         foreach ($rows as $row) {
             Income::firstOrCreate(
-                ['user_id' => $this->user->id, 'title' => $row['title'], 'received_at' => $row['received_at']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'title' => $row['title'], 'received_at' => $row['received_at']],
                 array_merge($row, [
-                    'user_id'      => $this->user->id,
-                    'category_id'  => $otherIncome?->id,
-                    'is_recurring' => false,
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'category_id'        => $otherIncome?->id,
+                    'is_recurring'       => false,
                 ])
             );
         }
@@ -116,42 +140,66 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($rentRows as $row) {
             Expense::firstOrCreate(
-                ['user_id' => $this->user->id, 'title' => $row['title'], 'spent_at' => $row['spent_at']],
-                array_merge($row, ['user_id' => $this->user->id, 'category_id' => $housing?->id, 'is_recurring' => true, 'recurrence_interval' => 'monthly'])
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'title' => $row['title'], 'spent_at' => $row['spent_at']],
+                array_merge($row, [
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'category_id'        => $housing?->id,
+                ])
             );
         }
 
         $waterRows = [
-            ['title' => 'Water Bill - Jan-Feb',     'amount' => 158,  'spent_at' => '2025-03-15', 'description' => 'paid-Jan 30-February'],
-            ['title' => 'Water Bill - Mar-Apr',     'amount' => 450,  'spent_at' => '2025-04-01', 'description' => 'paid-March-April'],
-            ['title' => 'Water Bill - Apr-May',     'amount' => 339,  'spent_at' => '2025-05-05', 'description' => 'paid-April-May 15'],
-            ['title' => 'Water Bill - May-Jun',     'amount' => 403,  'spent_at' => '2025-05-29', 'description' => 'paid-May 15-June 15'],
-            ['title' => 'Water Bill - Aug',         'amount' => 452,  'spent_at' => '2025-08-03', 'description' => 'paid'],
-            ['title' => 'Water Bill - Oct-Dec',     'amount' => 1526, 'spent_at' => '2026-02-01', 'description' => 'paid-Oct-Dec 2025'],
+            ['title' => 'Water - March',         'amount' => 262,   'spent_at' => '2025-03-01'],
+            ['title' => 'Water - April',         'amount' => 247,   'spent_at' => '2025-04-01'],
+            ['title' => 'Water - May',           'amount' => 235,   'spent_at' => '2025-05-01'],
+            ['title' => 'Water - June',          'amount' => 219,   'spent_at' => '2025-06-01'],
+            ['title' => 'Water - July',          'amount' => 189,   'spent_at' => '2025-07-01'],
+            ['title' => 'Water - August',        'amount' => 155,   'spent_at' => '2025-08-01'],
+            ['title' => 'Water - September',     'amount' => 163,   'spent_at' => '2025-09-01'],
+            ['title' => 'Water - October',       'amount' => 199,   'spent_at' => '2025-10-01'],
+            ['title' => 'Water - November',      'amount' => 174,   'spent_at' => '2025-11-01'],
+            ['title' => 'Water - December',      'amount' => 223,   'spent_at' => '2025-12-01'],
+            ['title' => 'Water - January 2026',  'amount' => 199,   'spent_at' => '2026-01-01'],
+            ['title' => 'Water - February 2026', 'amount' => 195,   'spent_at' => '2026-02-01'],
         ];
 
         foreach ($waterRows as $row) {
             Expense::firstOrCreate(
-                ['user_id' => $this->user->id, 'title' => $row['title'], 'spent_at' => $row['spent_at']],
-                array_merge($row, ['user_id' => $this->user->id, 'category_id' => $bills?->id, 'is_recurring' => false])
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'title' => $row['title'], 'spent_at' => $row['spent_at']],
+                array_merge($row, [
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'category_id'        => $bills?->id,
+                    'description'        => 'Water bill',
+                ])
             );
         }
 
         $electricityRows = [
-            ['title' => 'Electricity Front - Jan-Mar 2025',  'amount' => 65,   'spent_at' => '2025-03-23', 'description' => 'Front unit Jan 30–Mar 11'],
-            ['title' => 'Electricity Front - Mar-May 2025',  'amount' => 312,  'spent_at' => '2025-05-19', 'description' => 'Front unit Mar 11–May 19'],
-            ['title' => 'Electricity Front - May-Aug 2025',  'amount' => 468,  'spent_at' => '2025-08-03', 'description' => 'Front unit May 20–Aug 2'],
-            ['title' => 'Electricity Front - Aug 2025-Jan 2026', 'amount' => 1124, 'spent_at' => '2026-03-13', 'description' => 'Front unit Aug 2–Jan 2'],
-            ['title' => 'Electricity Back - Jan-Mar 2025',   'amount' => 117,  'spent_at' => '2025-03-23', 'description' => 'Back unit Jan 30–Mar 11'],
-            ['title' => 'Electricity Back - Mar-May 2025',   'amount' => 416,  'spent_at' => '2025-05-19', 'description' => 'Back unit Mar 11–May 19'],
-            ['title' => 'Electricity Back - May-Aug 2025',   'amount' => 533,  'spent_at' => '2025-08-03', 'description' => 'Back unit May 20–Aug 2'],
-            ['title' => 'Electricity Back - Aug 2025-Jan 2026 (partial)', 'amount' => 213, 'spent_at' => '2026-03-13', 'description' => 'Back unit Aug 2–Jan 2, balance 911.00 unpaid'],
+            ['title' => 'Electricity - March',         'amount' => 1046, 'spent_at' => '2025-03-01'],
+            ['title' => 'Electricity - April',         'amount' => 1087, 'spent_at' => '2025-04-01'],
+            ['title' => 'Electricity - May',           'amount' => 1054, 'spent_at' => '2025-05-01'],
+            ['title' => 'Electricity - June',          'amount' => 1096, 'spent_at' => '2025-06-01'],
+            ['title' => 'Electricity - July',          'amount' => 1104, 'spent_at' => '2025-07-01'],
+            ['title' => 'Electricity - August',        'amount' => 1112, 'spent_at' => '2025-08-01'],
+            ['title' => 'Electricity - September',     'amount' => 1098, 'spent_at' => '2025-09-01'],
+            ['title' => 'Electricity - October',       'amount' => 1089, 'spent_at' => '2025-10-01'],
+            ['title' => 'Electricity - November',      'amount' => 1076, 'spent_at' => '2025-11-01'],
+            ['title' => 'Electricity - December',      'amount' => 1132, 'spent_at' => '2025-12-01'],
+            ['title' => 'Electricity - January 2026',  'amount' => 1095, 'spent_at' => '2026-01-01'],
+            ['title' => 'Electricity - February 2026', 'amount' => 1108, 'spent_at' => '2026-02-01'],
         ];
 
         foreach ($electricityRows as $row) {
             Expense::firstOrCreate(
-                ['user_id' => $this->user->id, 'title' => $row['title'], 'spent_at' => $row['spent_at']],
-                array_merge($row, ['user_id' => $this->user->id, 'category_id' => $bills?->id, 'is_recurring' => false])
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'title' => $row['title'], 'spent_at' => $row['spent_at']],
+                array_merge($row, [
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'category_id'        => $bills?->id,
+                    'description'        => 'Electricity bill',
+                ])
             );
         }
     }
@@ -189,15 +237,16 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($rows as $row) {
             Purchase::firstOrCreate(
-                ['user_id' => $this->user->id, 'item_name' => $row['item_name'], 'purchase_date' => $row['purchase_date']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'item_name' => $row['item_name'], 'purchase_date' => $row['purchase_date']],
                 [
-                    'user_id'       => $this->user->id,
-                    'category_id'   => $catMap[$row['expense_code']] ?? null,
-                    'item_name'     => $row['item_name'],
-                    'description'   => $row['description'] . ' | Payment: ' . $row['payment'],
-                    'total_cost'    => $row['total_cost'],
-                    'is_installment' => false,
-                    'purchase_date' => $row['purchase_date'],
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'category_id'        => $catMap[$row['expense_code']] ?? null,
+                    'item_name'          => $row['item_name'],
+                    'description'        => $row['description'] . ' | Payment: ' . $row['payment'],
+                    'total_cost'         => $row['total_cost'],
+                    'is_installment'     => false,
+                    'purchase_date'      => $row['purchase_date'],
                 ]
             );
         }
@@ -227,16 +276,17 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($landRows as $row) {
             Investment::firstOrCreate(
-                ['user_id' => $this->user->id, 'name' => $row['name'], 'purchase_date' => $row['date'], 'amount_invested' => $row['amount']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => $row['name'], 'purchase_date' => $row['date'], 'amount_invested' => $row['amount']],
                 [
-                    'user_id'         => $this->user->id,
-                    'category_id'     => $realEstate?->id,
-                    'name'            => $row['name'],
-                    'type'            => 'real_estate',
-                    'amount_invested'  => $row['amount'],
-                    'current_value'   => $row['amount'],  // land appreciates; set to cost as baseline
-                    'purchase_date'   => $row['date'],
-                    'description'     => $row['desc'],
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'category_id'        => $realEstate?->id,
+                    'name'               => $row['name'],
+                    'type'               => 'real_estate',
+                    'amount_invested'    => $row['amount'],
+                    'current_value'      => $row['amount'],
+                    'purchase_date'      => $row['date'],
+                    'description'        => $row['desc'],
                 ]
             );
         }
@@ -271,16 +321,17 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($mp2Rows as $row) {
             Investment::firstOrCreate(
-                ['user_id' => $this->user->id, 'name' => $row['name'], 'purchase_date' => $row['date'], 'amount_invested' => $row['amount']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => $row['name'], 'purchase_date' => $row['date'], 'amount_invested' => $row['amount']],
                 [
-                    'user_id'        => $this->user->id,
-                    'category_id'    => $mutualFund?->id,
-                    'name'           => $row['name'],
-                    'type'           => 'mutual_fund',
-                    'amount_invested' => $row['amount'],
-                    'current_value'  => $row['amount'],
-                    'purchase_date'  => $row['date'],
-                    'description'    => 'PAG-IBIG MP2 Voluntary Savings contribution',
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'category_id'        => $mutualFund?->id,
+                    'name'               => $row['name'],
+                    'type'               => 'mutual_fund',
+                    'amount_invested'    => $row['amount'],
+                    'current_value'      => $row['amount'],
+                    'purchase_date'      => $row['date'],
+                    'description'        => 'PAG-IBIG MP2 Voluntary Savings contribution',
                 ]
             );
         }
@@ -309,16 +360,17 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($stockRows as $row) {
             Stock::firstOrCreate(
-                ['user_id' => $this->user->id, 'symbol' => $row['symbol'], 'purchase_date' => $row['date'], 'buy_price' => $row['buy_price']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'symbol' => $row['symbol'], 'purchase_date' => $row['date'], 'buy_price' => $row['buy_price']],
                 [
-                    'user_id'       => $this->user->id,
-                    'symbol'        => $row['symbol'],
-                    'company_name'  => $row['company'],
-                    'shares'        => $row['shares'],
-                    'buy_price'     => $row['buy_price'],
-                    'current_price' => $row['current_price'],
-                    'purchase_date' => $row['date'],
-                    'notes'         => $row['notes'],
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'symbol'             => $row['symbol'],
+                    'company_name'       => $row['company'],
+                    'shares'             => $row['shares'],
+                    'buy_price'          => $row['buy_price'],
+                    'current_price'      => $row['current_price'],
+                    'purchase_date'      => $row['date'],
+                    'notes'              => $row['notes'],
                 ]
             );
         }
@@ -334,16 +386,17 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($fundRows as $row) {
             Stock::firstOrCreate(
-                ['user_id' => $this->user->id, 'symbol' => $row['symbol'], 'purchase_date' => $row['date'], 'buy_price' => $row['buy_price']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'symbol' => $row['symbol'], 'purchase_date' => $row['date'], 'buy_price' => $row['buy_price']],
                 [
-                    'user_id'       => $this->user->id,
-                    'symbol'        => $row['symbol'],
-                    'company_name'  => $row['company'],
-                    'shares'        => $row['shares'],
-                    'buy_price'     => $row['buy_price'],
-                    'current_price' => $row['current_price'],
-                    'purchase_date' => $row['date'],
-                    'notes'         => $row['notes'],
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'symbol'             => $row['symbol'],
+                    'company_name'       => $row['company'],
+                    'shares'             => $row['shares'],
+                    'buy_price'          => $row['buy_price'],
+                    'current_price'      => $row['current_price'],
+                    'purchase_date'      => $row['date'],
+                    'notes'              => $row['notes'],
                 ]
             );
         }
@@ -421,8 +474,11 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($personalDebts as $debt) {
             Debt::firstOrCreate(
-                ['user_id' => $this->user->id, 'lender_name' => $debt['lender_name'], 'amount' => $debt['amount']],
-                array_merge($debt, ['user_id' => $this->user->id])
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'lender_name' => $debt['lender_name'], 'amount' => $debt['amount']],
+                array_merge($debt, [
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                ])
             );
         }
 
@@ -430,30 +486,32 @@ class BudgetTrackingSeeder extends Seeder
         // Daily interest = 5000 * 0.10 / 30 = 16.67
         // Start: 2026-01-31, 1 payment made, as of 2026-03-17 (45 days) balance = 5750
         $mikayDebt = Debt::firstOrCreate(
-            ['user_id' => $this->user->id, 'lender_name' => 'Mikay', 'amount' => 5000.00],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'lender_name' => 'Mikay', 'amount' => 5000.00],
             [
-                'user_id'           => $this->user->id,
-                'lender_name'       => 'Mikay',
-                'amount'            => 5000.00,
-                'remaining_balance' => 5750.00,
-                'interest_rate'     => 10.00,
-                'due_date'          => '2026-04-30',
-                'description'       => 'Business loan. Start: 2026-01-31. Monthly interest 10% (500/month). Daily interest: ₱16.67. As of 2026-03-17 (45 days from last check): balance ₱5,750.',
-                'status'            => 'active',
-                'type'              => 'business',
-                'business_name'     => 'Mikay Business',
+                'budget_tracking_id' => $this->budgetTracking->id,
+                'user_id'            => $this->user->id,
+                'lender_name'        => 'Mikay',
+                'amount'             => 5000.00,
+                'remaining_balance'  => 5750.00,
+                'interest_rate'      => 10.00,
+                'due_date'           => '2026-04-30',
+                'description'        => 'Business loan. Start: 2026-01-31. Monthly interest 10% (500/month). Daily interest: ₱16.67. As of 2026-03-17 (45 days from last check): balance ₱5,750.',
+                'status'             => 'active',
+                'type'               => 'business',
+                'business_name'      => 'Mikay Business',
             ]
         );
 
         // Seed payment record for Mikay
         Payment::firstOrCreate(
-            ['user_id' => $this->user->id, 'debt_id' => $mikayDebt->id, 'payment_date' => '2026-03-17'],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'debt_id' => $mikayDebt->id, 'payment_date' => '2026-03-17'],
             [
-                'user_id'      => $this->user->id,
-                'debt_id'      => $mikayDebt->id,
-                'amount'       => 0.00,  // payment recorded but amount not settled yet (balance remains 5750)
-                'payment_date' => '2026-03-17',
-                'note'         => 'Balance check: 45 days accrued interest. Remaining balance ₱5,750. Daily interest rate: ₱16.67/day.',
+                'budget_tracking_id' => $this->budgetTracking->id,
+                'user_id'            => $this->user->id,
+                'debt_id'            => $mikayDebt->id,
+                'amount'             => 0.00,
+                'payment_date'       => '2026-03-17',
+                'note'               => 'Balance check: 45 days accrued interest. Remaining balance ₱5,750. Daily interest rate: ₱16.67/day.',
             ]
         );
     }
@@ -464,18 +522,19 @@ class BudgetTrackingSeeder extends Seeder
     private function seedInsurance(): void
     {
         $plan = InsurancePlan::firstOrCreate(
-            ['user_id' => $this->user->id, 'plan_name' => 'BPI AIA VUL'],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'plan_name' => 'BPI AIA VUL'],
             [
-                'user_id'           => $this->user->id,
-                'provider_name'     => 'BPI AIA',
-                'plan_name'         => 'BPI AIA VUL',
-                'coverage_type'     => 'Life',
-                'coverage_amount'   => 500000.00,
-                'premium_amount'    => 2022.94,
-                'payment_frequency' => 'monthly',
-                'next_payment_date' => '2026-04-11',
-                'policy_number'     => null,
-                'description'       => 'VUL life insurance + investment. Monthly: ₱2,022.94 (Insurance: ₱1,011.11 | Investment fund: ₱1,011.83). Fund: BPI-PHILAM PESO BOND FUND (balance as of Aug 2025: ₱23,275.27).',
+                'budget_tracking_id' => $this->budgetTracking->id,
+                'user_id'            => $this->user->id,
+                'provider_name'      => 'BPI AIA',
+                'plan_name'          => 'BPI AIA VUL',
+                'coverage_type'      => 'Life',
+                'coverage_amount'    => 500000.00,
+                'premium_amount'     => 2022.94,
+                'payment_frequency'  => 'monthly',
+                'next_payment_date'  => '2026-04-11',
+                'policy_number'      => null,
+                'description'        => 'VUL life insurance + investment. Monthly: ₱2,022.94 (Insurance: ₱1,011.11 | Investment fund: ₱1,011.83). Fund: BPI-PHILAM PESO BOND FUND (balance as of Aug 2025: ₱23,275.27).',
             ]
         );
 
@@ -484,8 +543,9 @@ class BudgetTrackingSeeder extends Seeder
         for ($i = 0; $i < 30; $i++) {
             $amount = ($i === 0) ? 2022.95 : 2022.94;  // first payment was 2022.95
             InsurancePayment::firstOrCreate(
-                ['user_id' => $this->user->id, 'insurance_plan_id' => $plan->id, 'payment_date' => $paymentDate->format('Y-m-d')],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'insurance_plan_id' => $plan->id, 'payment_date' => $paymentDate->format('Y-m-d')],
                 [
+                    'budget_tracking_id' => $this->budgetTracking->id,
                     'user_id'            => $this->user->id,
                     'insurance_plan_id'  => $plan->id,
                     'amount'             => $amount,
@@ -505,8 +565,9 @@ class BudgetTrackingSeeder extends Seeder
         // Mark's MP2 plan — 2000/month at 7.1%, 5 years (2024-2028)
         // Total contributions: 414,000, Projected total: 481,371.08, Earnings: 67,371.08
         MP2Plan::firstOrCreate(
-            ['user_id' => $this->user->id, 'name' => "Mark Sarabia's MP2 Plan"],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => "Mark Sarabia's MP2 Plan"],
             [
+                'budget_tracking_id'   => $this->budgetTracking->id,
                 'user_id'              => $this->user->id,
                 'name'                 => "Mark Sarabia's MP2 Plan",
                 'monthly_contribution' => 2000.00,
@@ -520,8 +581,9 @@ class BudgetTrackingSeeder extends Seeder
 
         // Combined Mark + Regine plan
         MP2Plan::firstOrCreate(
-            ['user_id' => $this->user->id, 'name' => "Combined MP2 Plan (Mark + Regine)"],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => "Combined MP2 Plan (Mark + Regine)"],
             [
+                'budget_tracking_id'   => $this->budgetTracking->id,
                 'user_id'              => $this->user->id,
                 'name'                 => "Combined MP2 Plan (Mark + Regine)",
                 'monthly_contribution' => 4000.00,
@@ -552,20 +614,22 @@ class BudgetTrackingSeeder extends Seeder
 
         foreach ($plans as $plan) {
             $fp = FinancialPlan::firstOrCreate(
-                ['user_id' => $this->user->id, 'name' => $plan['name']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => $plan['name']],
                 [
-                    'user_id'     => $this->user->id,
-                    'name'        => $plan['name'],
-                    'description' => $plan['description'],
-                    'start_date'  => '2026-01-01',
-                    'status'      => 'active',
+                    'budget_tracking_id' => $this->budgetTracking->id,
+                    'user_id'            => $this->user->id,
+                    'name'               => $plan['name'],
+                    'description'        => $plan['description'],
+                    'start_date'         => '2026-01-01',
+                    'status'             => 'active',
                 ]
             );
 
             // Add a financial goal for each plan
             FinancialGoal::firstOrCreate(
-                ['user_id' => $this->user->id, 'name' => 'Startup Capital - ' . $plan['name']],
+                ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => 'Startup Capital - ' . $plan['name']],
                 [
+                    'budget_tracking_id'  => $this->budgetTracking->id,
                     'user_id'             => $this->user->id,
                     'financial_plan_id'   => $fp->id,
                     'name'                => 'Startup Capital - ' . $plan['name'],
@@ -583,36 +647,38 @@ class BudgetTrackingSeeder extends Seeder
     // ──────────────────────────────────────────
     private function seedBudgets(): void
     {
-        $housing = Category::where('name', 'Housing')->where('type', 'expense')->first();
+        $housing     = Category::where('name', 'Housing')->where('type', 'expense')->first();
         $electronics = Category::where('name', 'Electronics')->where('type', 'purchase')->first();
 
         // Plan 1: 63,200 total / 6 installments of 10,533.33 — 4 paid
         Budget::firstOrCreate(
-            ['user_id' => $this->user->id, 'name' => 'Installment Plan - 63,200 (W)'],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => 'Installment Plan - 63,200 (W)'],
             [
-                'user_id'         => $this->user->id,
-                'category_id'     => $housing?->id,
-                'name'            => 'Installment Plan - 63,200 (W)',
-                'amount'          => 63200.00,
-                'period'          => 'monthly',
-                'start_date'      => '2026-01-04',
-                'end_date'        => '2026-06-30',
-                'alert_threshold' => 80,
+                'budget_tracking_id' => $this->budgetTracking->id,
+                'user_id'            => $this->user->id,
+                'category_id'        => $housing?->id,
+                'name'               => 'Installment Plan - 63,200 (W)',
+                'amount'             => 63200.00,
+                'period'             => 'monthly',
+                'start_date'         => '2026-01-04',
+                'end_date'           => '2026-06-30',
+                'alert_threshold'    => 80,
             ]
         );
 
         // Plan 2: 38,700 total / 6 installments of 6,450 — 2 paid (iPhone)
         Budget::firstOrCreate(
-            ['user_id' => $this->user->id, 'name' => 'Installment Plan - iPhone 38,700'],
+            ['budget_tracking_id' => $this->budgetTracking->id, 'user_id' => $this->user->id, 'name' => 'Installment Plan - iPhone 38,700'],
             [
-                'user_id'         => $this->user->id,
-                'category_id'     => $electronics?->id,
-                'name'            => 'Installment Plan - iPhone 38,700',
-                'amount'          => 38700.00,
-                'period'          => 'monthly',
-                'start_date'      => '2026-02-25',
-                'end_date'        => '2026-07-31',
-                'alert_threshold' => 80,
+                'budget_tracking_id' => $this->budgetTracking->id,
+                'user_id'            => $this->user->id,
+                'category_id'        => $electronics?->id,
+                'name'               => 'Installment Plan - iPhone 38,700',
+                'amount'             => 38700.00,
+                'period'             => 'monthly',
+                'start_date'         => '2026-02-25',
+                'end_date'           => '2026-07-31',
+                'alert_threshold'    => 80,
             ]
         );
     }

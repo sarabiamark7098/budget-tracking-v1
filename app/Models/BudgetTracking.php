@@ -36,14 +36,12 @@ class BudgetTracking extends Model
         'currency',
         'period',
         'start_date',
-        'end_date',
         'join_code',
         'status',
     ];
 
     protected $casts = [
         'start_date' => 'date',
-        'end_date'   => 'date',
     ];
 
     protected $appends = ['total_allocated', 'total_income', 'total_expense', 'balance'];

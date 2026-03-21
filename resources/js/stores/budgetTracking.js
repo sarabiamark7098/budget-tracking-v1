@@ -75,6 +75,16 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
         hasChecked.value = true;
     }
 
+    async function archive() {
+        await budgetTrackingService.archive();
+        tracker.value = null;
+        summary.value = null;
+        consolidated.value = null;
+        transactions.value = [];
+        notFound.value = true;
+        hasChecked.value = true;
+    }
+
     async function regenerateCode() {
         const { data } = await budgetTrackingService.regenerateCode();
         if (tracker.value) tracker.value.join_code = data.data.join_code;
@@ -166,7 +176,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
         tracker, summary, consolidated, consolidatedLoading,
         transactions, txPagination, loading, txLoading, notFound, hasChecked,
         fetchTracker, create, update, remove,
-        join, leave, regenerateCode, removeMember,
+        join, leave, archive, regenerateCode, removeMember,
         fetchSummary, fetchConsolidated,
         addAllocation, updateAllocation, deleteAllocation,
         fetchTransactions, addTransaction, updateTransaction, deleteTransaction,

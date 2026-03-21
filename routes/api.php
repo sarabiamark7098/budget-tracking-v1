@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('/',                [BudgetTrackingController::class, 'destroy']);
             Route::post('join',               [BudgetTrackingController::class, 'join']);
             Route::post('leave',              [BudgetTrackingController::class, 'leave']);
+            Route::patch('archive',           [BudgetTrackingController::class, 'archive']);
             Route::post('code/regenerate',    [BudgetTrackingController::class, 'regenerateCode']);
             Route::delete('members/{userId}', [BudgetTrackingController::class, 'removeMember']);
 

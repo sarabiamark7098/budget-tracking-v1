@@ -461,20 +461,23 @@ class DashboardService
             $overallStatus = 'over_income';
         }
 
-        // Budget tracking allocations summary
+        // Budget tracking allocations summary — no end date, scope from start_date to today
+        $txFrom  = $budget->start_date?->toDateString() ?? '1970-01-01';
+        $txTo    = now()->toDateString();
+
         $txQuery     = BudgetTrackingTransaction::where('budget_tracking_id', $btId)
-            ->whereBetween('date', [$budget->start_date->toDateString(), $budget->end_date->toDateString()]);
+            ->whereBetween('date', [$txFrom, $txTo]);
 
         $btIncome    = (float) (clone $txQuery)->where('type', 'income')->sum('amount');
         $btExpense   = (float) (clone $txQuery)->where('type', 'expense')->sum('amount');
         $btAllocated = (float) $budget->allocations->sum('allocated_amount');
         $btUsagePct  = $btAllocated > 0 ? round(($btExpense / $btAllocated) * 100, 2) : 0;
 
-        $allocationRows = $budget->allocations->map(function ($a) use ($btId, $budget) {
+        $allocationRows = $budget->allocations->map(function ($a) use ($btId, $txFrom, $txTo) {
             $spent    = (float) BudgetTrackingTransaction::where('budget_tracking_id', $btId)
                 ->where('budget_tracking_allocation_id', $a->id)
                 ->where('type', 'expense')
-                ->whereBetween('date', [$budget->start_date->toDateString(), $budget->end_date->toDateString()])
+                ->whereBetween('date', [$txFrom, $txTo])
                 ->sum('amount');
             $allocated = (float) $a->allocated_amount;
             $usagePct  = $allocated > 0 ? round(($spent / $allocated) * 100, 2) : 0;

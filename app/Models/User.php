@@ -139,8 +139,14 @@ class User extends Authenticatable
         return $membership?->budgetTracking;
     }
 
+    /**
+     * True only when the user belongs to an ACTIVE (non-archived) tracker.
+     * Used as a gate before allowing create/join.
+     */
     public function hasBudgetTracking(): bool
     {
-        return $this->budgetTrackingMemberships()->exists();
+        return $this->budgetTrackingMemberships()
+            ->whereHas('budgetTracking', fn($q) => $q->where('status', 'active'))
+            ->exists();
     }
 }

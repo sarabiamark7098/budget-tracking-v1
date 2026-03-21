@@ -56,17 +56,101 @@
 
       <!-- User info -->
       <div class="px-4 py-4 border-t border-gray-700">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold text-sm">
+        <button
+          class="flex items-center gap-3 w-full text-left hover:bg-gray-800 rounded-lg px-2 py-1.5 transition-colors group"
+          @click="openAccountModal"
+        >
+          <div class="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
             {{ userInitial }}
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-white truncate">{{ authStore.user?.name ?? 'User' }}</p>
-            <p class="text-xs text-gray-400 truncate">{{ authStore.user?.email ?? '' }}</p>
+            <p class="text-xs text-gray-400 truncate group-hover:text-gray-300">Manage account</p>
           </div>
-        </div>
+          <svg class="w-4 h-4 text-gray-500 group-hover:text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
       </div>
     </aside>
+
+    <!-- ── Manage Account Modal ──────────────────────────────────────────────── -->
+    <div v-if="showAccountModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b">
+          <h2 class="text-lg font-semibold text-gray-800">Manage Account</h2>
+          <button @click="showAccountModal = false" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="px-6 py-5 space-y-6">
+
+          <!-- Change Name -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Change Name</h3>
+            <form @submit.prevent="handleUpdateName" class="space-y-3">
+              <input
+                v-model="nameForm.name"
+                type="text"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Full name"
+              />
+              <div v-if="nameError" class="text-red-600 text-xs bg-red-50 rounded-lg px-3 py-2">{{ nameError }}</div>
+              <div v-if="nameSuccess" class="text-green-600 text-xs bg-green-50 rounded-lg px-3 py-2">{{ nameSuccess }}</div>
+              <button
+                type="submit"
+                :disabled="nameSaving"
+                class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+              >{{ nameSaving ? 'Saving...' : 'Update Name' }}</button>
+            </form>
+          </div>
+
+          <div class="border-t"></div>
+
+          <!-- Change Password -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Change Password</h3>
+            <form @submit.prevent="handleChangePassword" class="space-y-3">
+              <input
+                v-model="pwForm.current_password"
+                type="password"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Current password"
+              />
+              <input
+                v-model="pwForm.password"
+                type="password"
+                required
+                minlength="8"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="New password (min 8 characters)"
+              />
+              <input
+                v-model="pwForm.password_confirmation"
+                type="password"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Confirm new password"
+              />
+              <div v-if="pwError" class="text-red-600 text-xs bg-red-50 rounded-lg px-3 py-2">{{ pwError }}</div>
+              <div v-if="pwSuccess" class="text-green-600 text-xs bg-green-50 rounded-lg px-3 py-2">{{ pwSuccess }}</div>
+              <button
+                type="submit"
+                :disabled="pwSaving"
+                class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+              >{{ pwSaving ? 'Saving...' : 'Change Password' }}</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -112,6 +196,8 @@ import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useBudgetTrackingStore } from '@/stores/budgetTracking';
+
+// ── Account modal ─────────────────────────────────────────────────────────────
 
 const router   = useRouter();
 const route    = useRoute();
@@ -249,5 +335,63 @@ watch(
 async function handleLogout() {
   await authStore.logout();
   router.push('/login');
+}
+
+// ── Account modal ─────────────────────────────────────────────────────────────
+const showAccountModal = ref(false);
+
+const nameForm    = ref({ name: '' });
+const nameSaving  = ref(false);
+const nameError   = ref('');
+const nameSuccess = ref('');
+
+const pwForm    = ref({ current_password: '', password: '', password_confirmation: '' });
+const pwSaving  = ref(false);
+const pwError   = ref('');
+const pwSuccess = ref('');
+
+function openAccountModal() {
+  nameForm.value.name = authStore.user?.name ?? '';
+  nameError.value   = '';
+  nameSuccess.value = '';
+  pwForm.value      = { current_password: '', password: '', password_confirmation: '' };
+  pwError.value     = '';
+  pwSuccess.value   = '';
+  showAccountModal.value = true;
+}
+
+async function handleUpdateName() {
+  nameSaving.value  = true;
+  nameError.value   = '';
+  nameSuccess.value = '';
+  try {
+    await authStore.updateProfile({ name: nameForm.value.name });
+    nameSuccess.value = 'Name updated successfully.';
+  } catch (e) {
+    const errs = e.response?.data?.errors;
+    nameError.value = errs ? Object.values(errs).flat().join(' ') : (e.response?.data?.message ?? 'Failed to update name.');
+  } finally {
+    nameSaving.value = false;
+  }
+}
+
+async function handleChangePassword() {
+  if (pwForm.value.password !== pwForm.value.password_confirmation) {
+    pwError.value = 'Passwords do not match.';
+    return;
+  }
+  pwSaving.value  = true;
+  pwError.value   = '';
+  pwSuccess.value = '';
+  try {
+    await authStore.changePassword(pwForm.value);
+    pwSuccess.value = 'Password changed successfully.';
+    pwForm.value    = { current_password: '', password: '', password_confirmation: '' };
+  } catch (e) {
+    const errs = e.response?.data?.errors;
+    pwError.value = errs ? Object.values(errs).flat().join(' ') : (e.response?.data?.message ?? 'Failed to change password.');
+  } finally {
+    pwSaving.value = false;
+  }
 }
 </script>

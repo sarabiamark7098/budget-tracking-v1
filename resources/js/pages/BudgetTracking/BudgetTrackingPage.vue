@@ -12,6 +12,11 @@
         >Edit</button>
         <button
           v-if="store.tracker.is_owner"
+          @click="confirmArchiveTracker = true"
+          class="text-sm px-3 py-2 border border-yellow-200 rounded-lg text-yellow-700 hover:bg-yellow-50"
+        >Archive</button>
+        <button
+          v-if="store.tracker.is_owner"
           @click="confirmDeleteTracker = true"
           class="text-sm px-3 py-2 border border-red-200 rounded-lg text-red-600 hover:bg-red-50"
         >Delete</button>
@@ -107,7 +112,7 @@
             </div>
             <p v-if="store.tracker.description" class="text-sm text-gray-500 mt-1">{{ store.tracker.description }}</p>
             <p class="text-xs text-gray-400 mt-1">
-              {{ formatDate(store.tracker.start_date) }} – {{ formatDate(store.tracker.end_date) }}
+              Started {{ formatDate(store.tracker.start_date) }}
               · {{ store.tracker.members?.length ?? 0 }} member{{ store.tracker.members?.length !== 1 ? 's' : '' }}
             </p>
           </div>
@@ -862,15 +867,9 @@
               <option value="yearly">Yearly</option>
             </select>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
-              <input v-model="trackerForm.start_date" type="date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">End Date *</label>
-              <input v-model="trackerForm.end_date" type="date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input v-model="trackerForm.start_date" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div v-if="editingTracker">
             <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -990,6 +989,18 @@
         <div class="flex justify-end gap-3">
           <button @click="confirmLeave = false" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
           <button @click="handleLeave" class="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700">Leave</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm: Archive Tracker -->
+    <div v-if="confirmArchiveTracker" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
+        <h3 class="font-semibold text-gray-800 mb-2">Archive Tracker</h3>
+        <p class="text-sm text-gray-500 mb-4">All data will be preserved but all members (including you) will be removed. Everyone will be able to create or join a new tracker.</p>
+        <div class="flex justify-end gap-3">
+          <button @click="confirmArchiveTracker = false" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button @click="handleArchiveTracker" class="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-700">Archive</button>
         </div>
       </div>
     </div>
@@ -1116,7 +1127,6 @@ const defaultTrackerForm = () => ({
   description: '',
   period:      'monthly',
   start_date:  new Date().toISOString().split('T')[0],
-  end_date:    '',
   status:      'active',
 });
 
@@ -1137,7 +1147,6 @@ function openEditModal() {
     description: t.description ?? '',
     period:      t.period,
     start_date:  t.start_date?.substring(0, 10) ?? '',
-    end_date:    t.end_date?.substring(0, 10)   ?? '',
     status:      t.status ?? 'active',
   };
   trackerFormError.value = '';
@@ -1162,9 +1171,10 @@ async function handleTrackerSubmit() {
   }
 }
 
-// ── Delete / Leave tracker ────────────────────────────────────────────────
-const confirmDeleteTracker = ref(false);
-const confirmLeave         = ref(false);
+// ── Delete / Leave / Archive tracker ─────────────────────────────────────
+const confirmDeleteTracker  = ref(false);
+const confirmLeave          = ref(false);
+const confirmArchiveTracker = ref(false);
 
 async function handleDeleteTracker() {
   try {
@@ -1183,6 +1193,16 @@ async function handleLeave() {
     alert(e.response?.data?.message ?? 'Failed to leave tracker.');
   } finally {
     confirmLeave.value = false;
+  }
+}
+
+async function handleArchiveTracker() {
+  try {
+    await store.archive();
+  } catch (e) {
+    alert(e.response?.data?.message ?? 'Failed to archive tracker.');
+  } finally {
+    confirmArchiveTracker.value = false;
   }
 }
 

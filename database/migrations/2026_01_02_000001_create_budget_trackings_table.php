@@ -15,8 +15,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('currency', 10)->default('PHP');
             $table->enum('period', ['weekly', 'monthly', 'yearly'])->default('monthly');
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->date('start_date')->nullable();
             $table->string('join_code', 16)->unique();   // unique shareable code
             $table->enum('status', ['active', 'archived'])->default('active');
             $table->timestamps();

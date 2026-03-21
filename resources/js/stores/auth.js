@@ -42,5 +42,15 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    return { user, token, isAuthenticated, login, register, logout, fetchUser };
+    async function updateProfile(data) {
+        const { data: res } = await authService.updateProfile(data);
+        user.value = res.data;
+        return res.data;
+    }
+
+    async function changePassword(data) {
+        await authService.changePassword(data);
+    }
+
+    return { user, token, isAuthenticated, login, register, logout, fetchUser, updateProfile, changePassword };
 });

@@ -22,8 +22,7 @@ class UpdateBudgetTrackingRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:1000'],
             'currency'    => ['nullable', 'string', 'max:10'],
             'period'      => ['sometimes', 'in:weekly,monthly,yearly'],
-            'start_date'  => ['sometimes', 'date'],
-            'end_date'    => ['sometimes', 'date', 'after:start_date'],
+            'start_date'  => ['sometimes', 'nullable', 'date'],
             'status'      => ['sometimes', 'in:active,archived'],
         ];
     }

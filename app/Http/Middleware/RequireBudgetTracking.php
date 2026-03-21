@@ -38,6 +38,12 @@ class RequireBudgetTracking
             ], 404);
         }
 
+        if ($budget->status === 'archived') {
+            return response()->json([
+                'message' => 'Your Budget Tracker has been archived. Please create or join a new one.',
+            ], 403);
+        }
+
         // Bind to request so controllers can access it via $request->budgetTracking
         $request->attributes->set('budgetTracking', $budget);
 

@@ -95,7 +95,7 @@ async function handleLogin() {
   errorMsg.value = '';
   try {
     await authStore.login(form);
-    router.push('/dashboard');
+    router.push('/budget-tracking');
   } catch (err) {
     errorMsg.value = err.response?.data?.message ?? 'Invalid credentials. Please try again.';
   } finally {

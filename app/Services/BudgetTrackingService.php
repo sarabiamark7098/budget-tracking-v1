@@ -25,7 +25,7 @@ class BudgetTrackingService
 
     /**
      * Get the user's single budget tracking (owned or shared).
-     * Returns null if the user has no budget tracking yet.
+     * Returns null if the user has no membership or their tracker is archived.
      */
     public function getForUser(User $user): ?BudgetTracking
     {
@@ -35,11 +35,18 @@ class BudgetTrackingService
             return null;
         }
 
-        return BudgetTracking::with([
+        $budget = BudgetTracking::with([
             'owner',
             'members.user',
             'allocations',
         ])->find($membership->budget_tracking_id);
+
+        // Treat archived trackers as non-existent for active-use purposes
+        if (! $budget || $budget->status === 'archived') {
+            return null;
+        }
+
+        return $budget;
     }
 
     /**
@@ -60,15 +67,18 @@ class BudgetTrackingService
             $budget = BudgetTracking::create(array_merge($data, [
                 'owner_id'  => $user->id,
                 'join_code' => BudgetTracking::generateJoinCode(),
+                'status'    => 'active',
             ]));
 
-            // Creator is automatically enrolled as owner-member
             BudgetTrackingMember::create([
                 'budget_tracking_id' => $budget->id,
                 'user_id'            => $user->id,
                 'role'               => 'owner',
                 'joined_at'          => now(),
             ]);
+
+            // Seed default categories scoped to this tracker
+            app(CategoryService::class)->seedDefaultCategories($budget, $user);
 
             $this->log($budget, $user, 'budget_created', 'budget_tracking', $budget->id, null, $budget->toArray(), "Budget tracking \"{$budget->name}\" created.");
 
@@ -85,9 +95,9 @@ class BudgetTrackingService
     {
         $this->assertOwner($budget, $user);
 
-        $old = $budget->only(['name', 'description', 'currency', 'period', 'start_date', 'end_date', 'status']);
+        $old = $budget->only(['name', 'description', 'currency', 'period', 'start_date', 'status']);
         $budget->update($data);
-        $new = $budget->fresh()->only(['name', 'description', 'currency', 'period', 'start_date', 'end_date', 'status']);
+        $new = $budget->fresh()->only(['name', 'description', 'currency', 'period', 'start_date', 'status']);
 
         $this->log($budget, $user, 'budget_updated', 'budget_tracking', $budget->id, $old, $new, "Budget tracking \"{$budget->name}\" updated.");
 
@@ -103,6 +113,27 @@ class BudgetTrackingService
     {
         $this->assertOwner($budget, $user);
         return $budget->delete();
+    }
+
+    /**
+     * Archive the budget tracking. Only the owner may archive.
+     * Archives the tracker (preserves all data) and removes all memberships
+     * so every member can create or join a new tracker.
+     *
+     * @throws ValidationException
+     */
+    public function archive(BudgetTracking $budget, User $user): BudgetTracking
+    {
+        $this->assertOwner($budget, $user);
+
+        $budget->update(['status' => 'archived']);
+
+        // Remove all memberships so members can join/create a new tracker
+        BudgetTrackingMember::where('budget_tracking_id', $budget->id)->delete();
+
+        $this->log($budget, $user, 'budget_archived', 'budget_tracking', $budget->id, ['status' => 'active'], ['status' => 'archived'], "Budget tracking \"{$budget->name}\" archived.");
+
+        return $budget->fresh();
     }
 
     /**

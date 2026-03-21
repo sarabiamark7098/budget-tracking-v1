@@ -156,6 +156,7 @@ export const budgetTrackingService = {
     delete:               ()         => api.delete('/budget-tracking'),
     join:                 (code)     => api.post('/budget-tracking/join', { join_code: code }),
     leave:                ()         => api.post('/budget-tracking/leave'),
+    archive:              ()         => api.patch('/budget-tracking/archive'),
     getSummary:           ()         => api.get('/budget-tracking/summary'),
     getHistory:           (params)   => api.get('/budget-tracking/history', { params }),
     regenerateCode:       ()         => api.post('/budget-tracking/code/regenerate'),

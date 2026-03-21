@@ -113,6 +113,18 @@ class BudgetTrackingController extends Controller
     }
 
     /**
+     * PATCH /api/v1/budget-tracking/archive
+     * Archive the budget tracking. Owner only.
+     * Preserves all data but removes all memberships so everyone can join/create a new one.
+     */
+    public function archive(): JsonResponse
+    {
+        $budget = $this->resolveOrFail();
+        $this->service->archive($budget, auth()->user());
+        return $this->respondSuccess(null, 'Budget tracking archived successfully.');
+    }
+
+    /**
      * DELETE /api/v1/budget-tracking/members/{userId}
      * Remove a member from the budget tracking. Owner only.
      */
