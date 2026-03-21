@@ -9,6 +9,7 @@ class InsurancePayment extends Model
 {
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'insurance_plan_id',
         'amount',
         'payment_date',
@@ -19,6 +20,11 @@ class InsurancePayment extends Model
         'amount' => 'decimal:2',
         'payment_date' => 'date',
     ];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

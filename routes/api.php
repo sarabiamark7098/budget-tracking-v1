@@ -34,7 +34,7 @@ Route::prefix('v1')->group(function () {
     // Public MP2 calculator
     Route::post('mp2/calculate', [MP2Controller::class, 'calculate']);
 
-    // Protected routes
+    // Protected routes — authentication only
     Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
@@ -43,38 +43,63 @@ Route::prefix('v1')->group(function () {
             Route::put('password', [AuthController::class, 'changePassword']);
         });
 
+        // ─── Budget Tracking setup (no tracker required — this is where you get one) ──
+        Route::prefix('budget-tracking')->group(function () {
+            Route::get('/',                   [BudgetTrackingController::class, 'show']);
+            Route::post('/',                  [BudgetTrackingController::class, 'store']);
+            Route::put('/',                   [BudgetTrackingController::class, 'update']);
+            Route::delete('/',                [BudgetTrackingController::class, 'destroy']);
+            Route::post('join',               [BudgetTrackingController::class, 'join']);
+            Route::post('leave',              [BudgetTrackingController::class, 'leave']);
+            Route::post('code/regenerate',    [BudgetTrackingController::class, 'regenerateCode']);
+            Route::delete('members/{userId}', [BudgetTrackingController::class, 'removeMember']);
+
+            // These require an active tracker — apply middleware only here
+            Route::middleware('require.budget_tracking')->group(function () {
+                Route::get('summary',     [BudgetTrackingController::class, 'summary']);
+                Route::get('consolidated',[BudgetTrackingController::class, 'consolidated']);
+                Route::get('history',     [BudgetTrackingController::class, 'history']);
+
+                Route::get('allocations',                 [BudgetTrackingAllocationController::class, 'index']);
+                Route::post('allocations',                [BudgetTrackingAllocationController::class, 'store']);
+                Route::put('allocations/{allocation}',    [BudgetTrackingAllocationController::class, 'update']);
+                Route::delete('allocations/{allocation}', [BudgetTrackingAllocationController::class, 'destroy']);
+
+                Route::get('transactions',                  [BudgetTrackingTransactionController::class, 'index']);
+                Route::post('transactions',                 [BudgetTrackingTransactionController::class, 'store']);
+                Route::put('transactions/{transaction}',    [BudgetTrackingTransactionController::class, 'update']);
+                Route::delete('transactions/{transaction}', [BudgetTrackingTransactionController::class, 'destroy']);
+            });
+        });
+    });
+
+    // Protected routes — authentication + active budget tracker required
+    Route::middleware(['auth:sanctum', 'require.budget_tracking'])->group(function () {
         Route::get('dashboard/transactions', [DashboardController::class, 'transactions']);
         Route::get('dashboard', [DashboardController::class, 'index']);
 
         Route::apiResource('categories', CategoryController::class);
 
-        // Income - custom routes BEFORE apiResource to avoid route conflict
         Route::get('incomes/monthly', [IncomeController::class, 'monthly']);
         Route::apiResource('incomes', IncomeController::class);
 
-        // Expense - custom routes BEFORE apiResource
         Route::get('expenses/monthly', [ExpenseController::class, 'monthly']);
         Route::apiResource('expenses', ExpenseController::class);
 
-        // Budget - custom routes BEFORE apiResource
         Route::get('budgets/summary', [BudgetController::class, 'summary']);
         Route::apiResource('budgets', BudgetController::class);
 
-        // Debts — amortization and accrual BEFORE apiResource
         Route::get('debts/{debt}/amortization', [DebtController::class, 'amortization']);
         Route::get('debts/{debt}/accrual', [DebtController::class, 'accrual']);
         Route::apiResource('debts', DebtController::class);
         Route::apiResource('payments', PaymentController::class)->except(['update']);
 
-        // Investment - portfolio BEFORE apiResource
         Route::get('investments/portfolio', [InvestmentController::class, 'portfolio']);
         Route::apiResource('investments', InvestmentController::class);
 
-        // Stocks - portfolio BEFORE apiResource
         Route::get('stocks/portfolio', [StockController::class, 'portfolio']);
         Route::apiResource('stocks', StockController::class);
 
-        // Crypto - portfolio BEFORE apiResource
         Route::get('crypto/portfolio', [CryptoController::class, 'portfolio']);
         Route::apiResource('crypto', CryptoController::class);
 
@@ -93,47 +118,6 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('files', FileController::class)->only(['index', 'store', 'destroy']);
         Route::get('files/{file}/download', [FileController::class, 'download']);
 
-        // ─── Budget Tracking (collaborative / shared) ───────────────────────────
-        Route::prefix('budget-tracking')->group(function () {
-            // Core budget tracking — one per user (owned or shared)
-            Route::get('/',                      [BudgetTrackingController::class, 'show']);
-            Route::post('/',                     [BudgetTrackingController::class, 'store']);
-            Route::put('/',                      [BudgetTrackingController::class, 'update']);
-            Route::delete('/',                   [BudgetTrackingController::class, 'destroy']);
-
-            // Join & leave via unique code
-            Route::post('join',                  [BudgetTrackingController::class, 'join']);
-            Route::post('leave',                 [BudgetTrackingController::class, 'leave']);
-
-            // Summary dashboard
-            Route::get('summary',                [BudgetTrackingController::class, 'summary']);
-
-            // Consolidated member data (all modules, attributed by user)
-            Route::get('consolidated',           [BudgetTrackingController::class, 'consolidated']);
-
-            // Change history log
-            Route::get('history',                [BudgetTrackingController::class, 'history']);
-
-            // Join code management (owner only)
-            Route::post('code/regenerate',       [BudgetTrackingController::class, 'regenerateCode']);
-
-            // Member management (owner only)
-            Route::delete('members/{userId}',    [BudgetTrackingController::class, 'removeMember']);
-
-            // Budget allocations (owner manages, all members view)
-            Route::get('allocations',            [BudgetTrackingAllocationController::class, 'index']);
-            Route::post('allocations',           [BudgetTrackingAllocationController::class, 'store']);
-            Route::put('allocations/{allocation}',    [BudgetTrackingAllocationController::class, 'update']);
-            Route::delete('allocations/{allocation}', [BudgetTrackingAllocationController::class, 'destroy']);
-
-            // Transactions (all members can add/edit own; owner can edit/delete any)
-            Route::get('transactions',                    [BudgetTrackingTransactionController::class, 'index']);
-            Route::post('transactions',                   [BudgetTrackingTransactionController::class, 'store']);
-            Route::put('transactions/{transaction}',      [BudgetTrackingTransactionController::class, 'update']);
-            Route::delete('transactions/{transaction}',   [BudgetTrackingTransactionController::class, 'destroy']);
-        });
-
-        // Reports
         Route::prefix('reports')->group(function () {
             Route::get('income-expense', [ReportController::class, 'incomeExpense']);
             Route::get('net-worth', [ReportController::class, 'netWorth']);

@@ -469,15 +469,16 @@ class BudgetTrackingService
             })->values()->toArray();
         };
 
-        // ── Fetch from every module ──────────────────────────────────────────────
-        $incomes     = Income::whereIn('user_id', $userIds)->latest('received_at')->get();
-        $expenses    = Expense::whereIn('user_id', $userIds)->latest('spent_at')->get();
-        $debts       = Debt::whereIn('user_id', $userIds)->get();
-        $investments = Investment::whereIn('user_id', $userIds)->get();
-        $stocks      = Stock::whereIn('user_id', $userIds)->get();
-        $crypto      = CryptoAsset::whereIn('user_id', $userIds)->get();
-        $payments    = Payment::with('debt')->whereIn('user_id', $userIds)->latest()->get();
-        $purchases   = Purchase::whereIn('user_id', $userIds)->get();
+        // ── Fetch from every module scoped to the budget tracking ────────────────
+        $btId        = $budget->id;
+        $incomes     = Income::where('budget_tracking_id', $btId)->latest('received_at')->get();
+        $expenses    = Expense::where('budget_tracking_id', $btId)->latest('spent_at')->get();
+        $debts       = Debt::where('budget_tracking_id', $btId)->get();
+        $investments = Investment::where('budget_tracking_id', $btId)->get();
+        $stocks      = Stock::where('budget_tracking_id', $btId)->get();
+        $crypto      = CryptoAsset::where('budget_tracking_id', $btId)->get();
+        $payments    = Payment::with('debt')->where('budget_tracking_id', $btId)->latest()->get();
+        $purchases   = Purchase::where('budget_tracking_id', $btId)->get();
 
         // ── Per-member summary for the overview panel ────────────────────────────
         $memberSummary = $members->map(function ($m) use (

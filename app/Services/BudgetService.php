@@ -3,24 +3,28 @@
 namespace App\Services;
 
 use App\Models\Budget;
+use App\Models\BudgetTracking;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class BudgetService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Budget::with('category')
-            ->where('user_id', $user->id);
+            ->where('budget_tracking_id', $budget->id);
 
         $perPage = $filters['per_page'] ?? 15;
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): Budget
+    public function create(BudgetTracking $budget, User $user, array $data): Budget
     {
-        return Budget::create(array_merge($data, ['user_id' => $user->id]));
+        return Budget::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(Budget $budget, array $data): Budget
@@ -35,10 +39,10 @@ class BudgetService
         return $budget->delete();
     }
 
-    public function getBudgetSummary(User $user): array
+    public function getBudgetSummary(BudgetTracking $budgetTracking): array
     {
         $budgets = Budget::with('category')
-            ->where('user_id', $user->id)
+            ->where('budget_tracking_id', $budgetTracking->id)
             ->get();
 
         return $budgets->map(function (Budget $budget) {

@@ -12,6 +12,7 @@ class CryptoAsset extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'coin_name',
         'symbol',
         'wallet_address',
@@ -30,6 +31,11 @@ class CryptoAsset extends Model
     ];
 
     protected $appends = ['current_value', 'profit_loss'];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

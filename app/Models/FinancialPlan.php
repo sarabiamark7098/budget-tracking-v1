@@ -13,6 +13,7 @@ class FinancialPlan extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'name',
         'description',
         'monthly_income_target',
@@ -30,6 +31,11 @@ class FinancialPlan extends Model
         'start_date' => 'date',
         'end_date' => 'date',
     ];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

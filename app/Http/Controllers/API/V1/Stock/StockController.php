@@ -21,39 +21,39 @@ class StockController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['search', 'per_page']);
-        $stocks = $this->service->getAll(auth()->user(), $filters);
+        $stocks = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(StockResource::collection($stocks)->response()->getData(true));
     }
 
     public function store(StoreStockRequest $request): JsonResponse
     {
-        $stock = $this->service->create(auth()->user(), $request->validated());
+        $stock = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         return $this->respondCreated(new StockResource($stock), 'Stock created successfully');
     }
 
-    public function show(Stock $stock): JsonResponse
+    public function show(Request $request, Stock $stock): JsonResponse
     {
-        abort_if($stock->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($stock->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         return $this->respondSuccess(new StockResource($stock));
     }
 
     public function update(UpdateStockRequest $request, Stock $stock): JsonResponse
     {
-        abort_if($stock->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($stock->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $stock = $this->service->update($stock, $request->validated());
         return $this->respondSuccess(new StockResource($stock), 'Stock updated successfully');
     }
 
-    public function destroy(Stock $stock): JsonResponse
+    public function destroy(Request $request, Stock $stock): JsonResponse
     {
-        abort_if($stock->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($stock->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($stock);
         return $this->respondSuccess(null, 'Stock deleted successfully');
     }
 
-    public function portfolio(): JsonResponse
+    public function portfolio(Request $request): JsonResponse
     {
-        $summary = $this->service->getPortfolioSummary(auth()->user());
+        $summary = $this->service->getPortfolioSummary($this->budget($request));
         return $this->respondSuccess($summary, 'Stock portfolio summary retrieved');
     }
 }

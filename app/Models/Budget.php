@@ -12,6 +12,7 @@ class Budget extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'category_id',
         'name',
         'amount',
@@ -30,6 +31,11 @@ class Budget extends Model
 
     protected $appends = ['spent_amount', 'remaining_amount', 'usage_percentage'];
 
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -46,8 +52,7 @@ class Budget extends Model
         $explicit = Expense::where('budget_id', $this->id)->sum('amount');
 
         // Fallback: expenses matched by category + date range that have no budget assigned yet
-        // (covers records created before the budget_id column existed)
-        $fallbackQuery = Expense::where('user_id', $this->user_id)
+        $fallbackQuery = Expense::where('budget_tracking_id', $this->budget_tracking_id)
             ->whereNull('budget_id')
             ->whereBetween('spent_at', [$this->start_date, $this->end_date]);
 

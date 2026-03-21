@@ -14,6 +14,7 @@ class MP2Plan extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'name',
         'monthly_contribution',
         'duration_years',
@@ -29,6 +30,11 @@ class MP2Plan extends Model
         'total_contributions' => 'decimal:2',
         'start_date' => 'date',
     ];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

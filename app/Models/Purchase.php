@@ -13,6 +13,7 @@ class Purchase extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'category_id',
         'item_name',
         'description',
@@ -32,6 +33,11 @@ class Purchase extends Model
     ];
 
     protected $appends = ['remaining_installments'];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

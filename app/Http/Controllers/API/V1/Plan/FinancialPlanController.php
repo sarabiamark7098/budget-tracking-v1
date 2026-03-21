@@ -21,33 +21,33 @@ class FinancialPlanController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['status', 'per_page']);
-        $plans = $this->service->getAll(auth()->user(), $filters);
+        $plans = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(FinancialPlanResource::collection($plans)->response()->getData(true));
     }
 
     public function store(StoreFinancialPlanRequest $request): JsonResponse
     {
-        $plan = $this->service->create(auth()->user(), $request->validated());
+        $plan = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         return $this->respondCreated(new FinancialPlanResource($plan), 'Financial plan created successfully');
     }
 
-    public function show(FinancialPlan $financialPlan): JsonResponse
+    public function show(Request $request, FinancialPlan $financialPlan): JsonResponse
     {
-        abort_if($financialPlan->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($financialPlan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $financialPlan->load('financialGoals');
         return $this->respondSuccess(new FinancialPlanResource($financialPlan));
     }
 
     public function update(UpdateFinancialPlanRequest $request, FinancialPlan $financialPlan): JsonResponse
     {
-        abort_if($financialPlan->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($financialPlan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $plan = $this->service->update($financialPlan, $request->validated());
         return $this->respondSuccess(new FinancialPlanResource($plan), 'Financial plan updated successfully');
     }
 
-    public function destroy(FinancialPlan $financialPlan): JsonResponse
+    public function destroy(Request $request, FinancialPlan $financialPlan): JsonResponse
     {
-        abort_if($financialPlan->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($financialPlan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($financialPlan);
         return $this->respondSuccess(null, 'Financial plan deleted successfully');
     }

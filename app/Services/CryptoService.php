@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\CryptoAsset;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class CryptoService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
-        $query = CryptoAsset::where('user_id', $user->id);
+        $query = CryptoAsset::where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
@@ -23,9 +24,12 @@ class CryptoService
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): CryptoAsset
+    public function create(BudgetTracking $budget, User $user, array $data): CryptoAsset
     {
-        return CryptoAsset::create(array_merge($data, ['user_id' => $user->id]));
+        return CryptoAsset::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(CryptoAsset $crypto, array $data): CryptoAsset
@@ -39,9 +43,9 @@ class CryptoService
         return $crypto->delete();
     }
 
-    public function getPortfolioSummary(User $user): array
+    public function getPortfolioSummary(BudgetTracking $budget): array
     {
-        $assets = CryptoAsset::where('user_id', $user->id)->get();
+        $assets = CryptoAsset::where('budget_tracking_id', $budget->id)->get();
 
         $totalCostBasis = $assets->sum(fn($a) => (float) $a->quantity * (float) $a->buy_price);
         $totalCurrentValue = $assets->sum(fn($a) => $a->current_value);

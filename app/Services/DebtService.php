@@ -2,16 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\Debt;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class DebtService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Debt::with('payments')
-            ->where('user_id', $user->id);
+            ->where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['type'])) {
             $query->where('type', $filters['type']);
@@ -25,10 +26,13 @@ class DebtService
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): Debt
+    public function create(BudgetTracking $budget, User $user, array $data): Debt
     {
         $data['remaining_balance'] = $data['remaining_balance'] ?? $data['amount'];
-        return Debt::create(array_merge($data, ['user_id' => $user->id]));
+        return Debt::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(Debt $debt, array $data): Debt

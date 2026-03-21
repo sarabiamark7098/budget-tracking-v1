@@ -21,41 +21,41 @@ class PurchaseController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['category_id', 'is_installment', 'search', 'per_page']);
-        $purchases = $this->service->getAll(auth()->user(), $filters);
+        $purchases = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(PurchaseResource::collection($purchases)->response()->getData(true));
     }
 
     public function store(StorePurchaseRequest $request): JsonResponse
     {
-        $purchase = $this->service->create(auth()->user(), $request->validated());
+        $purchase = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         $purchase->load('category');
         return $this->respondCreated(new PurchaseResource($purchase), 'Purchase created successfully');
     }
 
-    public function show(Purchase $purchase): JsonResponse
+    public function show(Request $request, Purchase $purchase): JsonResponse
     {
-        abort_if($purchase->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($purchase->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $purchase->load(['category', 'files']);
         return $this->respondSuccess(new PurchaseResource($purchase));
     }
 
     public function update(UpdatePurchaseRequest $request, Purchase $purchase): JsonResponse
     {
-        abort_if($purchase->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($purchase->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $purchase = $this->service->update($purchase, $request->validated());
         return $this->respondSuccess(new PurchaseResource($purchase), 'Purchase updated successfully');
     }
 
-    public function destroy(Purchase $purchase): JsonResponse
+    public function destroy(Request $request, Purchase $purchase): JsonResponse
     {
-        abort_if($purchase->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($purchase->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($purchase);
         return $this->respondSuccess(null, 'Purchase deleted successfully');
     }
 
-    public function payInstallment(Purchase $purchase): JsonResponse
+    public function payInstallment(Request $request, Purchase $purchase): JsonResponse
     {
-        abort_if($purchase->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($purchase->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
 
         if (!$purchase->is_installment) {
             return $this->respondError('This purchase is not on installment', 422);

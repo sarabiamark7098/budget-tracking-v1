@@ -21,39 +21,39 @@ class CryptoController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['search', 'per_page']);
-        $assets = $this->service->getAll(auth()->user(), $filters);
+        $assets = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(CryptoResource::collection($assets)->response()->getData(true));
     }
 
     public function store(StoreCryptoRequest $request): JsonResponse
     {
-        $crypto = $this->service->create(auth()->user(), $request->validated());
+        $crypto = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         return $this->respondCreated(new CryptoResource($crypto), 'Crypto asset created successfully');
     }
 
-    public function show(CryptoAsset $crypto): JsonResponse
+    public function show(Request $request, CryptoAsset $crypto): JsonResponse
     {
-        abort_if($crypto->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($crypto->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         return $this->respondSuccess(new CryptoResource($crypto));
     }
 
     public function update(UpdateCryptoRequest $request, CryptoAsset $crypto): JsonResponse
     {
-        abort_if($crypto->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($crypto->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $crypto = $this->service->update($crypto, $request->validated());
         return $this->respondSuccess(new CryptoResource($crypto), 'Crypto asset updated successfully');
     }
 
-    public function destroy(CryptoAsset $crypto): JsonResponse
+    public function destroy(Request $request, CryptoAsset $crypto): JsonResponse
     {
-        abort_if($crypto->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($crypto->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($crypto);
         return $this->respondSuccess(null, 'Crypto asset deleted successfully');
     }
 
-    public function portfolio(): JsonResponse
+    public function portfolio(Request $request): JsonResponse
     {
-        $summary = $this->service->getPortfolioSummary(auth()->user());
+        $summary = $this->service->getPortfolioSummary($this->budget($request));
         return $this->respondSuccess($summary, 'Crypto portfolio summary retrieved');
     }
 }

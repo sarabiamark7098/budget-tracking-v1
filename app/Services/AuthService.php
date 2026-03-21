@@ -20,9 +20,6 @@ class AuthService
             'timezone' => $data['timezone'] ?? 'Asia/Manila',
         ]);
 
-        // Seed default categories for new user
-        app(CategoryService::class)->seedDefaultCategories($user);
-
         // Auto-create a personal budget tracker with a unique shareable join code.
         // Other users can join this tracker using the join_code (they become members).
         $budgetTracking = BudgetTracking::create([
@@ -42,6 +39,9 @@ class AuthService
             'role'               => 'owner',
             'joined_at'          => now(),
         ]);
+
+        // Seed default categories scoped to this tracker
+        app(CategoryService::class)->seedDefaultCategories($budgetTracking, $user);
 
         return $user;
     }

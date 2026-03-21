@@ -21,13 +21,13 @@ class ExpenseController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['budget_id', 'category_id', 'date_from', 'date_to', 'search', 'per_page']);
-        $expenses = $this->service->getAll(auth()->user(), $filters);
+        $expenses = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(ExpenseResource::collection($expenses)->response()->getData(true));
     }
 
     public function store(StoreExpenseRequest $request): JsonResponse
     {
-        $expense      = $this->service->create(auth()->user(), $request->validated());
+        $expense      = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         $expense->load(['category', 'budget']);
         $budgetImpact = $this->service->getBudgetImpact($expense);
 
@@ -37,13 +37,13 @@ class ExpenseController extends Controller
         return $this->respondCreated($data, 'Expense created successfully');
     }
 
-    public function show(Expense $expense): JsonResponse
+    public function show(Request $request, Expense $expense): JsonResponse
     {
-        abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($expense->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $expense->load(['category', 'files', 'budget']);
         $budgetImpact = $this->service->getBudgetImpact($expense);
 
-        $data = (new ExpenseResource($expense))->toArray($request ?? request());
+        $data = (new ExpenseResource($expense))->toArray($request);
         $data['budget_impact'] = $budgetImpact;
 
         return $this->respondSuccess($data);
@@ -51,7 +51,7 @@ class ExpenseController extends Controller
 
     public function update(UpdateExpenseRequest $request, Expense $expense): JsonResponse
     {
-        abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($expense->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $expense      = $this->service->update($expense, $request->validated());
         $budgetImpact = $this->service->getBudgetImpact($expense);
 
@@ -61,9 +61,9 @@ class ExpenseController extends Controller
         return $this->respondSuccess($data, 'Expense updated successfully');
     }
 
-    public function destroy(Expense $expense): JsonResponse
+    public function destroy(Request $request, Expense $expense): JsonResponse
     {
-        abort_if($expense->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($expense->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($expense);
         return $this->respondSuccess(null, 'Expense deleted successfully');
     }
@@ -71,7 +71,7 @@ class ExpenseController extends Controller
     public function monthly(Request $request): JsonResponse
     {
         $year = $request->get('year', now()->year);
-        $data = $this->service->getMonthlySummary(auth()->user(), (int) $year);
+        $data = $this->service->getMonthlySummary($this->budget($request), (int) $year);
         return $this->respondSuccess($data, 'Monthly summary retrieved');
     }
 }

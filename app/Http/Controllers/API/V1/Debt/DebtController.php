@@ -21,33 +21,33 @@ class DebtController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['type', 'status', 'per_page']);
-        $debts = $this->service->getAll(auth()->user(), $filters);
+        $debts = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(DebtResource::collection($debts)->response()->getData(true));
     }
 
     public function store(StoreDebtRequest $request): JsonResponse
     {
-        $debt = $this->service->create(auth()->user(), $request->validated());
+        $debt = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         return $this->respondCreated(new DebtResource($debt), 'Debt created successfully');
     }
 
-    public function show(Debt $debt): JsonResponse
+    public function show(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $debt->load('payments');
         return $this->respondSuccess(new DebtResource($debt));
     }
 
     public function update(UpdateDebtRequest $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $debt = $this->service->update($debt, $request->validated());
         return $this->respondSuccess(new DebtResource($debt), 'Debt updated successfully');
     }
 
-    public function destroy(Debt $debt): JsonResponse
+    public function destroy(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($debt);
         return $this->respondSuccess(null, 'Debt deleted successfully');
     }
@@ -59,7 +59,7 @@ class DebtController extends Controller
      */
     public function amortization(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
 
         $durationMonths = (int) ($request->query('duration_months', 12));
         $fixedPayment   = $request->query('fixed_payment') ? (float) $request->query('fixed_payment') : null;
@@ -84,7 +84,7 @@ class DebtController extends Controller
      */
     public function accrual(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
 
         $daysElapsed = (int) ($request->query('days_elapsed', 0));
         $totalPaid   = (float) ($request->query('total_paid', $debt->payments()->sum('amount')));

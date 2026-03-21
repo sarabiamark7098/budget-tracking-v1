@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\Expense;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -9,10 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class ExpenseService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Expense::with(['category', 'budget', 'files'])
-            ->where('user_id', $user->id);
+            ->where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
@@ -43,8 +44,9 @@ class ExpenseService
         return $query->paginate($perPage);
     }
 
-    public function create(User $user, array $data): Expense
+    public function create(BudgetTracking $budget, User $user, array $data): Expense
     {
+        $data['budget_tracking_id'] = $budget->id;
         $data['user_id'] = $user->id;
 
         return Expense::create($data);
@@ -98,10 +100,10 @@ class ExpenseService
         return $expense->delete();
     }
 
-    public function getMonthlySummary(User $user, int $year): array
+    public function getMonthlySummary(BudgetTracking $budget, int $year): array
     {
         return DB::table('expenses')
-            ->where('user_id', $user->id)
+            ->where('budget_tracking_id', $budget->id)
             ->whereNull('deleted_at')
             ->whereYear('spent_at', $year)
             ->select(

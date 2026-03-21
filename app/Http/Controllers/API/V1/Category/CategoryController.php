@@ -20,32 +20,32 @@ class CategoryController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $categories = $this->service->getAll(auth()->user());
+        $categories = $this->service->getAll($this->budget($request));
         return $this->respondSuccess(CategoryResource::collection($categories));
     }
 
     public function store(StoreCategoryRequest $request): JsonResponse
     {
-        $category = $this->service->create(auth()->user(), $request->validated());
+        $category = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         return $this->respondCreated(new CategoryResource($category), 'Category created successfully');
     }
 
-    public function show(Category $category): JsonResponse
+    public function show(Request $request, Category $category): JsonResponse
     {
-        abort_if($category->user_id !== null && $category->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($category->budget_tracking_id !== null && $category->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         return $this->respondSuccess(new CategoryResource($category));
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
-        abort_if($category->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($category->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $category = $this->service->update($category, $request->validated());
         return $this->respondSuccess(new CategoryResource($category), 'Category updated successfully');
     }
 
-    public function destroy(Category $category): JsonResponse
+    public function destroy(Request $request, Category $category): JsonResponse
     {
-        abort_if($category->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($category->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($category);
         return $this->respondSuccess(null, 'Category deleted successfully');
     }

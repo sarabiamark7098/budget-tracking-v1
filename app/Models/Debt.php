@@ -13,6 +13,7 @@ class Debt extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'lender_name',
         'amount',
         'remaining_balance',
@@ -30,6 +31,11 @@ class Debt extends Model
         'interest_rate' => 'decimal:2',
         'due_date' => 'date',
     ];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

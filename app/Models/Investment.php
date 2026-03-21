@@ -12,6 +12,7 @@ class Investment extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'category_id',
         'name',
         'type',
@@ -28,6 +29,11 @@ class Investment extends Model
     ];
 
     protected $appends = ['roi', 'roi_amount'];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

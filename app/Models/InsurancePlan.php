@@ -14,6 +14,7 @@ class InsurancePlan extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'provider_name',
         'plan_name',
         'coverage_type',
@@ -30,6 +31,11 @@ class InsurancePlan extends Model
         'premium_amount' => 'decimal:2',
         'next_payment_date' => 'date',
     ];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

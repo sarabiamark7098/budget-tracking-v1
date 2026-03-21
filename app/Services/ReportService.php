@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\CryptoAsset;
 use App\Models\Debt;
 use App\Models\Expense;
@@ -14,19 +15,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportService
 {
-    public function generateIncomeExpenseReport(User $user, array $filters = []): array
+    public function generateIncomeExpenseReport(BudgetTracking $budget, array $filters = []): array
     {
         $dateFrom = $filters['date_from'] ?? now()->startOfYear()->toDateString();
         $dateTo = $filters['date_to'] ?? now()->endOfYear()->toDateString();
 
         $incomes = Income::with('category')
-            ->where('user_id', $user->id)
+            ->where('budget_tracking_id', $budget->id)
             ->whereBetween('received_at', [$dateFrom, $dateTo])
             ->orderBy('received_at', 'desc')
             ->get();
 
         $expenses = Expense::with('category')
-            ->where('user_id', $user->id)
+            ->where('budget_tracking_id', $budget->id)
             ->whereBetween('spent_at', [$dateFrom, $dateTo])
             ->orderBy('spent_at', 'desc')
             ->get();
@@ -42,7 +43,7 @@ class ReportService
         $expenseRatio = $totalIncome > 0 ? ($totalExpense / $totalIncome) * 100 : 0;
 
         // Month-over-month trend within the period
-        $monthlyTrend = $this->buildMonthlyTrend($user, $dateFrom, $dateTo);
+        $monthlyTrend = $this->buildMonthlyTrend($budget, $dateFrom, $dateTo);
 
         // Burn-rate: average daily expense in the period
         $periodDays = max(1, (int) (new \DateTime($dateFrom))->diff(new \DateTime($dateTo))->days + 1);
@@ -68,12 +69,12 @@ class ReportService
         ];
     }
 
-    public function generateNetWorthReport(User $user): array
+    public function generateNetWorthReport(BudgetTracking $budget): array
     {
-        $totalInvestments = Investment::where('user_id', $user->id)->sum('current_value');
-        $totalStocks = Stock::where('user_id', $user->id)->get()->sum(fn($s) => $s->current_value);
-        $totalCrypto = CryptoAsset::where('user_id', $user->id)->get()->sum(fn($a) => $a->current_value);
-        $totalDebt = Debt::where('user_id', $user->id)->where('status', '!=', 'paid')->sum('remaining_balance');
+        $totalInvestments = Investment::where('budget_tracking_id', $budget->id)->sum('current_value');
+        $totalStocks = Stock::where('budget_tracking_id', $budget->id)->get()->sum(fn($s) => $s->current_value);
+        $totalCrypto = CryptoAsset::where('budget_tracking_id', $budget->id)->get()->sum(fn($a) => $a->current_value);
+        $totalDebt = Debt::where('budget_tracking_id', $budget->id)->where('status', '!=', 'paid')->sum('remaining_balance');
 
         $totalAssets = $totalInvestments + $totalStocks + $totalCrypto;
         $netWorth = $totalAssets - $totalDebt;
@@ -92,7 +93,7 @@ class ReportService
      * Build month-by-month income vs expense trend within the report period.
      * Each month returns: income, expense, net, savings_rate_pct, mom_net_change_pct
      */
-    private function buildMonthlyTrend(User $user, string $dateFrom, string $dateTo): array
+    private function buildMonthlyTrend(BudgetTracking $budget, string $dateFrom, string $dateTo): array
     {
         $start  = new \DateTime($dateFrom);
         $end    = new \DateTime($dateTo);
@@ -104,9 +105,9 @@ class ReportService
             $y = $cursor->format('Y');
             $m = $cursor->format('m');
 
-            $income  = (float) Income::where('user_id', $user->id)
+            $income  = (float) Income::where('budget_tracking_id', $budget->id)
                 ->whereYear('received_at', $y)->whereMonth('received_at', $m)->sum('amount');
-            $expense = (float) Expense::where('user_id', $user->id)
+            $expense = (float) Expense::where('budget_tracking_id', $budget->id)
                 ->whereYear('spent_at', $y)->whereMonth('spent_at', $m)->sum('amount');
 
             $net         = $income - $expense;

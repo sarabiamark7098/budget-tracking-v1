@@ -12,6 +12,7 @@ class Stock extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'symbol',
         'company_name',
         'shares',
@@ -29,6 +30,11 @@ class Stock extends Model
     ];
 
     protected $appends = ['current_value', 'profit_loss', 'profit_loss_percentage'];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

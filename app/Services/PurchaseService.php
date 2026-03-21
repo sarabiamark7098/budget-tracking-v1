@@ -2,16 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\Purchase;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PurchaseService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Purchase::with(['category', 'files'])
-            ->where('user_id', $user->id);
+            ->where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
@@ -29,12 +30,15 @@ class PurchaseService
         return $query->orderBy('purchase_date', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): Purchase
+    public function create(BudgetTracking $budget, User $user, array $data): Purchase
     {
         if (!empty($data['is_installment']) && !empty($data['installment_count']) && empty($data['installment_amount'])) {
             $data['installment_amount'] = (float) $data['total_cost'] / (int) $data['installment_count'];
         }
-        return Purchase::create(array_merge($data, ['user_id' => $user->id]));
+        return Purchase::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(Purchase $purchase, array $data): Purchase

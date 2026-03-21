@@ -13,6 +13,7 @@ class Category extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'name',
         'type',
         'color',
@@ -23,6 +24,11 @@ class Category extends Model
     protected $casts = [
         'is_system' => 'boolean',
     ];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

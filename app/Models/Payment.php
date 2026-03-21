@@ -12,6 +12,7 @@ class Payment extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'debt_id',
         'amount',
         'payment_date',
@@ -50,6 +51,11 @@ class Payment extends Model
                 ]);
             }
         });
+    }
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
     }
 
     public function user(): BelongsTo

@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class StockService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
-        $query = Stock::where('user_id', $user->id);
+        $query = Stock::where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
@@ -23,9 +24,12 @@ class StockService
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): Stock
+    public function create(BudgetTracking $budget, User $user, array $data): Stock
     {
-        return Stock::create(array_merge($data, ['user_id' => $user->id]));
+        return Stock::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(Stock $stock, array $data): Stock
@@ -39,9 +43,9 @@ class StockService
         return $stock->delete();
     }
 
-    public function getPortfolioSummary(User $user): array
+    public function getPortfolioSummary(BudgetTracking $budget): array
     {
-        $stocks = Stock::where('user_id', $user->id)->get();
+        $stocks = Stock::where('budget_tracking_id', $budget->id)->get();
 
         $totalCostBasis    = $stocks->sum(fn($s) => (float) $s->shares * (float) $s->buy_price);
         $totalCurrentValue = $stocks->sum(fn($s) => $s->current_value);

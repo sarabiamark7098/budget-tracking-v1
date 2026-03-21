@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\MP2Plan;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -14,20 +15,23 @@ class MP2Service
      */
     const ANNUAL_DIVIDEND_RATE = 0.0703;
 
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
-        $query = MP2Plan::where('user_id', $user->id);
+        $query = MP2Plan::where('budget_tracking_id', $budget->id);
         $perPage = $filters['per_page'] ?? 15;
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): MP2Plan
+    public function create(BudgetTracking $budget, User $user, array $data): MP2Plan
     {
         $calculation = $this->calculate($data);
         $data['projected_earnings'] = $calculation['projected_earnings'];
         $data['total_contributions'] = $calculation['total_contributions'];
 
-        return MP2Plan::create(array_merge($data, ['user_id' => $user->id]));
+        return MP2Plan::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(MP2Plan $plan, array $data): MP2Plan

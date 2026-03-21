@@ -21,41 +21,41 @@ class InvestmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['type', 'per_page']);
-        $investments = $this->service->getAll(auth()->user(), $filters);
+        $investments = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(InvestmentResource::collection($investments)->response()->getData(true));
     }
 
     public function store(StoreInvestmentRequest $request): JsonResponse
     {
-        $investment = $this->service->create(auth()->user(), $request->validated());
+        $investment = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         $investment->load('category');
         return $this->respondCreated(new InvestmentResource($investment), 'Investment created successfully');
     }
 
-    public function show(Investment $investment): JsonResponse
+    public function show(Request $request, Investment $investment): JsonResponse
     {
-        abort_if($investment->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($investment->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $investment->load('category');
         return $this->respondSuccess(new InvestmentResource($investment));
     }
 
     public function update(UpdateInvestmentRequest $request, Investment $investment): JsonResponse
     {
-        abort_if($investment->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($investment->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $investment = $this->service->update($investment, $request->validated());
         return $this->respondSuccess(new InvestmentResource($investment), 'Investment updated successfully');
     }
 
-    public function destroy(Investment $investment): JsonResponse
+    public function destroy(Request $request, Investment $investment): JsonResponse
     {
-        abort_if($investment->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($investment->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($investment);
         return $this->respondSuccess(null, 'Investment deleted successfully');
     }
 
-    public function portfolio(): JsonResponse
+    public function portfolio(Request $request): JsonResponse
     {
-        $summary = $this->service->getPortfolioSummary(auth()->user());
+        $summary = $this->service->getPortfolioSummary($this->budget($request));
         return $this->respondSuccess($summary, 'Portfolio summary retrieved');
     }
 }

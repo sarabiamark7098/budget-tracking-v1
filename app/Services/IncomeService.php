@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\Income;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -9,10 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class IncomeService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Income::with('category')
-            ->where('user_id', $user->id);
+            ->where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['category_id'])) {
             $query->where('category_id', $filters['category_id']);
@@ -40,8 +41,9 @@ class IncomeService
         return $query->paginate($perPage);
     }
 
-    public function create(User $user, array $data): Income
+    public function create(BudgetTracking $budget, User $user, array $data): Income
     {
+        $data['budget_tracking_id'] = $budget->id;
         $data['user_id'] = $user->id;
         $data['source']  = $this->sanitizeSource($data['source'] ?? null);
 
@@ -81,10 +83,10 @@ class IncomeService
         return $income->delete();
     }
 
-    public function getMonthlySummary(User $user, int $year): array
+    public function getMonthlySummary(BudgetTracking $budget, int $year): array
     {
         return DB::table('incomes')
-            ->where('user_id', $user->id)
+            ->where('budget_tracking_id', $budget->id)
             ->whereNull('deleted_at')
             ->whereYear('received_at', $year)
             ->select(

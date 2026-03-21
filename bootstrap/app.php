@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
         $middleware->trustProxies(at: '*');
+        $middleware->alias([
+            'require.budget_tracking' => \App\Http\Middleware\RequireBudgetTracking::class,
+        ]);
     })
     ->booting(function () {
         if (app()->isProduction()) {

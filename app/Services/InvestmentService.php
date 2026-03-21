@@ -2,16 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\Investment;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class InvestmentService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Investment::with('category')
-            ->where('user_id', $user->id);
+            ->where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['type'])) {
             $query->where('type', $filters['type']);
@@ -21,9 +22,12 @@ class InvestmentService
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): Investment
+    public function create(BudgetTracking $budget, User $user, array $data): Investment
     {
-        return Investment::create(array_merge($data, ['user_id' => $user->id]));
+        return Investment::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(Investment $investment, array $data): Investment
@@ -37,9 +41,9 @@ class InvestmentService
         return $investment->delete();
     }
 
-    public function getPortfolioSummary(User $user): array
+    public function getPortfolioSummary(BudgetTracking $budget): array
     {
-        $investments = Investment::where('user_id', $user->id)->get();
+        $investments = Investment::where('budget_tracking_id', $budget->id)->get();
 
         $totalInvested = $investments->sum('amount_invested');
         $totalCurrentValue = $investments->sum('current_value');

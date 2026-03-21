@@ -12,6 +12,7 @@ class FinancialGoal extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'financial_plan_id',
         'name',
         'description',
@@ -29,6 +30,11 @@ class FinancialGoal extends Model
     ];
 
     protected $appends = ['progress_percentage'];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {

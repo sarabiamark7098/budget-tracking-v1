@@ -2,16 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\FinancialGoal;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class FinancialGoalService
 {
-    public function getAll(User $user, array $filters = []): LengthAwarePaginator
+    public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = FinancialGoal::with('financialPlan')
-            ->where('user_id', $user->id);
+            ->where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['financial_plan_id'])) {
             $query->where('financial_plan_id', $filters['financial_plan_id']);
@@ -29,9 +30,12 @@ class FinancialGoalService
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
-    public function create(User $user, array $data): FinancialGoal
+    public function create(BudgetTracking $budget, User $user, array $data): FinancialGoal
     {
-        return FinancialGoal::create(array_merge($data, ['user_id' => $user->id]));
+        return FinancialGoal::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(FinancialGoal $goal, array $data): FinancialGoal

@@ -2,22 +2,26 @@
 
 namespace App\Services;
 
+use App\Models\BudgetTracking;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
 class CategoryService
 {
-    public function getAll(User $user): Collection
+    public function getAll(BudgetTracking $budget): Collection
     {
-        return Category::where(function ($q) use ($user) {
-            $q->where('user_id', $user->id)->orWhereNull('user_id');
+        return Category::where(function ($q) use ($budget) {
+            $q->where('budget_tracking_id', $budget->id)->orWhereNull('budget_tracking_id');
         })->get();
     }
 
-    public function create(User $user, array $data): Category
+    public function create(BudgetTracking $budget, User $user, array $data): Category
     {
-        return Category::create(array_merge($data, ['user_id' => $user->id]));
+        return Category::create(array_merge($data, [
+            'budget_tracking_id' => $budget->id,
+            'user_id'            => $user->id,
+        ]));
     }
 
     public function update(Category $category, array $data): Category
@@ -31,7 +35,7 @@ class CategoryService
         return $category->delete();
     }
 
-    public function seedDefaultCategories(User $user): void
+    public function seedDefaultCategories(BudgetTracking $budget, User $user): void
     {
         $defaults = [
             // Income categories
@@ -58,13 +62,13 @@ class CategoryService
             ['name' => 'Mutual Fund', 'type' => 'investment', 'color' => '#607D8B', 'icon' => 'pie-chart', 'is_system' => true],
         ];
 
-        // Only create if not already existing (check for system categories)
-        $existing = Category::whereNull('user_id')->where('is_system', true)->count();
+        // Only create if not already existing for this budget tracker
+        $existing = Category::where('budget_tracking_id', $budget->id)->where('is_system', true)->count();
         if ($existing === 0) {
             foreach ($defaults as $cat) {
                 Category::firstOrCreate(
-                    ['name' => $cat['name'], 'type' => $cat['type'], 'user_id' => null],
-                    array_merge($cat, ['user_id' => null])
+                    ['name' => $cat['name'], 'type' => $cat['type'], 'budget_tracking_id' => $budget->id],
+                    array_merge($cat, ['budget_tracking_id' => $budget->id, 'user_id' => $user->id])
                 );
             }
         }

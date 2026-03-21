@@ -17,7 +17,7 @@ class DashboardController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['date_from', 'date_to']);
-        $summary = $this->service->getSummary(auth()->user(), $filters);
+        $summary = $this->service->getSummary($this->budget($request), $filters);
         return $this->respondSuccess($summary, 'Dashboard summary retrieved successfully');
     }
 
@@ -32,7 +32,7 @@ class DashboardController extends Controller
     public function transactions(Request $request): JsonResponse
     {
         $filters = $request->only(['page', 'per_page']);
-        $data    = $this->service->getTransactions(auth()->user(), $filters);
+        $data    = $this->service->getTransactions($this->budget($request), $filters);
         return $this->respondSuccess($data, 'Transactions retrieved successfully');
     }
 }

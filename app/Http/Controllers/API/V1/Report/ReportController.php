@@ -17,13 +17,13 @@ class ReportController extends Controller
     public function incomeExpense(Request $request): JsonResponse
     {
         $filters = $request->only(['date_from', 'date_to']);
-        $report = $this->service->generateIncomeExpenseReport(auth()->user(), $filters);
+        $report = $this->service->generateIncomeExpenseReport($this->budget($request), $filters);
         return $this->respondSuccess($report, 'Income/Expense report generated');
     }
 
-    public function netWorth(): JsonResponse
+    public function netWorth(Request $request): JsonResponse
     {
-        $report = $this->service->generateNetWorthReport(auth()->user());
+        $report = $this->service->generateNetWorthReport($this->budget($request));
         return $this->respondSuccess($report, 'Net worth report generated');
     }
 
@@ -33,10 +33,10 @@ class ReportController extends Controller
         $type = $request->get('type', 'income_expense');
 
         if ($type === 'net_worth') {
-            $data = [$this->service->generateNetWorthReport(auth()->user())];
+            $data = [$this->service->generateNetWorthReport($this->budget($request))];
             $filename = 'net_worth_report_' . now()->format('Y_m_d');
         } else {
-            $report = $this->service->generateIncomeExpenseReport(auth()->user(), $filters);
+            $report = $this->service->generateIncomeExpenseReport($this->budget($request), $filters);
             $data = array_merge(
                 collect($report['incomes'])->map(fn($i) => [
                     'type' => 'income',

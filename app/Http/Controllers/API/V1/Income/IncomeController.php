@@ -21,34 +21,34 @@ class IncomeController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['category_id', 'date_from', 'date_to', 'search', 'per_page']);
-        $incomes = $this->service->getAll(auth()->user(), $filters);
+        $incomes = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(IncomeResource::collection($incomes)->response()->getData(true));
     }
 
     public function store(StoreIncomeRequest $request): JsonResponse
     {
-        $income = $this->service->create(auth()->user(), $request->validated());
+        $income = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         $income->load('category');
         return $this->respondCreated(new IncomeResource($income), 'Income created successfully');
     }
 
-    public function show(Income $income): JsonResponse
+    public function show(Request $request, Income $income): JsonResponse
     {
-        abort_if($income->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($income->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $income->load('category');
         return $this->respondSuccess(new IncomeResource($income));
     }
 
     public function update(UpdateIncomeRequest $request, Income $income): JsonResponse
     {
-        abort_if($income->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($income->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $income = $this->service->update($income, $request->validated());
         return $this->respondSuccess(new IncomeResource($income), 'Income updated successfully');
     }
 
-    public function destroy(Income $income): JsonResponse
+    public function destroy(Request $request, Income $income): JsonResponse
     {
-        abort_if($income->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($income->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($income);
         return $this->respondSuccess(null, 'Income deleted successfully');
     }
@@ -56,7 +56,7 @@ class IncomeController extends Controller
     public function monthly(Request $request): JsonResponse
     {
         $year = $request->get('year', now()->year);
-        $data = $this->service->getMonthlySummary(auth()->user(), (int) $year);
+        $data = $this->service->getMonthlySummary($this->budget($request), (int) $year);
         return $this->respondSuccess($data, 'Monthly summary retrieved');
     }
 }

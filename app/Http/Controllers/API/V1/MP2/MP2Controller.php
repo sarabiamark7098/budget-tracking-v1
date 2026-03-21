@@ -22,26 +22,26 @@ class MP2Controller extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['per_page']);
-        $plans = $this->service->getAll(auth()->user(), $filters);
+        $plans = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(MP2PlanResource::collection($plans)->response()->getData(true));
     }
 
     public function store(StoreMP2Request $request): JsonResponse
     {
-        $plan = $this->service->create(auth()->user(), $request->validated());
+        $plan = $this->service->create($this->budget($request), auth()->user(), $request->validated());
         return $this->respondCreated(new MP2PlanResource($plan), 'MP2 plan created successfully');
     }
 
     public function update(UpdateMP2Request $request, MP2Plan $mp2Plan): JsonResponse
     {
-        abort_if($mp2Plan->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($mp2Plan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $plan = $this->service->update($mp2Plan, $request->validated());
         return $this->respondSuccess(new MP2PlanResource($plan), 'MP2 plan updated successfully');
     }
 
-    public function destroy(MP2Plan $mp2Plan): JsonResponse
+    public function destroy(Request $request, MP2Plan $mp2Plan): JsonResponse
     {
-        abort_if($mp2Plan->user_id !== auth()->id(), 403, 'Unauthorized');
+        abort_if($mp2Plan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($mp2Plan);
         return $this->respondSuccess(null, 'MP2 plan deleted successfully');
     }

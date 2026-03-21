@@ -8,6 +8,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
+// Module models
+use App\Models\Category;
+use App\Models\Income;
+use App\Models\Expense;
+use App\Models\Budget;
+use App\Models\Debt;
+use App\Models\Payment;
+use App\Models\Investment;
+use App\Models\Stock;
+use App\Models\CryptoAsset;
+use App\Models\FinancialPlan;
+use App\Models\FinancialGoal;
+use App\Models\InsurancePlan;
+use App\Models\InsurancePayment;
+use App\Models\Purchase;
+use App\Models\MP2Plan;
+
 class BudgetTracking extends Model
 {
     use SoftDeletes;
@@ -57,6 +74,24 @@ class BudgetTracking extends Model
     {
         return $this->hasMany(BudgetTrackingHistory::class)->orderByDesc('created_at');
     }
+
+    // ─── Module Relationships (all data scoped to this tracker) ─────────────────
+
+    public function categories(): HasMany    { return $this->hasMany(Category::class); }
+    public function incomes(): HasMany       { return $this->hasMany(Income::class); }
+    public function expenses(): HasMany      { return $this->hasMany(Expense::class); }
+    public function budgets(): HasMany       { return $this->hasMany(Budget::class); }
+    public function debts(): HasMany         { return $this->hasMany(Debt::class); }
+    public function payments(): HasMany      { return $this->hasMany(Payment::class); }
+    public function investments(): HasMany   { return $this->hasMany(Investment::class); }
+    public function stocks(): HasMany        { return $this->hasMany(Stock::class); }
+    public function cryptoAssets(): HasMany  { return $this->hasMany(CryptoAsset::class); }
+    public function financialPlans(): HasMany{ return $this->hasMany(FinancialPlan::class); }
+    public function financialGoals(): HasMany{ return $this->hasMany(FinancialGoal::class); }
+    public function insurancePlans(): HasMany{ return $this->hasMany(InsurancePlan::class); }
+    public function insurancePayments(): HasMany { return $this->hasMany(InsurancePayment::class); }
+    public function purchases(): HasMany     { return $this->hasMany(Purchase::class); }
+    public function mp2Plans(): HasMany      { return $this->hasMany(MP2Plan::class); }
 
     // ─── Computed Attributes ────────────────────────────────────────────────────
 

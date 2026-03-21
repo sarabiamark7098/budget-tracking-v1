@@ -12,6 +12,7 @@ class Income extends Model
 
     protected $fillable = [
         'user_id',
+        'budget_tracking_id',
         'category_id',
         'title',
         'amount',
@@ -29,6 +30,11 @@ class Income extends Model
         'is_recurring' => 'boolean',
         'recurrence_end_date' => 'date',
     ];
+
+    public function budgetTracking(): BelongsTo
+    {
+        return $this->belongsTo(BudgetTracking::class);
+    }
 
     public function user(): BelongsTo
     {
