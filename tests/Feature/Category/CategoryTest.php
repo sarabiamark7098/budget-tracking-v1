@@ -3,7 +3,6 @@
 namespace Tests\Feature\Category;
 
 use App\Models\Category;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,7 +12,7 @@ class CategoryTest extends TestCase
 
     public function test_can_create_custom_category(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/categories', [
             'name' => 'Freelance Income',
             'type' => 'income',
@@ -28,9 +27,11 @@ class CategoryTest extends TestCase
 
     public function test_can_list_categories(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
+        $bt = $this->getBT($user);
         Category::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $bt->id,
             'name' => 'My Category',
             'type' => 'expense',
             'is_system' => false,
@@ -42,7 +43,7 @@ class CategoryTest extends TestCase
 
     public function test_category_type_validation(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/categories', [
             'name' => 'Invalid Category',
             'type' => 'invalid_type',
@@ -52,9 +53,11 @@ class CategoryTest extends TestCase
 
     public function test_can_update_own_category(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
+        $bt = $this->getBT($user);
         $category = Category::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $bt->id,
             'name' => 'Old Name',
             'type' => 'expense',
             'is_system' => false,
@@ -70,9 +73,11 @@ class CategoryTest extends TestCase
 
     public function test_can_delete_own_category(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
+        $bt = $this->getBT($user);
         $category = Category::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $bt->id,
             'name' => 'To Delete',
             'type' => 'expense',
             'is_system' => false,
@@ -85,10 +90,12 @@ class CategoryTest extends TestCase
 
     public function test_cannot_update_other_users_category(): void
     {
-        $user = User::factory()->create();
-        $other = User::factory()->create();
+        $user = $this->createUser();
+        $other = $this->createUser();
+        $otherBt = $this->getBT($other);
         $category = Category::create([
             'user_id' => $other->id,
+            'budget_tracking_id' => $otherBt->id,
             'name' => 'Other Category',
             'type' => 'expense',
             'is_system' => false,
@@ -102,7 +109,7 @@ class CategoryTest extends TestCase
 
     public function test_category_creation_requires_name(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/categories', [
             'type' => 'expense',
         ]);
@@ -111,7 +118,7 @@ class CategoryTest extends TestCase
 
     public function test_category_creation_requires_type(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/categories', [
             'name' => 'No Type',
         ]);
@@ -120,7 +127,7 @@ class CategoryTest extends TestCase
 
     public function test_valid_category_types_are_accepted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $types = ['income', 'expense', 'investment', 'insurance', 'purchase', 'debt'];
 
         foreach ($types as $type) {

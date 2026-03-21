@@ -16,13 +16,20 @@ class UpdateInvestmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'type' => ['nullable', 'in:stocks,crypto,real_estate,business,mutual_fund,other'],
-            'amount_invested' => ['nullable', 'numeric', 'min:0'],
-            'current_value' => ['nullable', 'numeric', 'min:0'],
-            'purchase_date' => ['nullable', 'date'],
-            'description' => ['nullable', 'string'],
+            'category_id'            => ['nullable', 'exists:categories,id'],
+            'name'                   => ['nullable', 'string', 'max:255'],
+            'type'                   => ['nullable', 'in:stocks,crypto,real_estate,business,mutual_fund,uitf,bonds,other'],
+            'amount_invested'        => ['nullable', 'numeric', 'min:0'],
+            'current_value'          => ['nullable', 'numeric', 'min:0'],
+            'purchase_date'          => ['nullable', 'date'],
+            'description'            => ['nullable', 'string'],
+            // new fields
+            'total_value'            => ['nullable', 'numeric', 'min:0'],
+            'period'                 => ['nullable', 'in:monthly,quarterly,semi_annual,annual'],
+            'months_of_payment'      => ['nullable', 'integer', 'min:1'],
+            'amount_per_payment'     => ['nullable', 'numeric', 'min:0'],
+            'date_started'           => ['nullable', 'date'],
+            'other_investment_title' => ['nullable', 'string', 'max:255'],
         ];
     }
 

@@ -27,6 +27,7 @@ export const useStockStore = defineStore('stock', () => {
     async function create(formData) {
         const { data } = await stockService.create(formData);
         items.value.unshift(data.data);
+        await fetchPortfolio();
         return data.data;
     }
 
@@ -40,7 +41,27 @@ export const useStockStore = defineStore('stock', () => {
     async function remove(id) {
         await stockService.delete(id);
         items.value = items.value.filter(i => i.id !== id);
+        await fetchPortfolio();
     }
 
-    return { items, loading, pagination, portfolio, fetchAll, fetchPortfolio, create, update, remove };
+    async function fetchLots(stockId) {
+        const { data } = await stockService.getLots(stockId);
+        return data.data.lots ?? [];
+    }
+
+    async function addLot(stockId, formData) {
+        const { data } = await stockService.addLot(stockId, formData);
+        await fetchPortfolio();
+        return data.data;
+    }
+
+    async function updatePrice(stockId, price) {
+        const { data } = await stockService.updatePrice(stockId, { latest_price: price });
+        const idx = items.value.findIndex(i => i.id === stockId);
+        if (idx !== -1) items.value[idx] = data.data;
+        await fetchPortfolio();
+        return data.data;
+    }
+
+    return { items, loading, pagination, portfolio, fetchAll, fetchPortfolio, create, update, remove, fetchLots, addLot, updatePrice };
 });

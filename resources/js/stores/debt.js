@@ -3,16 +3,16 @@ import { ref } from 'vue';
 import { debtService } from '@/services/index';
 
 export const useDebtStore = defineStore('debt', () => {
-    const items = ref([]);
-    const loading = ref(false);
+    const items      = ref([]);
+    const loading    = ref(false);
     const pagination = ref(null);
 
     async function fetchAll(params = {}) {
         loading.value = true;
         try {
             const { data } = await debtService.getAll(params);
-            items.value = data.data.data ?? data.data;
-            pagination.value = data.data.meta ?? null;
+            items.value      = data.data.data ?? data.data;
+            pagination.value = data.data.meta  ?? null;
         } finally {
             loading.value = false;
         }
@@ -36,5 +36,17 @@ export const useDebtStore = defineStore('debt', () => {
         items.value = items.value.filter(i => i.id !== id);
     }
 
-    return { items, loading, pagination, fetchAll, create, update, remove };
+    async function pay(id, payload = {}) {
+        const { data } = await debtService.pay(id, payload);
+        const idx = items.value.findIndex(i => i.id === id);
+        if (idx !== -1) items.value[idx] = data.data.debt;
+        return data.data;
+    }
+
+    async function getBalance(id) {
+        const { data } = await debtService.getBalance(id);
+        return data.data;
+    }
+
+    return { items, loading, pagination, fetchAll, create, update, remove, pay, getBalance };
 });

@@ -28,14 +28,12 @@ class IncomeController extends Controller
     public function store(StoreIncomeRequest $request): JsonResponse
     {
         $income = $this->service->create($this->budget($request), auth()->user(), $request->validated());
-        $income->load('category');
         return $this->respondCreated(new IncomeResource($income), 'Income created successfully');
     }
 
     public function show(Request $request, Income $income): JsonResponse
     {
         abort_if($income->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
-        $income->load('category');
         return $this->respondSuccess(new IncomeResource($income));
     }
 

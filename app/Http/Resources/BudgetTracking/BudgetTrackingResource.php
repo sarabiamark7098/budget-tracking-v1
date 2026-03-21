@@ -23,10 +23,11 @@ class BudgetTrackingResource extends JsonResource
             // join_code shown only to members (they are authenticated and authorized)
             'join_code'       => $this->join_code,
             'is_owner'        => $userId ? $this->isOwner($userId) : false,
-            'total_allocated' => $this->total_allocated,
-            'total_income'    => $this->total_income,
-            'total_expense'   => $this->total_expense,
-            'balance'         => $this->balance,
+            'total_allocated'   => $this->total_allocated,
+            'total_income'      => $this->total_income,
+            'total_expense'     => $this->total_expense,
+            'balance'           => $this->balance,
+            'available_balance' => $this->available_balance,
             'owner'           => $this->whenLoaded('owner', fn() => [
                 'id'   => $this->owner->id,
                 'name' => $this->owner->name,

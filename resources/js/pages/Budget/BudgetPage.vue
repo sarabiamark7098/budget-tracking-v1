@@ -10,6 +10,7 @@
       <div class="bg-white rounded-xl shadow-sm p-5">
         <p class="text-sm text-gray-500 mb-1">Total Budget</p>
         <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(store.summary.total_budget) }}</p>
+        <p class="text-xs text-gray-400 mt-1">Cumulative since start</p>
       </div>
       <div class="bg-white rounded-xl shadow-sm p-5">
         <p class="text-sm text-gray-500 mb-1">Total Spent</p>
@@ -17,7 +18,10 @@
       </div>
       <div class="bg-white rounded-xl shadow-sm p-5">
         <p class="text-sm text-gray-500 mb-1">Remaining</p>
-        <p class="text-2xl font-bold text-green-600">{{ formatCurrency(store.summary.total_remaining) }}</p>
+        <p class="text-2xl font-bold" :class="store.summary.total_remaining >= 0 ? 'text-green-600' : 'text-red-600'">
+          {{ formatCurrency(store.summary.total_remaining) }}
+        </p>
+        <p v-if="store.summary.total_remaining < 0" class="text-xs text-red-400 mt-1">Over budget</p>
       </div>
     </div>
 
@@ -29,7 +33,9 @@
           <tr>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Name</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Period</th>
-            <th class="text-right px-4 py-3 text-gray-500 font-medium">Budget</th>
+            <th class="text-left px-4 py-3 text-gray-500 font-medium">Start Date</th>
+            <th class="text-right px-4 py-3 text-gray-500 font-medium">Per Period</th>
+            <th class="text-right px-4 py-3 text-gray-500 font-medium">Total Budget</th>
             <th class="text-right px-4 py-3 text-gray-500 font-medium">Spent</th>
             <th class="text-right px-4 py-3 text-gray-500 font-medium">Remaining</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Usage</th>
@@ -38,26 +44,29 @@
         </thead>
         <tbody>
           <tr v-if="store.items.length === 0">
-            <td colspan="7" class="text-center py-10 text-gray-400">No budget records found</td>
+            <td colspan="9" class="text-center py-10 text-gray-400">No budget records found</td>
           </tr>
           <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
             <td class="px-4 py-3 font-medium text-gray-700">{{ item.name }}</td>
             <td class="px-4 py-3 text-gray-500 capitalize">{{ item.period }}</td>
-            <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ formatCurrency(item.amount) }}</td>
-            <td class="px-4 py-3 text-right text-red-600">{{ formatCurrency(item.spent) }}</td>
-            <td class="px-4 py-3 text-right" :class="item.remaining >= 0 ? 'text-green-600' : 'text-red-600'">
-              {{ formatCurrency(item.remaining) }}
+            <td class="px-4 py-3 text-gray-500">{{ formatDate(item.start_date) }}</td>
+            <td class="px-4 py-3 text-right text-gray-600">{{ formatCurrency(item.amount) }}</td>
+            <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ formatCurrency(item.total_budget) }}</td>
+            <td class="px-4 py-3 text-right text-red-600">{{ formatCurrency(item.spent_amount) }}</td>
+            <td class="px-4 py-3 text-right font-semibold" :class="item.remaining_amount >= 0 ? 'text-green-600' : 'text-red-600'">
+              {{ formatCurrency(item.remaining_amount) }}
+              <span v-if="item.remaining_amount < 0" class="block text-xs font-normal text-red-400">Over budget</span>
             </td>
             <td class="px-4 py-3 min-w-[120px]">
               <div class="flex items-center gap-2">
                 <div class="flex-1 bg-gray-100 rounded-full h-2">
                   <div
                     class="h-2 rounded-full transition-all"
-                    :class="usagePercent(item) >= 100 ? 'bg-red-500' : usagePercent(item) >= 80 ? 'bg-yellow-500' : 'bg-green-500'"
-                    :style="{ width: Math.min(100, usagePercent(item)) + '%' }"
+                    :class="usagePct(item) >= 100 ? 'bg-red-500' : usagePct(item) >= 80 ? 'bg-yellow-500' : 'bg-green-500'"
+                    :style="{ width: Math.min(100, usagePct(item)) + '%' }"
                   ></div>
                 </div>
-                <span class="text-xs text-gray-500 w-10 text-right">{{ usagePercent(item).toFixed(0) }}%</span>
+                <span class="text-xs text-gray-500 w-10 text-right">{{ usagePct(item).toFixed(0) }}%</span>
               </div>
             </td>
             <td class="px-4 py-3">
@@ -91,7 +100,7 @@
 
     <!-- Add/Edit Modal -->
     <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
         <div class="flex items-center justify-between p-5 border-b">
           <h2 class="font-semibold text-gray-800">{{ editing ? 'Edit Budget' : 'Add Budget' }}</h2>
           <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
@@ -102,35 +111,21 @@
             <input v-model="form.name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Groceries, Entertainment" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Budget Amount *</label>
-            <input v-model="form.amount" type="number" min="0" step="0.01" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+            <input v-model="form.amount" type="number" min="0" step="0.01" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Amount per period" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Period *</label>
             <select v-model="form.period" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
               <option value="yearly">Yearly</option>
-              <option value="custom">Custom</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
             <input v-model="form.start_date" type="date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input v-model="form.end_date" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Alert Threshold (%)</label>
-            <input v-model="form.alert_threshold" type="number" min="1" max="100" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Default: 80" />
-            <p class="text-xs text-gray-400 mt-1">Warn when spending reaches this % of the budget</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea v-model="form.description" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+            <p class="text-xs text-gray-400 mt-1">Total budget = amount × number of {{ form.period ?? 'period' }}s elapsed</p>
           </div>
           <div v-if="formError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ formError }}</div>
           <div class="flex justify-end gap-3 pt-2">
@@ -162,40 +157,46 @@ import { ref, onMounted } from 'vue';
 import { useBudgetStore } from '@/stores/budget';
 
 const store = useBudgetStore();
-const showModal = ref(false);
-const editing = ref(null);
+const showModal   = ref(false);
+const editing     = ref(null);
 const deleteTarget = ref(null);
-const saving = ref(false);
-const formError = ref('');
+const saving      = ref(false);
+const formError   = ref('');
 
 const defaultForm = () => ({
-  name: '',
-  amount: '',
-  period: 'monthly',
+  name:       '',
+  amount:     '',
+  period:     'monthly',
   start_date: new Date().toISOString().split('T')[0],
-  end_date: '',
-  alert_threshold: 80,
-  description: '',
 });
 
 const form = ref(defaultForm());
 
 function formatCurrency(val) {
-  return '₱' + Number(val || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+  const n = Number(val || 0);
+  const formatted = Math.abs(n).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+  return (n < 0 ? '-₱' : '₱') + formatted;
 }
 
-function usagePercent(item) {
-  if (!item.amount || item.amount === 0) return 0;
-  return ((item.spent ?? 0) / item.amount) * 100;
+function formatDate(val) {
+  if (!val) return '—';
+  return new Date(val).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function usagePct(item) {
+  const total = Number(item.total_budget ?? item.amount ?? 0);
+  if (total === 0) return 0;
+  return (Number(item.spent_amount ?? 0) / total) * 100;
 }
 
 function openModal(item = null) {
   editing.value = item;
   form.value = item
     ? {
-        ...item,
+        name:       item.name,
+        amount:     item.amount,
+        period:     item.period,
         start_date: item.start_date?.split('T')[0] ?? item.start_date,
-        end_date: item.end_date?.split('T')[0] ?? item.end_date ?? '',
       }
     : defaultForm();
   formError.value = '';
@@ -207,7 +208,7 @@ function confirmDelete(item) {
 }
 
 async function handleSubmit() {
-  saving.value = true;
+  saving.value    = true;
   formError.value = '';
   try {
     if (editing.value) {
@@ -216,6 +217,7 @@ async function handleSubmit() {
       await store.create(form.value);
     }
     showModal.value = false;
+    store.fetchSummary();
   } catch (e) {
     formError.value = e.response?.data?.message ?? 'Failed to save. Please try again.';
   } finally {
@@ -226,6 +228,7 @@ async function handleSubmit() {
 async function handleDelete() {
   await store.remove(deleteTarget.value.id);
   deleteTarget.value = null;
+  store.fetchSummary();
 }
 
 function changePage(page) {

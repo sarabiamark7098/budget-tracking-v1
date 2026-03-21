@@ -15,21 +15,31 @@ class StoreStockRequest extends FormRequest
 
     public function rules(): array
     {
+        $btId = $this->attributes->get('budgetTracking')?->id;
+
         return [
-            'symbol' => ['required', 'string', 'max:20'],
+            'symbol'       => [
+                'required', 'string', 'max:20',
+                \Illuminate\Validation\Rule::unique('stocks')->where('budget_tracking_id', $btId),
+            ],
             'company_name' => ['required', 'string', 'max:255'],
-            'shares' => ['required', 'numeric', 'min:0'],
-            'buy_price' => ['required', 'numeric', 'min:0'],
-            'current_price' => ['required', 'numeric', 'min:0'],
-            'purchase_date' => ['required', 'date'],
-            'notes' => ['nullable', 'string'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'symbol.unique' => 'This stock symbol already exists in your portfolio.',
         ];
     }
 
     protected function failedValidation(Validator $validator): void
     {
+        $errors  = $validator->errors();
+        $message = $errors->first() ?: 'Validation failed';
+
         throw new HttpResponseException(
-            response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422)
+            response()->json(['success' => false, 'message' => $message, 'errors' => $errors], 422)
         );
     }
 }

@@ -15,13 +15,19 @@ class Payment extends Model
         'budget_tracking_id',
         'debt_id',
         'amount',
+        'interest_paid',
+        'principal_paid',
+        'days_elapsed',
+        'installment_number',
         'payment_date',
         'note',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
-        'payment_date' => 'date',
+        'amount'        => 'decimal:2',
+        'interest_paid' => 'decimal:2',
+        'principal_paid' => 'decimal:2',
+        'payment_date'  => 'date',
     ];
 
     protected static function boot(): void
@@ -31,11 +37,21 @@ class Payment extends Model
         static::created(function (Payment $payment) {
             $debt = $payment->debt;
             if ($debt) {
-                $newBalance = max(0, (float) $debt->remaining_balance - (float) $payment->amount);
-                $status = $newBalance <= 0 ? 'paid' : $debt->status;
+                // For business debts: only the principal_paid portion reduces the balance.
+                // For personal debts: the full amount is principal (no interest split).
+                $reduction = ($payment->principal_paid !== null)
+                    ? (float) $payment->principal_paid
+                    : (float) $payment->amount;
+
+                $newBalance = max(0, (float) $debt->remaining_balance - $reduction);
+                // Treat anything below ₱1.00 as fully settled (ignore remaining centavos)
+                if ($newBalance < 1) {
+                    $newBalance = 0;
+                }
+                $status = $newBalance == 0 ? 'paid' : $debt->status;
                 $debt->update([
                     'remaining_balance' => $newBalance,
-                    'status' => $status,
+                    'status'            => $status,
                 ]);
             }
         });
@@ -43,11 +59,14 @@ class Payment extends Model
         static::deleted(function (Payment $payment) {
             $debt = $payment->debt;
             if ($debt) {
-                $newBalance = (float) $debt->remaining_balance + (float) $payment->amount;
-                $status = $newBalance > 0 ? 'active' : 'paid';
+                $reduction  = ($payment->principal_paid !== null)
+                    ? (float) $payment->principal_paid
+                    : (float) $payment->amount;
+                $newBalance = (float) $debt->remaining_balance + $reduction;
+                $status     = $newBalance > 0 ? 'active' : 'paid';
                 $debt->update([
                     'remaining_balance' => $newBalance,
-                    'status' => $status,
+                    'status'            => $status,
                 ]);
             }
         });

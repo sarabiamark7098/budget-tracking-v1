@@ -16,15 +16,17 @@ class UpdateDebtRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'lender_name' => ['nullable', 'string', 'max:255'],
-            'amount' => ['nullable', 'numeric', 'min:0'],
+            'type'            => ['nullable', 'in:personal,business'],
+            'personal_mode'   => ['nullable', 'in:shop_pay_later,pay_installment'],
+            'lender_name'     => ['nullable', 'string', 'max:255'],
+            'borrower_name'   => ['nullable', 'string', 'max:255'],
+            'business_name'   => ['nullable', 'string', 'max:255'],
+            'amount'          => ['nullable', 'numeric', 'min:0.01'],
             'remaining_balance' => ['nullable', 'numeric', 'min:0'],
-            'interest_rate' => ['nullable', 'numeric', 'min:0'],
-            'due_date' => ['nullable', 'date'],
-            'description' => ['nullable', 'string'],
-            'status' => ['nullable', 'in:active,paid,overdue'],
-            'type' => ['nullable', 'in:personal,business'],
-            'business_name' => ['nullable', 'string', 'max:255'],
+            'interest_rate'   => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'months_to_pay'   => ['nullable', 'integer', 'min:1'],
+            'monthly_payment' => ['nullable', 'numeric', 'min:0.01'],
+            'status'          => ['nullable', 'in:active,paid'],
         ];
     }
 

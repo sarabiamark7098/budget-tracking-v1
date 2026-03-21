@@ -15,22 +15,31 @@ class StoreCryptoRequest extends FormRequest
 
     public function rules(): array
     {
+        $btId = $this->attributes->get('budgetTracking')?->id;
+
         return [
             'coin_name' => ['required', 'string', 'max:255'],
-            'symbol' => ['required', 'string', 'max:20'],
-            'quantity' => ['required', 'numeric', 'min:0'],
-            'buy_price' => ['required', 'numeric', 'min:0'],
-            'current_price' => ['required', 'numeric', 'min:0'],
-            'purchase_date' => ['required', 'date'],
-            'wallet_address' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string'],
+            'symbol'    => [
+                'required', 'string', 'max:20',
+                \Illuminate\Validation\Rule::unique('crypto_assets')->where('budget_tracking_id', $btId),
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'symbol.unique' => 'This coin symbol already exists in your portfolio.',
         ];
     }
 
     protected function failedValidation(Validator $validator): void
     {
+        $errors  = $validator->errors();
+        $message = $errors->first() ?: 'Validation failed';
+
         throw new HttpResponseException(
-            response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422)
+            response()->json(['success' => false, 'message' => $message, 'errors' => $errors], 422)
         );
     }
 }

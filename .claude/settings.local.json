@@ -21,7 +21,31 @@
       "Bash(mysql -u root -e \"CREATE DATABASE IF NOT EXISTS dev_budget_tracking_test;\")",
       "Bash(npm run:*)",
       "Bash(grep -rn \"from ''@/utils/date''\" resources/js --include=\"*.vue\" --include=\"*.js\")",
-      "Bash(find /c/laragon/www/budget-tracking-v1 -type f -name *budget*tracking*)"
+      "Bash(find /c/laragon/www/budget-tracking-v1 -type f -name *budget*tracking*)",
+      "Bash(php -r \"require ''C:/laragon/www/budget-tracking-v1/vendor/autoload.php''; echo ''OK'';\")",
+      "Bash(php -r \"require ''vendor/autoload.php''; echo ''OK'';\")",
+      "Bash(php -l app/Services/DashboardService.php)",
+      "Bash(php -l app/Services/DebtService.php)",
+      "Bash(php -l app/Models/BudgetTracking.php)",
+      "Bash(php -l app/Models/Payment.php)",
+      "Bash(find C:laragonwwwbudget-tracking-v1appHttpControllersAPIV1 -name *Investment* -o -name *Stock* -o -name *Crypto*)",
+      "Bash(find C:laragonwwwbudget-tracking-v1appHttpResources -name *Investment* -o -name *Stock* -o -name *Crypto*)",
+      "Bash(find C:laragonwwwbudget-tracking-v1appHttpRequests -name *Investment* -o -name *Stock* -o -name *Crypto*)",
+      "Bash(ls -la \"C:\\\\laragon\\\\www\\\\budget-tracking-v1\\\\app\\\\Http\\\\Requests\\\\Insurance\"\" 2>/dev/null || echo \"Directory does not exist \")",
+      "Bash(grep -n \"User::factory\\(\\)->create\\\\|actingAs\\\\|$user\\\\|$other\" tests/Feature/Budget/BudgetTest.php)",
+      "Bash(grep -n \"User::factory\\(\\)->create\\\\|actingAs\\\\|$user\\\\|$other\" tests/Feature/Category/CategoryTest.php)",
+      "Bash(php -r \":*)",
+      "Bash(grep -n \"abort_if\\\\|budget_tracking_id\\\\|$this->budget\" app/Http/Controllers/API/V1/Expense/ExpenseController.php app/Http/Controllers/API/V1/Income/IncomeController.php app/Http/Controllers/API/V1/Debt/DebtController.php)",
+      "Bash(vendor/bin/phpunit tests/Feature/Category/CategoryTest.php --filter=\"test_can_create_custom_category\" --display-errors --display-exceptions)",
+      "Bash(vendor/bin/phpunit tests/Feature/Category/CategoryTest.php --filter=\"test_can_create_custom_category\" --display-errors)",
+      "Bash(find app:*)",
+      "Bash(xargs grep:*)",
+      "Bash(php -r \"echo PHP_BINARY . PHP_EOL; phpinfo\\(INFO_GENERAL\\);\")",
+      "Bash(php -r \"require ''C:/laragon/www/budget-tracking-v1/vendor/autoload.php''; $s = new \\\\PhpOffice\\\\PhpSpreadsheet\\\\Spreadsheet\\(\\); echo ''PhpSpreadsheet OK - v'' . \\\\PhpOffice\\\\PhpSpreadsheet\\\\Spreadsheet::VERSION . PHP_EOL;\")",
+      "Bash(php -r \"require ''vendor/autoload.php''; echo class_exists\\(''PhpOffice\\\\PhpSpreadsheet\\\\Spreadsheet''\\) ? ''OK'' : ''MISSING'';\")",
+      "Bash(php -r \"require ''vendor/autoload.php''; echo \\\\PhpOffice\\\\PhpSpreadsheet\\\\Spreadsheet::VERSION;\")",
+      "Bash(composer show:*)",
+      "Bash(1:*)"
     ]
   }
 }

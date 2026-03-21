@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Debt\StoreDebtRequest;
 use App\Http\Requests\Debt\UpdateDebtRequest;
 use App\Http\Resources\Debt\DebtResource;
+use App\Http\Resources\Payment\PaymentResource;
 use App\Models\Debt;
 use App\Services\DebtService;
 use App\Traits\ApiResponseTrait;
@@ -21,7 +22,7 @@ class DebtController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['type', 'status', 'per_page']);
-        $debts = $this->service->getAll($this->budget($request), $filters);
+        $debts   = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(DebtResource::collection($debts)->response()->getData(true));
     }
 
@@ -53,52 +54,71 @@ class DebtController extends Controller
     }
 
     /**
-     * GET /api/v1/debts/{debt}/amortization
-     * Returns a full monthly amortization schedule for the debt.
-     * Optional query params: duration_months, fixed_payment
+     * GET /api/v1/debts/{debt}/balance
+     * Returns the current balance due for a business debt (readonly preview for the Pay modal).
      */
-    public function amortization(Request $request, Debt $debt): JsonResponse
+    public function balance(Request $request, Debt $debt): JsonResponse
     {
         abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        abort_if($debt->type !== 'business', 422, 'Balance calculation is only for business debts');
 
-        $durationMonths = (int) ($request->query('duration_months', 12));
-        $fixedPayment   = $request->query('fixed_payment') ? (float) $request->query('fixed_payment') : null;
-
-        $schedule = $this->service->amortizationSchedule(
-            (float) $debt->amount,
-            (float) $debt->interest_rate,
-            $durationMonths,
-            $fixedPayment
-        );
-
-        return $this->respondSuccess([
-            'debt'         => new DebtResource($debt),
-            'amortization' => $schedule,
-        ]);
+        return $this->respondSuccess($this->service->businessBalanceDue($debt));
     }
 
     /**
-     * GET /api/v1/debts/{debt}/accrual
-     * Returns daily interest accrual calculation for a business debt.
-     * Query params: days_elapsed, total_paid
+     * POST /api/v1/debts/{debt}/pay
+     * Unified pay endpoint for all debt types/modes.
+     *
+     * Personal / shop_pay_later  → pays off full remaining balance
+     * Personal / pay_installment → records next monthly installment
+     * Business                   → amount required in request body; splits into interest + principal
      */
-    public function accrual(Request $request, Debt $debt): JsonResponse
+    public function pay(Request $request, Debt $debt): JsonResponse
     {
         abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
 
-        $daysElapsed = (int) ($request->query('days_elapsed', 0));
-        $totalPaid   = (float) ($request->query('total_paid', $debt->payments()->sum('amount')));
+        if ($debt->status === 'paid') {
+            return response()->json(['success' => false, 'message' => 'This debt is already fully paid.'], 422);
+        }
 
-        $accrual = $this->service->dailyInterestAccrual(
-            (float) $debt->amount,
-            (float) $debt->interest_rate,
-            $daysElapsed,
-            $totalPaid
-        );
+        if ($debt->type === 'business') {
+            $request->validate([
+                'amount' => ['required', 'numeric', 'min:0.01'],
+            ]);
 
-        return $this->respondSuccess([
-            'debt'    => new DebtResource($debt),
-            'accrual' => $accrual,
-        ]);
+            [$payment, $breakdown] = $this->service->payBusiness(
+                $debt,
+                auth()->user(),
+                (float) $request->input('amount')
+            );
+
+            $debt->load('payments');
+
+            return $this->respondSuccess([
+                'payment'   => new PaymentResource($payment),
+                'debt'      => new DebtResource($debt),
+                'breakdown' => $breakdown,
+            ], 'Payment recorded');
+        }
+
+        if ($debt->personal_mode === 'shop_pay_later') {
+            $payment = $this->service->payShopPayLater($debt, auth()->user());
+            $debt->load('payments');
+            return $this->respondSuccess([
+                'payment' => new PaymentResource($payment),
+                'debt'    => new DebtResource($debt),
+            ], 'Payment recorded');
+        }
+
+        if ($debt->personal_mode === 'pay_installment') {
+            $payment = $this->service->payInstallment($debt, auth()->user());
+            $debt->load('payments');
+            return $this->respondSuccess([
+                'payment' => new PaymentResource($payment),
+                'debt'    => new DebtResource($debt),
+            ], 'Installment recorded');
+        }
+
+        return response()->json(['success' => false, 'message' => 'Unknown debt mode.'], 422);
     }
 }

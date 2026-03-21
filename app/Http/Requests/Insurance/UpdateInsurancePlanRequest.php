@@ -16,15 +16,15 @@ class UpdateInsurancePlanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'provider_name' => ['nullable', 'string', 'max:255'],
-            'plan_name' => ['nullable', 'string', 'max:255'],
-            'coverage_type' => ['nullable', 'string', 'max:255'],
-            'coverage_amount' => ['nullable', 'numeric', 'min:0'],
-            'premium_amount' => ['nullable', 'numeric', 'min:0'],
+            'provider_name'     => ['nullable', 'string', 'max:255'],
+            'plan_name'         => ['nullable', 'string', 'max:255'],
+            'coverage_type'     => ['nullable', 'array'],
+            'coverage_type.*'   => ['string', 'in:life,health,vehicle,property,travel,other'],
+            'coverage_amount'   => ['nullable', 'numeric', 'min:0'],
+            'premium_amount'    => ['nullable', 'numeric', 'min:0'],
             'payment_frequency' => ['nullable', 'in:monthly,quarterly,semi_annually,annually'],
-            'next_payment_date' => ['nullable', 'date'],
-            'policy_number' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'policy_number'     => ['nullable', 'string', 'max:255'],
+            'notes'             => ['nullable', 'string'],
         ];
     }
 

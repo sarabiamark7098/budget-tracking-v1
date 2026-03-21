@@ -3,7 +3,6 @@
 namespace Tests\Feature\Investment;
 
 use App\Models\Investment;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,13 +12,13 @@ class InvestmentTest extends TestCase
 
     public function test_can_create_investment(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/investments', [
-            'name' => 'Apple Stocks',
-            'type' => 'stocks',
+            'name'            => 'Apple Stocks',
+            'type'            => 'stocks',
             'amount_invested' => 100000,
-            'current_value' => 120000,
-            'purchase_date' => '2024-01-01',
+            'current_value'   => 120000,
+            'purchase_date'   => '2024-01-01',
         ]);
 
         $response->assertStatus(201)
@@ -29,14 +28,15 @@ class InvestmentTest extends TestCase
 
     public function test_can_get_portfolio_summary(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         Investment::create([
-            'user_id' => $user->id,
-            'name' => 'Stock Portfolio',
-            'type' => 'stocks',
-            'amount_invested' => 100000,
-            'current_value' => 120000,
-            'purchase_date' => '2024-01-01',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'name'               => 'Stock Portfolio',
+            'type'               => 'stocks',
+            'amount_invested'    => 100000,
+            'current_value'      => 120000,
+            'purchase_date'      => '2024-01-01',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/investments/portfolio');
@@ -45,14 +45,15 @@ class InvestmentTest extends TestCase
 
     public function test_portfolio_includes_roi(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         Investment::create([
-            'user_id' => $user->id,
-            'name' => 'Test Investment',
-            'type' => 'mutual_fund',
-            'amount_invested' => 100000,
-            'current_value' => 120000,
-            'purchase_date' => '2024-01-01',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'name'               => 'Test Investment',
+            'type'               => 'mutual_fund',
+            'amount_invested'    => 100000,
+            'current_value'      => 120000,
+            'purchase_date'      => '2024-01-01',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/investments');
@@ -64,22 +65,23 @@ class InvestmentTest extends TestCase
 
     public function test_can_update_investment(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $investment = Investment::create([
-            'user_id' => $user->id,
-            'name' => 'Old Investment',
-            'type' => 'stocks',
-            'amount_invested' => 50000,
-            'current_value' => 55000,
-            'purchase_date' => '2024-01-01',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'name'               => 'Old Investment',
+            'type'               => 'stocks',
+            'amount_invested'    => 50000,
+            'current_value'      => 55000,
+            'purchase_date'      => '2024-01-01',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/investments/{$investment->id}", [
-            'name' => 'Updated Investment',
-            'type' => 'stocks',
+            'name'            => 'Updated Investment',
+            'type'            => 'stocks',
             'amount_invested' => 50000,
-            'current_value' => 70000,
-            'purchase_date' => '2024-01-01',
+            'current_value'   => 70000,
+            'purchase_date'   => '2024-01-01',
         ]);
 
         $response->assertOk()->assertJsonPath('data.name', 'Updated Investment');
@@ -87,14 +89,15 @@ class InvestmentTest extends TestCase
 
     public function test_can_delete_investment(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $investment = Investment::create([
-            'user_id' => $user->id,
-            'name' => 'To Delete',
-            'type' => 'other',
-            'amount_invested' => 10000,
-            'current_value' => 11000,
-            'purchase_date' => '2024-01-01',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'name'               => 'To Delete',
+            'type'               => 'other',
+            'amount_invested'    => 10000,
+            'current_value'      => 11000,
+            'purchase_date'      => '2024-01-01',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/investments/{$investment->id}");
@@ -103,12 +106,12 @@ class InvestmentTest extends TestCase
 
     public function test_investment_validation_requires_type(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/investments', [
-            'name' => 'No Type',
+            'name'            => 'No Type',
             'amount_invested' => 10000,
-            'current_value' => 12000,
-            'purchase_date' => '2024-01-01',
+            'current_value'   => 12000,
+            'purchase_date'   => '2024-01-01',
         ]);
 
         $response->assertStatus(422)->assertJsonPath('success', false);
@@ -116,15 +119,16 @@ class InvestmentTest extends TestCase
 
     public function test_cannot_access_other_users_investment(): void
     {
-        $user = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $user      = $this->createUser();
+        $otherUser = $this->createUser();
         $investment = Investment::create([
-            'user_id' => $otherUser->id,
-            'name' => 'Other Investment',
-            'type' => 'stocks',
-            'amount_invested' => 50000,
-            'current_value' => 60000,
-            'purchase_date' => '2024-01-01',
+            'user_id'            => $otherUser->id,
+            'budget_tracking_id' => $this->getBT($otherUser)->id,
+            'name'               => 'Other Investment',
+            'type'               => 'stocks',
+            'amount_invested'    => 50000,
+            'current_value'      => 60000,
+            'purchase_date'      => '2024-01-01',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/investments/{$investment->id}");

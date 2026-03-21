@@ -10,17 +10,13 @@ class AuthService
 {
     public function register(array $data): User
     {
-        $user = User::create([
+        return User::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
             'password' => Hash::make($data['password']),
             'currency' => $data['currency'] ?? 'PHP',
             'timezone' => $data['timezone'] ?? 'Asia/Manila',
         ]);
-
-        // No budget tracker is created automatically.
-        // The user will be prompted to create or join a tracker after registration.
-        return $user;
     }
 
     public function login(array $credentials): array

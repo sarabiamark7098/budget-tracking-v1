@@ -14,22 +14,24 @@ class Debt extends Model
     protected $fillable = [
         'user_id',
         'budget_tracking_id',
+        'type',
+        'personal_mode',
         'lender_name',
+        'borrower_name',
+        'business_name',
         'amount',
         'remaining_balance',
         'interest_rate',
-        'due_date',
-        'description',
+        'months_to_pay',
+        'monthly_payment',
         'status',
-        'type',
-        'business_name',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount'           => 'decimal:2',
         'remaining_balance' => 'decimal:2',
-        'interest_rate' => 'decimal:2',
-        'due_date' => 'date',
+        'interest_rate'    => 'decimal:3',
+        'monthly_payment'  => 'decimal:2',
     ];
 
     public function budgetTracking(): BelongsTo
@@ -44,6 +46,6 @@ class Debt extends Model
 
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(Payment::class)->orderBy('installment_number')->orderBy('created_at');
     }
 }

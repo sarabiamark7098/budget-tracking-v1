@@ -14,14 +14,12 @@ class BudgetTest extends TestCase
 
     public function test_can_create_budget(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/budgets', [
             'name' => 'Monthly Food Budget',
             'amount' => 10000,
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
-            'alert_threshold' => 80,
         ]);
 
         $response->assertStatus(201)
@@ -31,12 +29,11 @@ class BudgetTest extends TestCase
 
     public function test_budget_validation_requires_amount(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/budgets', [
             'name' => 'Budget without amount',
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response->assertStatus(422)->assertJsonPath('success', false);
@@ -44,14 +41,14 @@ class BudgetTest extends TestCase
 
     public function test_can_list_budgets(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         Budget::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
             'name' => 'Test Budget',
             'amount' => 10000,
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/budgets');
@@ -60,14 +57,14 @@ class BudgetTest extends TestCase
 
     public function test_budget_summary_returns_spent_remaining_percentage(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         Budget::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
             'name' => 'Food Budget',
             'amount' => 10000,
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/budgets/summary');
@@ -76,15 +73,15 @@ class BudgetTest extends TestCase
 
     public function test_cannot_access_other_users_budget(): void
     {
-        $user = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $user      = $this->createUser();
+        $otherUser = $this->createUser();
         $budget = Budget::create([
-            'user_id' => $otherUser->id,
-            'name' => 'Other Budget',
-            'amount' => 5000,
-            'period' => 'monthly',
-            'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
+            'user_id'            => $otherUser->id,
+            'budget_tracking_id' => $this->getBT($otherUser)->id,
+            'name'               => 'Other Budget',
+            'amount'             => 5000,
+            'period'             => 'monthly',
+            'start_date'         => now()->startOfMonth()->toDateString(),
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/budgets/{$budget->id}");
@@ -93,14 +90,14 @@ class BudgetTest extends TestCase
 
     public function test_can_show_budget_with_computed_attributes(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $budget = Budget::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
             'name' => 'Test Budget',
             'amount' => 10000,
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/budgets/{$budget->id}");
@@ -111,14 +108,14 @@ class BudgetTest extends TestCase
 
     public function test_can_update_budget(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $budget = Budget::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
             'name' => 'Old Name',
             'amount' => 5000,
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/budgets/{$budget->id}", [
@@ -126,7 +123,6 @@ class BudgetTest extends TestCase
             'amount' => 10000,
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response->assertOk()->assertJsonPath('data.name', 'Updated Budget');
@@ -134,14 +130,14 @@ class BudgetTest extends TestCase
 
     public function test_can_delete_budget(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $budget = Budget::create([
             'user_id' => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
             'name' => 'To Delete',
             'amount' => 5000,
             'period' => 'monthly',
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/budgets/{$budget->id}");
@@ -150,12 +146,11 @@ class BudgetTest extends TestCase
 
     public function test_budget_validation_requires_period(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/budgets', [
             'name' => 'Budget',
             'amount' => 10000,
             'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
         ]);
 
         $response->assertStatus(422)->assertJsonPath('success', false);

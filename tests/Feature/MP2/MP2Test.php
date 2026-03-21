@@ -15,8 +15,7 @@ class MP2Test extends TestCase
     {
         $response = $this->postJson('/api/v1/mp2/calculate', [
             'monthly_contribution' => 1000,
-            'duration_years' => 5,
-            'start_date' => '2024-01-01',
+            'duration_years'       => 5,
         ]);
 
         $response->assertOk()
@@ -33,8 +32,7 @@ class MP2Test extends TestCase
     {
         $response = $this->postJson('/api/v1/mp2/calculate', [
             'monthly_contribution' => 2000,
-            'duration_years' => 3,
-            'start_date' => '2024-01-01',
+            'duration_years'       => 3,
         ]);
 
         $response->assertOk();
@@ -45,8 +43,7 @@ class MP2Test extends TestCase
     {
         $response = $this->postJson('/api/v1/mp2/calculate', [
             'monthly_contribution' => 5000,
-            'duration_years' => 5,
-            'start_date' => '2024-01-01',
+            'duration_years'       => 5,
         ]);
 
         $response->assertOk();
@@ -58,8 +55,7 @@ class MP2Test extends TestCase
     {
         $response = $this->postJson('/api/v1/mp2/calculate', [
             'monthly_contribution' => 1000,
-            'duration_years' => 7,
-            'start_date' => '2024-01-01',
+            'duration_years'       => 7,
         ]);
 
         $response->assertOk();
@@ -68,12 +64,12 @@ class MP2Test extends TestCase
 
     public function test_can_save_mp2_plan(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/mp2-plans', [
-            'name' => 'Retirement MP2',
+            'name'                 => 'Retirement MP2',
             'monthly_contribution' => 3000,
-            'duration_years' => 10,
-            'start_date' => '2024-01-01',
+            'duration_years'       => 10,
+            'start_date'           => '2024-01-01',
         ]);
 
         $response->assertStatus(201)
@@ -83,15 +79,16 @@ class MP2Test extends TestCase
 
     public function test_can_list_mp2_plans(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         MP2Plan::create([
-            'user_id' => $user->id,
-            'name' => 'My MP2',
+            'user_id'              => $user->id,
+            'budget_tracking_id'   => $this->getBT($user)->id,
+            'name'                 => 'My MP2',
             'monthly_contribution' => 2000,
-            'duration_years' => 5,
-            'start_date' => '2024-01-01',
-            'projected_earnings' => 50000,
-            'total_contributions' => 120000,
+            'duration_years'       => 5,
+            'start_date'           => '2024-01-01',
+            'projected_earnings'   => 50000,
+            'total_contributions'  => 120000,
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/mp2-plans');
@@ -100,22 +97,23 @@ class MP2Test extends TestCase
 
     public function test_can_update_mp2_plan(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $plan = MP2Plan::create([
-            'user_id' => $user->id,
-            'name' => 'Old MP2',
+            'user_id'              => $user->id,
+            'budget_tracking_id'   => $this->getBT($user)->id,
+            'name'                 => 'Old MP2',
             'monthly_contribution' => 1000,
-            'duration_years' => 5,
-            'start_date' => '2024-01-01',
-            'projected_earnings' => 20000,
-            'total_contributions' => 60000,
+            'duration_years'       => 5,
+            'start_date'           => '2024-01-01',
+            'projected_earnings'   => 20000,
+            'total_contributions'  => 60000,
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/mp2-plans/{$plan->id}", [
-            'name' => 'Updated MP2',
+            'name'                 => 'Updated MP2',
             'monthly_contribution' => 2000,
-            'duration_years' => 5,
-            'start_date' => '2024-01-01',
+            'duration_years'       => 5,
+            'start_date'           => '2024-01-01',
         ]);
 
         $response->assertOk()->assertJsonPath('data.name', 'Updated MP2');
@@ -123,15 +121,16 @@ class MP2Test extends TestCase
 
     public function test_can_delete_mp2_plan(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $plan = MP2Plan::create([
-            'user_id' => $user->id,
-            'name' => 'To Delete',
+            'user_id'              => $user->id,
+            'budget_tracking_id'   => $this->getBT($user)->id,
+            'name'                 => 'To Delete',
             'monthly_contribution' => 1000,
-            'duration_years' => 5,
-            'start_date' => '2024-01-01',
-            'projected_earnings' => 20000,
-            'total_contributions' => 60000,
+            'duration_years'       => 5,
+            'start_date'           => '2024-01-01',
+            'projected_earnings'   => 20000,
+            'total_contributions'  => 60000,
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/mp2-plans/{$plan->id}");
@@ -141,11 +140,11 @@ class MP2Test extends TestCase
 
     public function test_mp2_plans_only_shows_own_records(): void
     {
-        $user = User::factory()->create();
-        $other = User::factory()->create();
+        $user  = $this->createUser();
+        $other = $this->createUser();
 
-        MP2Plan::create(['user_id' => $user->id, 'name' => 'Mine', 'monthly_contribution' => 1000, 'duration_years' => 5, 'start_date' => '2024-01-01', 'projected_earnings' => 0, 'total_contributions' => 0]);
-        MP2Plan::create(['user_id' => $other->id, 'name' => 'Theirs', 'monthly_contribution' => 1000, 'duration_years' => 5, 'start_date' => '2024-01-01', 'projected_earnings' => 0, 'total_contributions' => 0]);
+        MP2Plan::create(['user_id' => $user->id, 'budget_tracking_id' => $this->getBT($user)->id, 'name' => 'Mine', 'monthly_contribution' => 1000, 'duration_years' => 5, 'start_date' => '2024-01-01', 'projected_earnings' => 0, 'total_contributions' => 0]);
+        MP2Plan::create(['user_id' => $other->id, 'budget_tracking_id' => $this->getBT($other)->id, 'name' => 'Theirs', 'monthly_contribution' => 1000, 'duration_years' => 5, 'start_date' => '2024-01-01', 'projected_earnings' => 0, 'total_contributions' => 0]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/mp2-plans');
         $response->assertOk();

@@ -15,28 +15,27 @@ class InsurancePlanTest extends TestCase
     private function makePlan(User $user, array $overrides = []): InsurancePlan
     {
         return InsurancePlan::create(array_merge([
-            'user_id' => $user->id,
-            'provider_name' => 'Sun Life',
-            'plan_name' => 'Life Insurance',
-            'coverage_type' => 'Life',
-            'coverage_amount' => 1000000,
-            'premium_amount' => 5000,
-            'payment_frequency' => 'monthly',
-            'next_payment_date' => '2024-02-01',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'provider_name'      => 'Sun Life',
+            'plan_name'          => 'Life Insurance',
+            'coverage_type'      => ['life'],
+            'coverage_amount'    => 1000000,
+            'premium_amount'     => 5000,
+            'payment_frequency'  => 'monthly',
         ], $overrides));
     }
 
     public function test_can_create_insurance_plan(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/insurance-plans', [
-            'provider_name' => 'AXA',
-            'plan_name' => 'Health Shield',
-            'coverage_type' => 'Health',
-            'coverage_amount' => 500000,
-            'premium_amount' => 2500,
+            'provider_name'     => 'AXA',
+            'plan_name'         => 'Health Shield',
+            'coverage_type'     => ['health'],
+            'coverage_amount'   => 500000,
+            'premium_amount'    => 2500,
             'payment_frequency' => 'monthly',
-            'next_payment_date' => '2024-02-01',
         ]);
 
         $response->assertStatus(201)
@@ -46,7 +45,7 @@ class InsurancePlanTest extends TestCase
 
     public function test_can_list_insurance_plans(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $this->makePlan($user);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/insurance-plans');
@@ -55,9 +54,9 @@ class InsurancePlanTest extends TestCase
 
     public function test_cannot_access_other_users_insurance_plan(): void
     {
-        $user = User::factory()->create();
-        $other = User::factory()->create();
-        $plan = $this->makePlan($other);
+        $user  = $this->createUser();
+        $other = $this->createUser();
+        $plan  = $this->makePlan($other);
 
         $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/insurance-plans/{$plan->id}");
         $response->assertStatus(403);
@@ -65,17 +64,16 @@ class InsurancePlanTest extends TestCase
 
     public function test_can_update_insurance_plan(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $plan = $this->makePlan($user);
 
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/insurance-plans/{$plan->id}", [
-            'provider_name' => 'Manulife',
-            'plan_name' => 'Updated Plan',
-            'coverage_type' => 'Life',
-            'coverage_amount' => 2000000,
-            'premium_amount' => 6000,
+            'provider_name'     => 'Manulife',
+            'plan_name'         => 'Updated Plan',
+            'coverage_type'     => ['life'],
+            'coverage_amount'   => 2000000,
+            'premium_amount'    => 6000,
             'payment_frequency' => 'annually',
-            'next_payment_date' => '2025-01-01',
         ]);
 
         $response->assertOk()->assertJsonPath('data.plan_name', 'Updated Plan');
@@ -83,7 +81,7 @@ class InsurancePlanTest extends TestCase
 
     public function test_can_delete_insurance_plan(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $plan = $this->makePlan($user);
 
         $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/insurance-plans/{$plan->id}");
@@ -93,14 +91,14 @@ class InsurancePlanTest extends TestCase
 
     public function test_can_record_insurance_payment(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $plan = $this->makePlan($user);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/insurance-payments', [
             'insurance_plan_id' => $plan->id,
-            'amount' => 5000,
-            'payment_date' => '2024-01-01',
-            'note' => 'January payment',
+            'amount'            => 5000,
+            'payment_date'      => '2024-01-01',
+            'note'              => 'January payment',
         ]);
 
         $response->assertStatus(201)->assertJsonPath('success', true);
@@ -109,13 +107,14 @@ class InsurancePlanTest extends TestCase
 
     public function test_can_list_insurance_payments(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $plan = $this->makePlan($user);
         InsurancePayment::create([
-            'user_id' => $user->id,
-            'insurance_plan_id' => $plan->id,
-            'amount' => 5000,
-            'payment_date' => '2024-01-01',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'insurance_plan_id'  => $plan->id,
+            'amount'             => 5000,
+            'payment_date'       => '2024-01-01',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/insurance-payments');
@@ -124,9 +123,9 @@ class InsurancePlanTest extends TestCase
 
     public function test_insurance_plan_creation_requires_provider(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/insurance-plans', [
-            'plan_name' => 'Missing Provider',
+            'plan_name'       => 'Missing Provider',
             'coverage_amount' => 500000,
         ]);
         $response->assertStatus(422)->assertJsonPath('success', false);
@@ -134,8 +133,8 @@ class InsurancePlanTest extends TestCase
 
     public function test_insurance_plans_only_shows_own_records(): void
     {
-        $user = User::factory()->create();
-        $other = User::factory()->create();
+        $user  = $this->createUser();
+        $other = $this->createUser();
 
         $this->makePlan($user);
         $this->makePlan($other);

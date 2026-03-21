@@ -16,14 +16,15 @@ class StoreDebtRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'lender_name' => ['required', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'remaining_balance' => ['nullable', 'numeric', 'min:0'],
-            'interest_rate' => ['nullable', 'numeric', 'min:0'],
-            'due_date' => ['nullable', 'date'],
-            'description' => ['nullable', 'string'],
-            'type' => ['required', 'in:personal,business'],
-            'business_name' => ['required_if:type,business', 'nullable', 'string', 'max:255'],
+            'type'            => ['required', 'in:personal,business'],
+            'personal_mode'   => ['required_if:type,personal', 'nullable', 'in:shop_pay_later,pay_installment'],
+            'lender_name'     => ['required', 'string', 'max:255'],
+            'borrower_name'   => ['required_if:type,business', 'nullable', 'string', 'max:255'],
+            'business_name'   => ['nullable', 'string', 'max:255'],
+            'amount'          => ['required', 'numeric', 'min:0.01'],
+            'interest_rate'   => ['required_if:type,business', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'months_to_pay'   => ['required_if:personal_mode,pay_installment', 'nullable', 'integer', 'min:1'],
+            'monthly_payment' => ['required_if:personal_mode,pay_installment', 'nullable', 'numeric', 'min:0.01'],
         ];
     }
 

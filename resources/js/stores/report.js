@@ -24,13 +24,16 @@ export const useReportStore = defineStore('report', () => {
 
     async function exportCsv(params = {}) {
         const response = await reportService.exportCsv(params);
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        const url  = window.URL.createObjectURL(new Blob([response.data], { type: mime }));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', 'report.csv');
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
+        link.setAttribute('download', `full_report_${date}.xlsx`);
         document.body.appendChild(link);
         link.click();
         link.remove();
+        window.URL.revokeObjectURL(url);
     }
 
     async function exportPdf(params = {}) {

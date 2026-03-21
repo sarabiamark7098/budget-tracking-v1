@@ -16,15 +16,15 @@ class StoreInsurancePlanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'provider_name' => ['required', 'string', 'max:255'],
-            'plan_name' => ['required', 'string', 'max:255'],
-            'coverage_type' => ['required', 'string', 'max:255'],
-            'coverage_amount' => ['required', 'numeric', 'min:0'],
-            'premium_amount' => ['required', 'numeric', 'min:0'],
+            'provider_name'     => ['required', 'string', 'max:255'],
+            'plan_name'         => ['required', 'string', 'max:255'],
+            'coverage_type'     => ['required', 'array', 'min:1'],
+            'coverage_type.*'   => ['string', 'in:life,health,vehicle,property,travel,other'],
+            'coverage_amount'   => ['nullable', 'numeric', 'min:0'],
+            'premium_amount'    => ['required', 'numeric', 'min:0'],
             'payment_frequency' => ['required', 'in:monthly,quarterly,semi_annually,annually'],
-            'next_payment_date' => ['required', 'date'],
-            'policy_number' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'policy_number'     => ['nullable', 'string', 'max:255'],
+            'notes'             => ['nullable', 'string'],
         ];
     }
 

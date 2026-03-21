@@ -27,6 +27,7 @@ export const useCryptoStore = defineStore('crypto', () => {
     async function create(formData) {
         const { data } = await cryptoService.create(formData);
         items.value.unshift(data.data);
+        await fetchPortfolio();
         return data.data;
     }
 
@@ -40,7 +41,27 @@ export const useCryptoStore = defineStore('crypto', () => {
     async function remove(id) {
         await cryptoService.delete(id);
         items.value = items.value.filter(i => i.id !== id);
+        await fetchPortfolio();
     }
 
-    return { items, loading, pagination, portfolio, fetchAll, fetchPortfolio, create, update, remove };
+    async function fetchLots(cryptoId) {
+        const { data } = await cryptoService.getLots(cryptoId);
+        return data.data.lots ?? [];
+    }
+
+    async function addLot(cryptoId, formData) {
+        const { data } = await cryptoService.addLot(cryptoId, formData);
+        await fetchPortfolio();
+        return data.data;
+    }
+
+    async function updatePrice(cryptoId, price) {
+        const { data } = await cryptoService.updatePrice(cryptoId, { latest_price: price });
+        const idx = items.value.findIndex(i => i.id === cryptoId);
+        if (idx !== -1) items.value[idx] = data.data;
+        await fetchPortfolio();
+        return data.data;
+    }
+
+    return { items, loading, pagination, portfolio, fetchAll, fetchPortfolio, create, update, remove, fetchLots, addLot, updatePrice };
 });

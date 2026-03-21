@@ -22,16 +22,14 @@
           <tr>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Source</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Category</th>
             <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
             <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Recurring</th>
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="store.items.length === 0">
-            <td colspan="7" class="text-center py-10 text-gray-400">No income records found</td>
+            <td colspan="5" class="text-center py-10 text-gray-400">No income records found</td>
           </tr>
           <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
             <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
@@ -41,13 +39,8 @@
               </span>
               <span v-else class="text-gray-400 text-xs">—</span>
             </td>
-            <td class="px-4 py-3 text-gray-500">{{ item.category?.name ?? '—' }}</td>
             <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
             <td class="px-4 py-3 text-gray-500">{{ formatDate(item.received_at) }}</td>
-            <td class="px-4 py-3">
-              <span v-if="item.is_recurring" class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">{{ item.recurrence_interval }}</span>
-              <span v-else class="text-gray-400 text-xs">One-time</span>
-            </td>
             <td class="px-4 py-3">
               <div class="flex gap-2 justify-end">
                 <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
@@ -91,7 +84,8 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
-            <input v-model="form.amount" type="number" min="0" step="0.01" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input v-model="form.amount" type="number" min="0.01" step="0.01" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <p class="text-xs text-gray-400 mt-1">Amount must be greater than zero</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Date Received *</label>
@@ -104,23 +98,6 @@
               <option v-for="s in INCOME_SOURCES" :key="s.value" :value="s.value">{{ s.label }}</option>
             </select>
             <p v-if="form.source" class="mt-1 text-xs text-gray-400">{{ INCOME_SOURCES.find(s => s.value === form.source)?.description }}</p>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea v-model="form.description" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
-          </div>
-          <div class="flex items-center gap-2">
-            <input v-model="form.is_recurring" type="checkbox" id="income-recurring" class="rounded" />
-            <label for="income-recurring" class="text-sm text-gray-700">Recurring income</label>
-          </div>
-          <div v-if="form.is_recurring">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Interval</label>
-            <select v-model="form.recurrence_interval" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
           </div>
           <div v-if="formError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ formError }}</div>
           <div class="flex justify-end gap-3 pt-2">
@@ -202,13 +179,10 @@ const formError = ref('');
 const filters = ref({ date_from: '', date_to: '', search: '' });
 
 const defaultForm = () => ({
-  title:               '',
-  amount:              '',
-  received_at:         new Date().toISOString().split('T')[0],
-  source:              '',   // one of INCOME_SOURCES values or ''
-  description:         '',
-  is_recurring:        false,
-  recurrence_interval: 'monthly',
+  title:       '',
+  amount:      '',
+  received_at: new Date().toISOString().split('T')[0],
+  source:      '',
 });
 
 const form = ref(defaultForm());
@@ -220,7 +194,12 @@ function formatCurrency(val) {
 function openModal(item = null) {
   editing.value = item;
   form.value = item
-    ? { ...item, received_at: item.received_at?.split('T')[0] ?? item.received_at }
+    ? {
+        title:       item.title,
+        amount:      item.amount,
+        received_at: item.received_at?.split('T')[0] ?? item.received_at,
+        source:      item.source ?? '',
+      }
     : defaultForm();
   formError.value = '';
   showModal.value = true;

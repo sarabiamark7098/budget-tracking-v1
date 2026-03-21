@@ -5,61 +5,122 @@
       <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add Purchase</button>
     </div>
 
+    <!-- Summary Cards -->
+    <div v-if="store.summary" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="bg-white rounded-xl shadow-sm p-5">
+        <p class="text-sm text-gray-500 mb-1">Total Purchases</p>
+        <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(store.summary.total_purchase) }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5">
+        <p class="text-sm text-gray-500 mb-1">Total Paid</p>
+        <p class="text-2xl font-bold text-green-600">{{ formatCurrency(store.summary.total_paid) }}</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-5">
+        <p class="text-sm text-gray-500 mb-1">Remaining Balance</p>
+        <p class="text-2xl font-bold" :class="store.summary.total_remaining > 0 ? 'text-red-600' : 'text-gray-500'">
+          {{ formatCurrency(store.summary.total_remaining) }}
+        </p>
+        <p class="text-xs text-gray-400 mt-1">Credit card balances only</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3">
+      <select v-model="filters.payment_method" class="border rounded-lg px-3 py-2 text-sm bg-white">
+        <option value="">All Payment Methods</option>
+        <option value="cash">Cash</option>
+        <option value="credit_card">Credit Card</option>
+        <option value="other">Other</option>
+      </select>
+      <input v-model="filters.search" type="text" class="border rounded-lg px-3 py-2 text-sm min-w-[180px]" placeholder="Search item..." />
+      <button @click="loadData" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">Filter</button>
+      <button @click="resetFilters" class="text-gray-400 text-sm px-2 py-2 hover:text-gray-600">Reset</button>
+    </div>
+
     <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
       <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
-      <div class="overflow-x-auto">
-        <table v-if="!store.loading" class="w-full text-sm">
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b">
             <tr>
               <th class="text-left px-4 py-3 text-gray-500 font-medium">Item</th>
+              <th class="text-left px-4 py-3 text-gray-500 font-medium">Payment</th>
               <th class="text-right px-4 py-3 text-gray-500 font-medium">Total Cost</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Type</th>
+              <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount Paid</th>
+              <th class="text-right px-4 py-3 text-gray-500 font-medium">Remaining</th>
               <th class="text-left px-4 py-3 text-gray-500 font-medium">Installments</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Purchase Date</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
+              <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="store.items.length === 0">
-              <td colspan="7" class="text-center py-10 text-gray-400">No purchases found</td>
+              <td colspan="8" class="text-center py-10 text-gray-400">No purchases found</td>
             </tr>
-            <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium text-gray-700">
-                <div>{{ item.item_name }}</div>
-                <div v-if="item.description" class="text-xs text-gray-400">{{ item.description }}</div>
-              </td>
-              <td class="px-4 py-3 text-right font-semibold text-gray-700">{{ formatCurrency(item.total_cost) }}</td>
-              <td class="px-4 py-3">
-                <span v-if="item.is_installment" class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Installment</span>
-                <span v-else class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">Full Pay</span>
-              </td>
-              <td class="px-4 py-3 text-gray-500">
-                <span v-if="item.is_installment">
-                  {{ item.paid_installments ?? 0 }} / {{ item.total_installments }} paid
-                  <span class="text-xs text-gray-400">({{ formatCurrency(item.installment_amount) }}/mo)</span>
-                </span>
-                <span v-else class="text-gray-400 text-xs">N/A</span>
-              </td>
-              <td class="px-4 py-3 text-gray-500">{{ formatDate(item.purchase_date) }}</td>
-              <td class="px-4 py-3">
-                <span class="text-xs px-2 py-1 rounded-full" :class="statusClass(item)">
-                  {{ itemStatus(item) }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex gap-2 justify-end flex-wrap">
-                  <button
-                    v-if="item.is_installment && (item.paid_installments ?? 0) < item.total_installments"
-                    @click="handlePayInstallment(item)"
-                    class="text-green-600 hover:text-green-800 text-xs px-2 py-1 border border-green-300 rounded bg-green-50 hover:bg-green-100"
-                  >Pay Installment</button>
-                  <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
-                  <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
-                </div>
-              </td>
-            </tr>
+            <template v-for="item in store.items" :key="item.id">
+              <tr class="border-b hover:bg-gray-50" :class="{ 'border-b-0': expandedId === item.id }">
+                <td class="px-4 py-3 font-medium text-gray-700">{{ item.item_name }}</td>
+                <td class="px-4 py-3">
+                  <span class="text-xs px-2 py-1 rounded-full font-medium" :class="methodClass(item.payment_method)">
+                    {{ methodLabel(item.payment_method) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right font-semibold text-gray-700">{{ formatCurrency(item.total_cost) }}</td>
+                <td class="px-4 py-3 text-right text-green-600">{{ formatCurrency(item.amount_paid) }}</td>
+                <td class="px-4 py-3 text-right" :class="item.remaining_balance > 0 ? 'text-red-600 font-semibold' : 'text-gray-400'">
+                  {{ formatCurrency(item.remaining_balance) }}
+                </td>
+                <td class="px-4 py-3 text-gray-500 text-xs">
+                  <template v-if="item.payment_method === 'credit_card'">
+                    <div>{{ item.installments_paid }} / {{ item.installment_count }} months paid</div>
+                    <div class="text-gray-400">{{ formatCurrency(item.installment_amount) }}/mo</div>
+                    <div v-if="item.remaining_installments > 0" class="text-amber-600">
+                      {{ item.remaining_installments }} months left
+                    </div>
+                    <div v-else class="text-green-600">Fully paid</div>
+                  </template>
+                  <span v-else class="text-gray-400">—</span>
+                </td>
+                <td class="px-4 py-3 text-gray-500">{{ formatDate(item.purchase_date) }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-2 justify-end flex-wrap">
+                    <button
+                      v-if="item.payment_method === 'credit_card' && item.remaining_installments > 0"
+                      @click="handlePayInstallment(item)"
+                      class="text-green-600 hover:text-green-800 text-xs px-2 py-1 border border-green-300 rounded bg-green-50 hover:bg-green-100"
+                    >Pay Month</button>
+                    <button
+                      v-if="item.payment_method === 'credit_card' && item.payments?.length"
+                      @click="expandedId = expandedId === item.id ? null : item.id"
+                      class="text-violet-500 hover:text-violet-700 text-xs px-2 py-1 border border-violet-200 rounded bg-violet-50 hover:bg-violet-100"
+                    >{{ expandedId === item.id ? 'Hide' : 'History' }}</button>
+                    <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
+                    <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Payment History expandable row -->
+              <tr v-if="expandedId === item.id && item.payments?.length" class="border-b bg-violet-50">
+                <td colspan="8" class="px-6 py-3">
+                  <p class="text-xs font-semibold text-violet-700 mb-2">Payment History</p>
+                  <div class="flex flex-wrap gap-2">
+                    <div
+                      v-for="p in item.payments"
+                      :key="p.id"
+                      class="flex items-center gap-1.5 bg-white border border-violet-200 rounded-lg px-3 py-1.5 text-xs"
+                    >
+                      <span class="font-semibold text-violet-700">#{{ p.installment_number }}</span>
+                      <span class="text-gray-400">·</span>
+                      <span class="text-gray-600">{{ formatDate(p.paid_at) }}</span>
+                      <span class="text-gray-400">·</span>
+                      <span class="font-medium text-green-600">{{ formatCurrency(p.amount) }}</span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -91,36 +152,89 @@
           <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
         </div>
         <form @submit.prevent="handleSubmit" class="p-5 space-y-4">
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
             <input v-model="form.item_name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Laptop, Refrigerator" />
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Date *</label>
+            <input v-model="form.purchase_date" type="date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="m in paymentMethods" :key="m.value"
+                type="button"
+                @click="form.payment_method = m.value"
+                :class="[
+                  'px-3 py-2 rounded-lg text-sm font-medium border transition-colors',
+                  form.payment_method === m.value
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                ]"
+              >{{ m.label }}</button>
+            </div>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Total Cost *</label>
             <input v-model="form.total_cost" type="number" min="0" step="0.01" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
-            <input v-model="form.purchase_date" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div class="flex items-center gap-2">
-            <input v-model="form.is_installment" type="checkbox" id="installment" class="rounded" />
-            <label for="installment" class="text-sm text-gray-700">Installment purchase</label>
-          </div>
-          <template v-if="form.is_installment">
+
+          <!-- Credit Card fields -->
+          <template v-if="form.payment_method === 'credit_card'">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Total Installments *</label>
-              <input v-model="form.total_installments" type="number" min="1" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 12" />
+              <label class="block text-sm font-medium text-gray-700 mb-1">Months to Pay *</label>
+              <input
+                v-model.number="form.installment_count"
+                type="number" min="1" required
+                class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. 12"
+                @input="autoCalcMonthly"
+              />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Monthly Installment Amount</label>
-              <input v-model="form.installment_amount" type="number" min="0" step="0.01" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label class="block text-sm font-medium text-gray-700 mb-1">Monthly Cost</label>
+              <input
+                v-model.number="form.installment_amount"
+                type="number" min="0" step="0.01"
+                class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Auto-calculated"
+              />
+              <p v-if="computedMonthly" class="text-xs text-gray-400 mt-1">
+                Auto: {{ formatCurrency(computedMonthly) }}/month
+              </p>
+            </div>
+            <div class="bg-blue-50 rounded-lg px-3 py-2 text-xs space-y-1 text-gray-600">
+              <div class="flex justify-between">
+                <span>Total cost</span>
+                <span class="font-medium">{{ formatCurrency(form.total_cost) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Monthly payment</span>
+                <span class="font-medium">{{ formatCurrency(form.installment_amount || computedMonthly) }}/mo</span>
+              </div>
+              <div class="flex justify-between font-semibold text-blue-700 border-t pt-1">
+                <span>Total over {{ form.installment_count || 0 }} months</span>
+                <span>{{ formatCurrency((form.installment_amount || computedMonthly) * (form.installment_count || 0)) }}</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Months Already Paid</label>
+              <input
+                v-model.number="form.installments_paid"
+                type="number" min="0"
+                :max="form.installment_count"
+                class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0"
+              />
             </div>
           </template>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea v-model="form.description" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
-          </div>
+
           <div v-if="formError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ formError }}</div>
           <div class="flex justify-end gap-3 pt-2">
             <button type="button" @click="showModal = false" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
@@ -132,7 +246,7 @@
       </div>
     </div>
 
-    <!-- Confirm Delete Dialog -->
+    <!-- Confirm Delete -->
     <div v-if="deleteTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
         <h3 class="font-semibold text-gray-800 mb-2">Delete Purchase</h3>
@@ -147,51 +261,80 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { usePurchaseStore } from '@/stores/purchase';
 import { formatDate } from '@/utils/date';
 
 const store = usePurchaseStore();
-const showModal = ref(false);
-const editing = ref(null);
+
+const showModal    = ref(false);
+const editing      = ref(null);
 const deleteTarget = ref(null);
-const saving = ref(false);
-const formError = ref('');
+const saving       = ref(false);
+const formError    = ref('');
+const filters      = ref({ payment_method: '', search: '' });
+const expandedId   = ref(null); // which purchase row has payment history expanded
+
+const paymentMethods = [
+  { value: 'cash',        label: 'Cash'        },
+  { value: 'credit_card', label: 'Credit Card' },
+  { value: 'other',       label: 'Other'       },
+];
 
 const defaultForm = () => ({
-  item_name: '',
-  total_cost: '',
-  purchase_date: new Date().toISOString().split('T')[0],
-  is_installment: false,
-  total_installments: '',
+  item_name:          '',
+  total_cost:         '',
+  payment_method:     'cash',
+  purchase_date:      new Date().toISOString().split('T')[0],
+  installment_count:  '',
   installment_amount: '',
-  description: '',
+  installments_paid:  0,
 });
 
 const form = ref(defaultForm());
+
+// Auto-calculate monthly cost from total / months
+const computedMonthly = computed(() => {
+  const total  = parseFloat(form.value.total_cost) || 0;
+  const months = parseInt(form.value.installment_count) || 0;
+  if (total > 0 && months > 0) return total / months;
+  return 0;
+});
+
+function autoCalcMonthly() {
+  // Clear manual override so hint shows auto value
+  if (!form.value.installment_amount) return;
+  form.value.installment_amount = '';
+}
 
 function formatCurrency(val) {
   return '₱' + Number(val || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
 }
 
-function itemStatus(item) {
-  if (!item.is_installment) return 'Paid';
-  const paid = item.paid_installments ?? 0;
-  if (paid >= item.total_installments) return 'Completed';
-  return `${paid}/${item.total_installments} paid`;
+function methodLabel(method) {
+  return { cash: 'Cash', credit_card: 'Credit Card', other: 'Other' }[method] ?? method;
 }
 
-function statusClass(item) {
-  if (!item.is_installment) return 'bg-green-100 text-green-700';
-  const paid = item.paid_installments ?? 0;
-  if (paid >= item.total_installments) return 'bg-green-100 text-green-700';
-  return 'bg-yellow-100 text-yellow-700';
+function methodClass(method) {
+  return {
+    cash:        'bg-green-100 text-green-700',
+    credit_card: 'bg-purple-100 text-purple-700',
+    other:       'bg-gray-100 text-gray-600',
+  }[method] ?? 'bg-gray-100 text-gray-600';
 }
 
 function openModal(item = null) {
   editing.value = item;
   form.value = item
-    ? { ...item, purchase_date: item.purchase_date?.split('T')[0] ?? item.purchase_date ?? '' }
+    ? {
+        item_name:          item.item_name,
+        total_cost:         item.total_cost,
+        payment_method:     item.payment_method ?? 'cash',
+        purchase_date:      item.purchase_date?.split('T')[0] ?? item.purchase_date ?? '',
+        installment_count:  item.installment_count ?? '',
+        installment_amount: item.installment_amount ?? '',
+        installments_paid:  item.installments_paid ?? 0,
+      }
     : defaultForm();
   formError.value = '';
   showModal.value = true;
@@ -204,20 +347,27 @@ function confirmDelete(item) {
 async function handlePayInstallment(item) {
   try {
     await store.payInstallment(item.id);
+    store.fetchSummary();
   } catch (e) {
     alert(e.response?.data?.message ?? 'Failed to record payment.');
   }
 }
 
 async function handleSubmit() {
-  saving.value = true;
+  saving.value    = true;
   formError.value = '';
   try {
-    if (editing.value) {
-      await store.update(editing.value.id, form.value);
-    } else {
-      await store.create(form.value);
+    const payload = { ...form.value };
+    // Use computed monthly if manual not entered
+    if (payload.payment_method === 'credit_card' && !payload.installment_amount && computedMonthly.value) {
+      payload.installment_amount = computedMonthly.value;
     }
+    if (editing.value) {
+      await store.update(editing.value.id, payload);
+    } else {
+      await store.create(payload);
+    }
+    store.fetchSummary();
     showModal.value = false;
   } catch (e) {
     formError.value = e.response?.data?.message ?? 'Failed to save. Please try again.';
@@ -228,12 +378,25 @@ async function handleSubmit() {
 
 async function handleDelete() {
   await store.remove(deleteTarget.value.id);
+  store.fetchSummary();
   deleteTarget.value = null;
 }
 
-function changePage(page) {
-  store.fetchAll({ page });
+function loadData() {
+  store.fetchAll({ ...filters.value });
 }
 
-onMounted(() => store.fetchAll());
+function resetFilters() {
+  filters.value = { payment_method: '', search: '' };
+  loadData();
+}
+
+function changePage(page) {
+  store.fetchAll({ ...filters.value, page });
+}
+
+onMounted(() => {
+  loadData();
+  store.fetchSummary();
+});
 </script>

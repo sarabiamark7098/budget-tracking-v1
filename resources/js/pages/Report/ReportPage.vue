@@ -1,135 +1,307 @@
 <template>
   <div class="space-y-6">
+
+    <!-- Header -->
     <div class="flex items-center justify-between flex-wrap gap-3">
       <h1 class="text-2xl font-bold text-gray-800">Reports</h1>
-      <div class="flex gap-2">
-        <button @click="exportCsv" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Export CSV
-        </button>
-      </div>
+      <button @click="exportCsv" :disabled="exporting" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-60 text-sm font-medium flex items-center gap-2">
+        <svg v-if="!exporting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        </svg>
+        {{ exporting ? 'Exporting...' : 'Export Excel' }}
+      </button>
     </div>
 
     <!-- Date Range Filter -->
-    <div class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3 items-end">
-      <div>
-        <label class="block text-xs text-gray-500 mb-1">From</label>
-        <input v-model="filters.date_from" type="date" class="border rounded-lg px-3 py-2 text-sm" />
+    <div class="bg-white rounded-xl shadow-sm p-4 space-y-3">
+      <div class="flex flex-wrap gap-2">
+        <button v-for="preset in datePresets" :key="preset.label"
+          @click="applyPreset(preset)"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+          :class="activePreset === preset.label
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'">
+          {{ preset.label }}
+        </button>
       </div>
-      <div>
-        <label class="block text-xs text-gray-500 mb-1">To</label>
-        <input v-model="filters.date_to" type="date" class="border rounded-lg px-3 py-2 text-sm" />
+      <div class="flex flex-wrap gap-3 items-end">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">From</label>
+          <input v-model="filters.date_from" type="date" @change="activePreset = null" class="border rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">To</label>
+          <input v-model="filters.date_to" type="date" @change="activePreset = null" class="border rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <button @click="loadReports" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">Generate Report</button>
+        <button @click="resetFilters" class="text-gray-400 text-sm px-2 py-2 hover:text-gray-600">Reset</button>
       </div>
-      <button @click="loadReports" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">Generate Report</button>
-      <button @click="resetFilters" class="text-gray-400 text-sm px-2 py-2 hover:text-gray-600">Reset</button>
     </div>
 
     <!-- Loading -->
     <div v-if="store.loading" class="text-center py-10 text-gray-400">Generating report...</div>
 
-    <template v-else>
-      <!-- Net Worth Card -->
+    <template v-else-if="store.incomeExpenseReport">
+
+      <!-- ── Net Worth Banner ───────────────────────────────────────────── -->
       <div v-if="store.netWorth" class="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-xl p-6 text-white shadow-lg">
-        <p class="text-indigo-100 text-sm mb-1">Net Worth</p>
-        <p class="text-4xl font-bold">{{ formatCurrency(store.netWorth.net_worth) }}</p>
-        <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-indigo-400">
+        <div class="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <p class="text-indigo-200 text-xs">Assets</p>
-            <p class="font-semibold">{{ formatCurrency(store.netWorth.total_assets) }}</p>
+            <p class="text-indigo-100 text-sm mb-1">Net Worth</p>
+            <p class="text-4xl font-bold">{{ fmt(store.netWorth.net_worth) }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-indigo-200 text-xs mb-1">Available Cash</p>
+            <p class="text-xl font-semibold">{{ fmt(store.netWorth.available_cash) }}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 pt-4 border-t border-indigo-400">
+          <div>
+            <p class="text-indigo-200 text-xs">Total Assets</p>
+            <p class="font-semibold">{{ fmt(store.netWorth.total_assets) }}</p>
           </div>
           <div>
             <p class="text-indigo-200 text-xs">Liabilities</p>
-            <p class="font-semibold">{{ formatCurrency(store.netWorth.total_liabilities) }}</p>
+            <p class="font-semibold">{{ fmt(store.netWorth.total_liabilities) }}</p>
           </div>
           <div>
             <p class="text-indigo-200 text-xs">Investments</p>
-            <p class="font-semibold">{{ formatCurrency(store.netWorth.total_investments) }}</p>
+            <p class="font-semibold">{{ fmt(store.netWorth.total_investments) }}</p>
+            <p class="text-xs mt-0.5" :class="store.netWorth.investment_gain >= 0 ? 'text-green-300' : 'text-red-300'">
+              {{ store.netWorth.investment_gain >= 0 ? '+' : '' }}{{ fmt(store.netWorth.investment_gain) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-indigo-200 text-xs">Stocks</p>
+            <p class="font-semibold">{{ fmt(store.netWorth.total_stocks) }}</p>
+            <p class="text-xs mt-0.5" :class="store.netWorth.stock_gain >= 0 ? 'text-green-300' : 'text-red-300'">
+              {{ store.netWorth.stock_gain >= 0 ? '+' : '' }}{{ fmt(store.netWorth.stock_gain) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-indigo-200 text-xs">Crypto</p>
+            <p class="font-semibold">{{ fmt(store.netWorth.total_crypto) }}</p>
+            <p class="text-xs mt-0.5" :class="store.netWorth.crypto_gain >= 0 ? 'text-green-300' : 'text-red-300'">
+              {{ store.netWorth.crypto_gain >= 0 ? '+' : '' }}{{ fmt(store.netWorth.crypto_gain) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-indigo-200 text-xs">Total Cost Basis</p>
+            <p class="font-semibold">{{ fmt((store.netWorth.investment_cost || 0) + (store.netWorth.stock_cost || 0) + (store.netWorth.crypto_cost || 0)) }}</p>
           </div>
         </div>
       </div>
 
-      <!-- Income vs Expenses Summary -->
-      <div v-if="store.incomeExpenseReport" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Total Income</p>
-          <p class="text-2xl font-bold text-green-600">{{ formatCurrency(store.incomeExpenseReport.total_income) }}</p>
+      <!-- ── Summary Stat Cards ─────────────────────────────────────────── -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="bg-white rounded-xl shadow-sm p-4 col-span-1">
+          <p class="text-xs text-gray-500 mb-1">Total Income</p>
+          <p class="text-xl font-bold text-green-600">{{ fmt(rpt.total_income) }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Total Expenses</p>
-          <p class="text-2xl font-bold text-red-600">{{ formatCurrency(store.incomeExpenseReport.total_expenses) }}</p>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-xs text-gray-500 mb-1">Expenses</p>
+          <p class="text-xl font-bold text-red-500">{{ fmt(rpt.total_expenses) }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Net Savings</p>
-          <p class="text-2xl font-bold" :class="store.incomeExpenseReport.net >= 0 ? 'text-blue-600' : 'text-red-600'">
-            {{ formatCurrency(store.incomeExpenseReport.net) }}
-          </p>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-xs text-gray-500 mb-1">Debt Payments</p>
+          <p class="text-xl font-bold text-orange-500">{{ fmt(rpt.total_debt_payments) }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-sm text-gray-500 mb-1">Savings Rate</p>
-          <p class="text-2xl font-bold text-indigo-600">{{ savingsRate }}%</p>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-xs text-gray-500 mb-1">CC Installments</p>
+          <p class="text-xl font-bold text-purple-500">{{ fmt(rpt.total_purchase_payments) }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-xs text-gray-500 mb-1">Cash Purchases</p>
+          <p class="text-xl font-bold text-pink-500">{{ fmt(rpt.total_cash_purchases) }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-xs text-gray-500 mb-1">Business Received</p>
+          <p class="text-xl font-bold text-teal-600">{{ fmt(rpt.business_debt_received) }}</p>
         </div>
       </div>
 
-      <!-- Monthly Breakdown Table -->
-      <div v-if="store.incomeExpenseReport?.monthly?.length" class="bg-white rounded-xl shadow-sm p-5">
-        <h2 class="font-semibold text-gray-700 mb-4">Monthly Breakdown</h2>
+      <!-- ── Key Metrics Row ─────────────────────────────────────────────── -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4" :class="rpt.net >= 0 ? 'border-blue-500' : 'border-red-500'">
+          <p class="text-xs text-gray-500 mb-1">Net</p>
+          <p class="text-2xl font-bold" :class="rpt.net >= 0 ? 'text-blue-600' : 'text-red-600'">{{ fmt(rpt.net) }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-indigo-400">
+          <p class="text-xs text-gray-500 mb-1">Total Outflow</p>
+          <p class="text-2xl font-bold text-indigo-600">{{ fmt(rpt.total_outflow) }}</p>
+          <p class="text-xs text-gray-400 mt-1">{{ pct(rpt.outflow_ratio_pct) }} of income</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-400">
+          <p class="text-xs text-gray-500 mb-1">Savings Rate</p>
+          <p class="text-2xl font-bold text-green-600">{{ pct(rpt.savings_rate_pct) }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-amber-400">
+          <p class="text-xs text-gray-500 mb-1">Daily Burn Rate</p>
+          <p class="text-2xl font-bold text-amber-600">{{ fmt(rpt.daily_burn_rate) }}</p>
+          <p v-if="rpt.savings_runway_days !== null" class="text-xs text-gray-400 mt-1">{{ rpt.savings_runway_days }} days runway</p>
+          <p v-else class="text-xs text-gray-400 mt-1">No runway data</p>
+        </div>
+      </div>
+
+      <!-- ── Expense Breakdown ───────────────────────────────────────────── -->
+      <div v-if="rpt.expense_breakdown?.length" class="bg-white rounded-xl shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-semibold text-gray-700">Expense Breakdown</h2>
+            <p class="text-xs text-gray-400 mt-0.5">{{ rpt.expense_breakdown.length }} categories</p>
+          </div>
+          <span class="text-sm font-semibold text-red-500">{{ fmt(rpt.total_expenses) }}</span>
+        </div>
+        <div class="space-y-3">
+          <div v-for="(cat, i) in rpt.expense_breakdown" :key="cat.id" class="group">
+            <div class="flex items-center gap-3">
+              <!-- Rank badge -->
+              <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                :style="{ backgroundColor: cat.color }">{{ i + 1 }}</span>
+              <!-- Name + count -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm text-gray-700 font-medium truncate">{{ cat.name }}</span>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="text-xs text-gray-400">{{ cat.count }} txn{{ cat.count !== 1 ? 's' : '' }}</span>
+                    <span class="text-sm font-semibold text-gray-800">{{ fmt(cat.total) }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                      :style="{ backgroundColor: cat.color + '22', color: cat.color }">{{ cat.pct }}%</span>
+                  </div>
+                </div>
+                <div class="mt-1.5 w-full bg-gray-100 rounded-full h-1.5">
+                  <div class="h-1.5 rounded-full transition-all duration-500"
+                    :style="{ width: cat.pct + '%', backgroundColor: cat.color }"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="rpt.expense_breakdown[0]" class="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-400 flex justify-between">
+          <span>Highest: <span class="font-medium text-gray-600">{{ rpt.expense_breakdown[0].name }}</span></span>
+          <span>{{ rpt.expense_breakdown[0].pct }}% of expenses</span>
+        </div>
+      </div>
+
+      <!-- ── Monthly Trend Table ─────────────────────────────────────────── -->
+      <div v-if="rpt.monthly_trend?.length" class="bg-white rounded-xl shadow-sm p-5">
+        <h2 class="font-semibold text-gray-700 mb-4">Monthly Trend</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b">
-                <th class="text-left py-2 px-3 text-gray-500 font-medium">Month</th>
-                <th class="text-right py-2 px-3 text-gray-500 font-medium">Income</th>
-                <th class="text-right py-2 px-3 text-gray-500 font-medium">Expenses</th>
-                <th class="text-right py-2 px-3 text-gray-500 font-medium">Net</th>
-                <th class="text-right py-2 px-3 text-gray-500 font-medium">Savings Rate</th>
+              <tr class="border-b bg-gray-50">
+                <th class="text-left py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Month</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Income</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Expenses</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Debt Pmts</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">CC Inst.</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Cash Purch.</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Outflow</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Net</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium whitespace-nowrap">Savings %</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in store.incomeExpenseReport.monthly" :key="row.month" class="border-b last:border-0 hover:bg-gray-50">
-                <td class="py-2 px-3 text-gray-700 font-medium">{{ row.month }}</td>
-                <td class="py-2 px-3 text-right text-green-600">{{ formatCurrency(row.income) }}</td>
-                <td class="py-2 px-3 text-right text-red-600">{{ formatCurrency(row.expenses) }}</td>
-                <td class="py-2 px-3 text-right font-semibold" :class="row.net >= 0 ? 'text-blue-600' : 'text-red-600'">
-                  {{ formatCurrency(row.net) }}
+              <tr v-for="row in rpt.monthly_trend" :key="row.month"
+                class="border-b last:border-0 hover:bg-gray-50">
+                <td class="py-2 px-3 text-gray-700 font-medium whitespace-nowrap">{{ row.label }}</td>
+                <td class="py-2 px-3 text-right text-green-600 whitespace-nowrap">{{ fmt(row.income) }}</td>
+                <td class="py-2 px-3 text-right text-red-500 whitespace-nowrap">{{ fmt(row.expense) }}</td>
+                <td class="py-2 px-3 text-right text-orange-500 whitespace-nowrap">{{ fmt(row.debt_payments) }}</td>
+                <td class="py-2 px-3 text-right text-purple-500 whitespace-nowrap">{{ fmt(row.purchase_payments) }}</td>
+                <td class="py-2 px-3 text-right text-pink-500 whitespace-nowrap">{{ fmt(row.cash_purchases) }}</td>
+                <td class="py-2 px-3 text-right text-indigo-600 font-medium whitespace-nowrap">{{ fmt(row.total_outflow) }}</td>
+                <td class="py-2 px-3 text-right font-semibold whitespace-nowrap" :class="row.net >= 0 ? 'text-blue-600' : 'text-red-600'">
+                  {{ fmt(row.net) }}
                 </td>
-                <td class="py-2 px-3 text-right text-gray-500">
-                  {{ row.income > 0 ? ((row.net / row.income) * 100).toFixed(1) : '0.0' }}%
+                <td class="py-2 px-3 text-right whitespace-nowrap">
+                  <span class="text-xs font-medium px-2 py-0.5 rounded-full"
+                    :class="row.savings_rate_pct >= 20 ? 'bg-green-100 text-green-700'
+                          : row.savings_rate_pct >= 0  ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'">
+                    {{ row.savings_rate_pct?.toFixed(1) }}%
+                  </span>
                 </td>
               </tr>
             </tbody>
+            <!-- Totals footer -->
+            <tfoot>
+              <tr class="border-t-2 border-gray-300 bg-gray-50 font-semibold">
+                <td class="py-2 px-3 text-gray-700">Total</td>
+                <td class="py-2 px-3 text-right text-green-600">{{ fmt(rpt.total_income) }}</td>
+                <td class="py-2 px-3 text-right text-red-500">{{ fmt(rpt.total_expenses) }}</td>
+                <td class="py-2 px-3 text-right text-orange-500">{{ fmt(rpt.total_debt_payments) }}</td>
+                <td class="py-2 px-3 text-right text-purple-500">{{ fmt(rpt.total_purchase_payments) }}</td>
+                <td class="py-2 px-3 text-right text-pink-500">{{ fmt(rpt.total_cash_purchases) }}</td>
+                <td class="py-2 px-3 text-right text-indigo-600">{{ fmt(rpt.total_outflow) }}</td>
+                <td class="py-2 px-3 text-right" :class="rpt.net >= 0 ? 'text-blue-600' : 'text-red-600'">{{ fmt(rpt.net) }}</td>
+                <td class="py-2 px-3 text-right text-gray-500">{{ pct(rpt.savings_rate_pct) }}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
 
-      <!-- Category Breakdown -->
-      <div v-if="store.incomeExpenseReport?.expense_by_category" class="bg-white rounded-xl shadow-sm p-5">
-        <h2 class="font-semibold text-gray-700 mb-4">Expenses by Category</h2>
-        <div v-if="Object.keys(store.incomeExpenseReport.expense_by_category).length === 0" class="text-gray-400 text-sm">No expense data for period</div>
-        <div v-for="(amount, category) in store.incomeExpenseReport.expense_by_category" :key="category" class="mb-3">
-          <div class="flex justify-between text-sm mb-1">
-            <span class="text-gray-600">{{ category || 'Uncategorized' }}</span>
-            <span class="font-medium">{{ formatCurrency(amount) }}</span>
+      <!-- ── Income / Expense Transaction Lists ─────────────────────────── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Income list -->
+        <div v-if="rpt.incomes?.length" class="bg-white rounded-xl shadow-sm p-5">
+          <h2 class="font-semibold text-gray-700 mb-3 flex items-center justify-between">
+            <span>Income Transactions</span>
+            <span class="text-xs text-gray-400">{{ rpt.incomes.length }} records</span>
+          </h2>
+          <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div v-for="inc in rpt.incomes" :key="inc.id"
+              class="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+              <div>
+                <p class="text-sm font-medium text-gray-700">{{ inc.source || inc.description || 'Income' }}</p>
+                <p class="text-xs text-gray-400">{{ inc.received_at }}</p>
+              </div>
+              <span class="text-sm font-semibold text-green-600">{{ fmt(inc.amount) }}</span>
+            </div>
           </div>
-          <div class="w-full bg-gray-100 rounded-full h-2">
-            <div
-              class="bg-red-400 h-2 rounded-full"
-              :style="{ width: getBarWidth(amount, store.incomeExpenseReport.total_expenses) + '%' }"
-            ></div>
+        </div>
+
+        <!-- Expense list -->
+        <div v-if="rpt.expenses?.length" class="bg-white rounded-xl shadow-sm p-5">
+          <h2 class="font-semibold text-gray-700 mb-3 flex items-center justify-between">
+            <span>Expense Transactions</span>
+            <span class="text-xs text-gray-400">{{ rpt.expenses.length }} records</span>
+          </h2>
+          <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div v-for="exp in rpt.expenses" :key="exp.id"
+              class="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+              <div class="flex items-center gap-2 min-w-0">
+                <span v-if="exp.category?.color" class="w-2 h-2 rounded-full flex-shrink-0"
+                  :style="{ backgroundColor: exp.category.color }"></span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-700 truncate">{{ exp.description || 'Expense' }}</p>
+                  <p class="text-xs text-gray-400">{{ exp.category?.name || 'Uncategorized' }} · {{ exp.spent_at }}</p>
+                </div>
+              </div>
+              <span class="text-sm font-semibold text-red-500 flex-shrink-0 ml-2">{{ fmt(exp.amount) }}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Empty state -->
-      <div v-if="!store.incomeExpenseReport && !store.loading" class="bg-white rounded-xl shadow-sm p-12 text-center text-gray-400">
-        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <p class="text-lg font-medium">No report data</p>
-        <p class="text-sm mt-1">Select a date range and click "Generate Report"</p>
-      </div>
     </template>
+
+    <!-- Empty state -->
+    <div v-else-if="!store.loading" class="bg-white rounded-xl shadow-sm p-12 text-center text-gray-400">
+      <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <p class="text-lg font-medium">No report data</p>
+      <p class="text-sm mt-1">Select a date range and click "Generate Report"</p>
+    </div>
+
   </div>
 </template>
 
@@ -138,51 +310,103 @@ import { ref, computed, onMounted } from 'vue';
 import { useReportStore } from '@/stores/report';
 
 const store = useReportStore();
+const exporting = ref(false);
 
-const filters = ref({
-  date_from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-  date_to: new Date().toISOString().split('T')[0],
-});
+// ── Convenience alias ──────────────────────────────────────────────────────
+const rpt = computed(() => store.incomeExpenseReport || {});
 
-function formatCurrency(val) {
-  return '₱' + Number(val || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+// ── Date presets ──────────────────────────────────────────────────────────
+const activePreset = ref('This Month');
+
+const datePresets = [
+  {
+    label: 'This Month',
+    get() {
+      const now = new Date();
+      return {
+        from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
+        to:   new Date().toISOString().split('T')[0],
+      };
+    },
+  },
+  {
+    label: 'Last Month',
+    get() {
+      const now = new Date();
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last  = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { from: first.toISOString().split('T')[0], to: last.toISOString().split('T')[0] };
+    },
+  },
+  {
+    label: 'This Year',
+    get() {
+      const y = new Date().getFullYear();
+      return { from: `${y}-01-01`, to: new Date().toISOString().split('T')[0] };
+    },
+  },
+  {
+    label: 'Last Year',
+    get() {
+      const y = new Date().getFullYear() - 1;
+      return { from: `${y}-01-01`, to: `${y}-12-31` };
+    },
+  },
+  {
+    label: 'All Time',
+    get() {
+      return { from: '2000-01-01', to: new Date().toISOString().split('T')[0] };
+    },
+  },
+];
+
+function applyPreset(preset) {
+  const range = preset.get();
+  filters.value.date_from = range.from;
+  filters.value.date_to   = range.to;
+  activePreset.value = preset.label;
+  loadReports();
 }
 
-function getBarWidth(amount, total) {
-  if (!total || total === 0) return 0;
-  return Math.min(100, (amount / total) * 100).toFixed(1);
+// ── Filters ────────────────────────────────────────────────────────────────
+const thisMonth = datePresets[0].get();
+const filters = ref({ date_from: thisMonth.from, date_to: thisMonth.to });
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmt(val) {
+  return '₱' + Number(val || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function pct(val) {
+  return Number(val || 0).toFixed(1) + '%';
 }
 
-const savingsRate = computed(() => {
-  const report = store.incomeExpenseReport;
-  if (!report || !report.total_income || report.total_income === 0) return '0.0';
-  return ((report.net / report.total_income) * 100).toFixed(1);
-});
-
+// ── Actions ────────────────────────────────────────────────────────────────
 async function loadReports() {
   const params = {};
   if (filters.value.date_from) params.date_from = filters.value.date_from;
-  if (filters.value.date_to) params.date_to = filters.value.date_to;
+  if (filters.value.date_to)   params.date_to   = filters.value.date_to;
   await store.fetchIncomeExpense(params);
   store.fetchNetWorth();
 }
 
 function resetFilters() {
-  filters.value = {
-    date_from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    date_to: new Date().toISOString().split('T')[0],
-  };
+  const range = datePresets[0].get();
+  filters.value = { date_from: range.from, date_to: range.to };
+  activePreset.value = 'This Month';
   loadReports();
 }
 
 async function exportCsv() {
   const params = {};
   if (filters.value.date_from) params.date_from = filters.value.date_from;
-  if (filters.value.date_to) params.date_to = filters.value.date_to;
+  if (filters.value.date_to)   params.date_to   = filters.value.date_to;
+  exporting.value = true;
   try {
     await store.exportCsv(params);
-  } catch (e) {
+  } catch {
     alert('Export failed. Please try again.');
+  } finally {
+    exporting.value = false;
   }
 }
 

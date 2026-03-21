@@ -16,15 +16,13 @@ class UpdatePurchaseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'item_name' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'total_cost' => ['nullable', 'numeric', 'min:0'],
-            'is_installment' => ['boolean'],
-            'installment_count' => ['nullable', 'integer', 'min:2'],
-            'installment_amount' => ['nullable', 'numeric', 'min:0'],
+            'item_name'         => ['nullable', 'string', 'max:255'],
+            'total_cost'        => ['nullable', 'numeric', 'min:0'],
+            'payment_method'    => ['nullable', 'in:cash,credit_card,other'],
+            'purchase_date'     => ['nullable', 'date'],
+            'installment_count' => ['nullable', 'integer', 'min:1'],
+            'installment_amount'=> ['nullable', 'numeric', 'min:0'],
             'installments_paid' => ['nullable', 'integer', 'min:0'],
-            'purchase_date' => ['nullable', 'date'],
         ];
     }
 

@@ -4,7 +4,6 @@ import { insuranceService } from '@/services/index';
 
 export const useInsuranceStore = defineStore('insurance', () => {
     const items = ref([]);
-    const payments = ref([]);
     const loading = ref(false);
     const pagination = ref(null);
 
@@ -17,11 +16,6 @@ export const useInsuranceStore = defineStore('insurance', () => {
         } finally {
             loading.value = false;
         }
-    }
-
-    async function fetchPayments(params = {}) {
-        const { data } = await insuranceService.getPayments(params);
-        payments.value = data.data.data ?? data.data;
     }
 
     async function create(formData) {
@@ -42,11 +36,20 @@ export const useInsuranceStore = defineStore('insurance', () => {
         items.value = items.value.filter(i => i.id !== id);
     }
 
-    async function recordPayment(formData) {
-        const { data } = await insuranceService.recordPayment(formData);
-        payments.value.unshift(data.data);
+    async function pay(planId, formData) {
+        const { data } = await insuranceService.pay(planId, formData);
+        // Update total_paid in items list
+        const idx = items.value.findIndex(i => i.id === planId);
+        if (idx !== -1) {
+            items.value[idx] = { ...items.value[idx], total_paid: (Number(items.value[idx].total_paid || 0) + Number(formData.amount)) };
+        }
         return data.data;
     }
 
-    return { items, payments, loading, pagination, fetchAll, fetchPayments, create, update, remove, recordPayment };
+    async function fetchPlanPayments(planId, params = {}) {
+        const { data } = await insuranceService.getPlanPayments(planId, params);
+        return data.data;
+    }
+
+    return { items, loading, pagination, fetchAll, create, update, remove, pay, fetchPlanPayments };
 });

@@ -16,15 +16,10 @@ class StoreIncomeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'source' => ['nullable', 'in:Compensation Income,Business Income,Passive Income,Property Gains,Other Sources'],
-            'description' => ['nullable', 'string'],
+            'title'       => ['required', 'string', 'max:255'],
+            'amount'      => ['required', 'numeric', 'min:0.01'],
+            'source'      => ['nullable', 'in:Compensation Income,Business Income,Passive Income,Property Gains,Other Sources'],
             'received_at' => ['required', 'date'],
-            'is_recurring' => ['boolean'],
-            'recurrence_interval' => ['required_if:is_recurring,true', 'nullable', 'in:daily,weekly,monthly,yearly'],
-            'recurrence_end_date' => ['nullable', 'date'],
         ];
     }
 

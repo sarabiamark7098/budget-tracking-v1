@@ -13,22 +13,15 @@ class Income extends Model
     protected $fillable = [
         'user_id',
         'budget_tracking_id',
-        'category_id',
         'title',
         'amount',
         'source',
-        'description',
         'received_at',
-        'is_recurring',
-        'recurrence_interval',
-        'recurrence_end_date',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount'      => 'decimal:2',
         'received_at' => 'date',
-        'is_recurring' => 'boolean',
-        'recurrence_end_date' => 'date',
     ];
 
     public function budgetTracking(): BelongsTo
@@ -41,8 +34,4 @@ class Income extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(Category::class);
-    }
 }

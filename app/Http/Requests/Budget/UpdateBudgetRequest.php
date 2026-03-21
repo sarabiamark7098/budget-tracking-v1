@@ -17,12 +17,10 @@ class UpdateBudgetRequest extends FormRequest
     {
         return [
             'category_id' => ['nullable', 'exists:categories,id'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'amount' => ['nullable', 'numeric', 'min:0'],
-            'period' => ['nullable', 'in:weekly,monthly,yearly'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date'],
-            'alert_threshold' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'name'        => ['nullable', 'string', 'max:255'],
+            'amount'      => ['nullable', 'numeric', 'min:0'],
+            'period'      => ['nullable', 'in:weekly,monthly,yearly'],
+            'start_date'  => ['nullable', 'date'],
         ];
     }
 

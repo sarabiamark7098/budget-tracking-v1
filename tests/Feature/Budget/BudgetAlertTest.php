@@ -4,7 +4,6 @@ namespace Tests\Feature\Budget;
 
 use App\Models\Budget;
 use App\Models\Expense;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,22 +13,27 @@ class BudgetAlertTest extends TestCase
 
     public function test_budget_usage_percentage_is_accurate(): void
     {
-        $user = User::factory()->create();
+        $user   = $this->createUser();
+        $bt     = $this->getBT($user);
+        $start  = now()->startOfMonth()->toDateString();
+
         $budget = Budget::create([
-            'user_id' => $user->id,
-            'name' => 'Test Budget',
-            'amount' => 10000,
-            'period' => 'monthly',
-            'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
-            'alert_threshold' => 80,
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $bt->id,
+            'name'               => 'Test Budget',
+            'amount'             => 10000,
+            'period'             => 'monthly',
+            'start_date'         => $start,
         ]);
 
+        // Link the expense directly to this budget so spent_amount uses the explicit path
         Expense::create([
-            'user_id' => $user->id,
-            'title' => 'Expense',
-            'amount' => 5000,
-            'spent_at' => '2024-01-15',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $bt->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'Expense',
+            'amount'             => 5000,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/budgets/{$budget->id}");
@@ -38,59 +42,50 @@ class BudgetAlertTest extends TestCase
         $this->assertEquals(50.0, $data['usage_percentage']);
     }
 
-    public function test_can_create_budget_with_custom_threshold(): void
+    public function test_can_create_budget(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/budgets', [
-            'name' => 'Custom Threshold Budget',
-            'amount' => 20000,
-            'period' => 'monthly',
-            'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
-            'alert_threshold' => 75,
+            'name'       => 'Custom Budget',
+            'amount'     => 20000,
+            'period'     => 'monthly',
+            'start_date' => now()->startOfMonth()->toDateString(),
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.alert_threshold', 75);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.name', 'Custom Budget');
     }
 
     public function test_budget_remaining_amount_is_correct(): void
     {
-        $user = User::factory()->create();
+        $user  = $this->createUser();
+        $bt    = $this->getBT($user);
+        $start = now()->startOfMonth()->toDateString();
+
         $budget = Budget::create([
-            'user_id' => $user->id,
-            'name' => 'Test Budget',
-            'amount' => 20000,
-            'period' => 'monthly',
-            'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $bt->id,
+            'name'               => 'Test Budget',
+            'amount'             => 20000,
+            'period'             => 'monthly',
+            'start_date'         => $start,
         ]);
 
         Expense::create([
-            'user_id' => $user->id,
-            'title' => 'Expense',
-            'amount' => 8000,
-            'spent_at' => '2024-01-15',
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $bt->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'Expense',
+            'amount'             => 8000,
+            'spent_at'           => now()->toDateString(),
         ]);
+
+        $budget->refresh();
 
         $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/budgets/{$budget->id}");
         $response->assertOk();
         $data = $response->json('data');
         $this->assertEquals(12000.0, $data['remaining_amount']);
-    }
-
-    public function test_alert_threshold_validation(): void
-    {
-        $user = User::factory()->create();
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/budgets', [
-            'name' => 'Invalid Threshold',
-            'amount' => 10000,
-            'period' => 'monthly',
-            'start_date' => '2024-01-01',
-            'end_date' => '2024-01-31',
-            'alert_threshold' => 150, // Invalid: must be <= 100
-        ]);
-
-        $response->assertStatus(422)->assertJsonPath('success', false);
     }
 }

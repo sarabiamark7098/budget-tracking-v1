@@ -21,5 +21,7 @@ const colorClass = computed(() => ({
   blue:   'text-blue-600',
   orange: 'text-orange-500',
   purple: 'text-purple-600',
+  violet: 'text-violet-600',
+  teal:   'text-teal-600',
 }[props.color] ?? 'text-gray-700'));
 </script>

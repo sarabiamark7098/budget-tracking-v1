@@ -56,11 +56,13 @@ export const budgetService = {
 
 // Debts
 export const debtService = {
-    getAll: (params) => api.get('/debts', { params }),
-    create: (data) => api.post('/debts', data),
-    show: (id) => api.get(`/debts/${id}`),
-    update: (id, data) => api.put(`/debts/${id}`, data),
-    delete: (id) => api.delete(`/debts/${id}`),
+    getAll:     (params) => api.get('/debts', { params }),
+    create:     (data)   => api.post('/debts', data),
+    show:       (id)     => api.get(`/debts/${id}`),
+    update:     (id, data) => api.put(`/debts/${id}`, data),
+    delete:     (id)     => api.delete(`/debts/${id}`),
+    getBalance: (id)     => api.get(`/debts/${id}/balance`),
+    pay:        (id, data) => api.post(`/debts/${id}/pay`, data ?? {}),
 };
 
 // Payments
@@ -78,6 +80,9 @@ export const investmentService = {
     show: (id) => api.get(`/investments/${id}`),
     update: (id, data) => api.put(`/investments/${id}`, data),
     delete: (id) => api.delete(`/investments/${id}`),
+    getPayments: (id) => api.get(`/investments/${id}/payments`),
+    addPayment: (id, data) => api.post(`/investments/${id}/payments`, data),
+    markDone: (id) => api.patch(`/investments/${id}/done`),
 };
 
 // Stocks
@@ -88,6 +93,9 @@ export const stockService = {
     show: (id) => api.get(`/stocks/${id}`),
     update: (id, data) => api.put(`/stocks/${id}`, data),
     delete: (id) => api.delete(`/stocks/${id}`),
+    getLots: (id) => api.get(`/stocks/${id}/lots`),
+    addLot: (id, data) => api.post(`/stocks/${id}/lots`, data),
+    updatePrice: (id, data) => api.patch(`/stocks/${id}/price`, data),
 };
 
 // Crypto
@@ -98,6 +106,9 @@ export const cryptoService = {
     show: (id) => api.get(`/crypto/${id}`),
     update: (id, data) => api.put(`/crypto/${id}`, data),
     delete: (id) => api.delete(`/crypto/${id}`),
+    getLots: (id) => api.get(`/crypto/${id}/lots`),
+    addLot: (id, data) => api.post(`/crypto/${id}/lots`, data),
+    updatePrice: (id, data) => api.patch(`/crypto/${id}/price`, data),
 };
 
 // Financial Plans
@@ -125,18 +136,19 @@ export const insuranceService = {
     show: (id) => api.get(`/insurance-plans/${id}`),
     update: (id, data) => api.put(`/insurance-plans/${id}`, data),
     delete: (id) => api.delete(`/insurance-plans/${id}`),
-    getPayments: (params) => api.get('/insurance-payments', { params }),
-    recordPayment: (data) => api.post('/insurance-payments', data),
+    pay: (id, data) => api.post(`/insurance-plans/${id}/pay`, data),
+    getPlanPayments: (id, params) => api.get(`/insurance-plans/${id}/payments`, { params }),
 };
 
 // Purchases
 export const purchaseService = {
-    getAll: (params) => api.get('/purchases', { params }),
-    create: (data) => api.post('/purchases', data),
-    show: (id) => api.get(`/purchases/${id}`),
-    update: (id, data) => api.put(`/purchases/${id}`, data),
-    payInstallment: (id) => api.patch(`/purchases/${id}/installment`),
-    delete: (id) => api.delete(`/purchases/${id}`),
+    getAll:          (params) => api.get('/purchases', { params }),
+    getSummary:      ()       => api.get('/purchases/summary'),
+    create:          (data)   => api.post('/purchases', data),
+    show:            (id)     => api.get(`/purchases/${id}`),
+    update:          (id, data) => api.put(`/purchases/${id}`, data),
+    payInstallment:  (id)     => api.patch(`/purchases/${id}/installment`),
+    delete:          (id)     => api.delete(`/purchases/${id}`),
 };
 
 // MP2
@@ -172,11 +184,17 @@ export const budgetTrackingService = {
     deleteTransaction:    (id)       => api.delete(`/budget-tracking/transactions/${id}`),
 };
 
+// Module Transfers (Investment / Stock / Crypto)
+export const moduleTransferService = {
+    getAll:  (params) => api.get('/module-transfers', { params }),
+    create:  (data)   => api.post('/module-transfers', data),
+};
+
 // Reports
 export const reportService = {
     getIncomeExpense: (params) => api.get('/reports/income-expense', { params }),
     getNetWorth: () => api.get('/reports/net-worth'),
-    exportCsv: (params) => api.get('/reports/export/csv', { params, responseType: 'blob' }),
+    exportCsv: (params) => api.get('/reports/export/csv', { params, responseType: 'blob', headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } }),
     exportPdf: (params) => api.get('/reports/export/pdf', { params, responseType: 'blob' }),
 };
 

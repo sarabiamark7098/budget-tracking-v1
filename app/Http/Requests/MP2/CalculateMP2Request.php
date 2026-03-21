@@ -17,7 +17,9 @@ class CalculateMP2Request extends FormRequest
     {
         return [
             'monthly_contribution' => ['required', 'numeric', 'min:0'],
-            'duration_years' => ['required', 'integer', 'min:1', 'max:30'],
+            'duration_years'       => ['required', 'integer', 'min:1', 'max:30'],
+            'dividend_rate'        => ['nullable', 'numeric', 'min:0.01', 'max:30'],
+            'start_date'           => ['nullable', 'date'],
         ];
     }
 

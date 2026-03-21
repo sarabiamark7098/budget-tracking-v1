@@ -29,34 +29,8 @@ class ReportController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $filters = $request->only(['date_from', 'date_to', 'type']);
-        $type = $request->get('type', 'income_expense');
-
-        if ($type === 'net_worth') {
-            $data = [$this->service->generateNetWorthReport($this->budget($request))];
-            $filename = 'net_worth_report_' . now()->format('Y_m_d');
-        } else {
-            $report = $this->service->generateIncomeExpenseReport($this->budget($request), $filters);
-            $data = array_merge(
-                collect($report['incomes'])->map(fn($i) => [
-                    'type' => 'income',
-                    'title' => $i->title,
-                    'amount' => $i->amount,
-                    'date' => $i->received_at,
-                    'category' => $i->category?->name ?? 'N/A',
-                ])->toArray(),
-                collect($report['expenses'])->map(fn($e) => [
-                    'type' => 'expense',
-                    'title' => $e->title,
-                    'amount' => $e->amount,
-                    'date' => $e->spent_at,
-                    'category' => $e->category?->name ?? 'N/A',
-                ])->toArray()
-            );
-            $filename = 'income_expense_report_' . now()->format('Y_m_d');
-        }
-
-        return $this->service->exportToCsv($data, $filename);
+        $filters = $request->only(['date_from', 'date_to']);
+        return $this->service->exportFullCsv($this->budget($request), $filters);
     }
 
     public function exportPdf(): JsonResponse

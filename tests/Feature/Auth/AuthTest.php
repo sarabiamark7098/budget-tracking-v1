@@ -20,11 +20,11 @@ class AuthTest extends TestCase
         ]);
         $response->assertStatus(201)
             ->assertJsonStructure(['success', 'message', 'data' => [
-                'id', 'name', 'email', 'token', 'budget_tracking_code',
+                'id', 'name', 'email', 'token',
             ]]);
     }
 
-    public function test_register_creates_budget_tracking_with_unique_code(): void
+    public function test_registration_does_not_auto_create_budget_tracking(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
             'name'                  => 'Mark Sarabia',
@@ -35,38 +35,11 @@ class AuthTest extends TestCase
 
         $response->assertStatus(201);
 
-        $code = $response->json('data.budget_tracking_code');
-
-        // Code must be an 8-character uppercase alphanumeric string
-        $this->assertNotNull($code);
-        $this->assertMatchesRegularExpression('/^[A-Z0-9]{8}$/', $code);
-
-        // The budget tracking record must exist in the DB
-        $this->assertDatabaseHas('budget_trackings', ['join_code' => $code]);
-
-        // The user is enrolled as owner
         $userId = $response->json('data.id');
-        $this->assertDatabaseHas('budget_tracking_members', [
-            'user_id' => $userId,
-            'role'    => 'owner',
-        ]);
-    }
 
-    public function test_two_users_get_different_budget_tracking_codes(): void
-    {
-        $r1 = $this->postJson('/api/v1/auth/register', [
-            'name' => 'Alice', 'email' => 'alice@example.com',
-            'password' => 'password123', 'password_confirmation' => 'password123',
-        ]);
-        $r2 = $this->postJson('/api/v1/auth/register', [
-            'name' => 'Bob', 'email' => 'bob@example.com',
-            'password' => 'password123', 'password_confirmation' => 'password123',
-        ]);
-
-        $this->assertNotEquals(
-            $r1->json('data.budget_tracking_code'),
-            $r2->json('data.budget_tracking_code')
-        );
+        // No budget tracking should exist yet — user must set it up manually
+        $this->assertDatabaseMissing('budget_tracking_members', ['user_id' => $userId]);
+        $this->assertNull($response->json('data.budget_tracking_code'));
     }
 
     public function test_user_can_login(): void

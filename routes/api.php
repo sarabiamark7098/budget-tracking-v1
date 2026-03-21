@@ -22,6 +22,7 @@ use App\Http\Controllers\API\V1\Plan\FinancialPlanController;
 use App\Http\Controllers\API\V1\Purchase\PurchaseController;
 use App\Http\Controllers\API\V1\Report\ReportController;
 use App\Http\Controllers\API\V1\Stock\StockController;
+use App\Http\Controllers\API\V1\Transfer\ModuleTransferController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -90,27 +91,42 @@ Route::prefix('v1')->group(function () {
         Route::get('budgets/summary', [BudgetController::class, 'summary']);
         Route::apiResource('budgets', BudgetController::class);
 
-        Route::get('debts/{debt}/amortization', [DebtController::class, 'amortization']);
-        Route::get('debts/{debt}/accrual', [DebtController::class, 'accrual']);
+        Route::get('debts/{debt}/balance', [DebtController::class, 'balance']);
+        Route::post('debts/{debt}/pay', [DebtController::class, 'pay']);
         Route::apiResource('debts', DebtController::class);
         Route::apiResource('payments', PaymentController::class)->except(['update']);
 
         Route::get('investments/portfolio', [InvestmentController::class, 'portfolio']);
+        Route::get('investments/{investment}/payments', [InvestmentController::class, 'getPayments']);
+        Route::post('investments/{investment}/payments', [InvestmentController::class, 'storePayment']);
+        Route::patch('investments/{investment}/done', [InvestmentController::class, 'markDone']);
         Route::apiResource('investments', InvestmentController::class);
 
         Route::get('stocks/portfolio', [StockController::class, 'portfolio']);
+        Route::get('stocks/{stock}/lots', [StockController::class, 'getLots']);
+        Route::post('stocks/{stock}/lots', [StockController::class, 'storeLot']);
+        Route::patch('stocks/{stock}/price', [StockController::class, 'updateLatestPrice']);
         Route::apiResource('stocks', StockController::class);
 
         Route::get('crypto/portfolio', [CryptoController::class, 'portfolio']);
+        Route::get('crypto/{crypto}/lots', [CryptoController::class, 'getLots']);
+        Route::post('crypto/{crypto}/lots', [CryptoController::class, 'storeLot']);
+        Route::patch('crypto/{crypto}/price', [CryptoController::class, 'updateLatestPrice']);
         Route::apiResource('crypto', CryptoController::class);
+
+        Route::get('module-transfers', [ModuleTransferController::class, 'index']);
+        Route::post('module-transfers', [ModuleTransferController::class, 'store']);
 
         Route::apiResource('financial-plans', FinancialPlanController::class);
         Route::apiResource('financial-goals', FinancialGoalController::class);
         Route::patch('financial-goals/{financialGoal}/progress', [FinancialGoalController::class, 'updateProgress']);
 
+        Route::post('insurance-plans/{insurancePlan}/pay', [InsurancePlanController::class, 'pay']);
+        Route::get('insurance-plans/{insurancePlan}/payments', [InsurancePlanController::class, 'getPayments']);
         Route::apiResource('insurance-plans', InsurancePlanController::class);
         Route::apiResource('insurance-payments', InsurancePaymentController::class)->except(['update']);
 
+        Route::get('purchases/summary', [PurchaseController::class, 'summary']);
         Route::apiResource('purchases', PurchaseController::class);
         Route::patch('purchases/{purchase}/installment', [PurchaseController::class, 'payInstallment']);
 

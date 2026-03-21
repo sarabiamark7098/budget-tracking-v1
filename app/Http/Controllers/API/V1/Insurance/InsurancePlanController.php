@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Insurance\StoreInsurancePlanRequest;
 use App\Http\Requests\Insurance\UpdateInsurancePlanRequest;
 use App\Http\Resources\Insurance\InsurancePlanResource;
+use App\Http\Resources\Insurance\InsurancePaymentResource;
 use App\Models\InsurancePlan;
 use App\Services\InsuranceService;
 use App\Traits\ApiResponseTrait;
@@ -20,7 +21,7 @@ class InsurancePlanController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['coverage_type', 'per_page']);
+        $filters = $request->only(['per_page']);
         $plans = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(InsurancePlanResource::collection($plans)->response()->getData(true));
     }
@@ -50,5 +51,39 @@ class InsurancePlanController extends Controller
         abort_if($insurancePlan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
         $this->service->delete($insurancePlan);
         return $this->respondSuccess(null, 'Insurance plan deleted successfully');
+    }
+
+    public function pay(Request $request, InsurancePlan $insurancePlan): JsonResponse
+    {
+        abort_if($insurancePlan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+
+        $data = $request->validate([
+            'amount'       => ['required', 'numeric', 'min:0.01'],
+            'payment_date' => ['nullable', 'date'],
+            'note'         => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $data['payment_date'] = $data['payment_date'] ?? now()->toDateString();
+
+        $payment = $this->service->recordPayment(
+            $this->budget($request),
+            auth()->user(),
+            array_merge($data, ['insurance_plan_id' => $insurancePlan->id])
+        );
+
+        return $this->respondCreated(new InsurancePaymentResource($payment), 'Payment recorded successfully');
+    }
+
+    public function getPayments(Request $request, InsurancePlan $insurancePlan): JsonResponse
+    {
+        abort_if($insurancePlan->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+
+        $payments = $insurancePlan->insurancePayments()
+            ->orderBy('payment_date', 'desc')
+            ->paginate(20);
+
+        return $this->respondSuccess(
+            InsurancePaymentResource::collection($payments)->response()->getData(true)
+        );
     }
 }

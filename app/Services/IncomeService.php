@@ -12,12 +12,7 @@ class IncomeService
 {
     public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
-        $query = Income::with('category')
-            ->where('budget_tracking_id', $budget->id);
-
-        if (!empty($filters['category_id'])) {
-            $query->where('category_id', $filters['category_id']);
-        }
+        $query = Income::where('budget_tracking_id', $budget->id);
 
         if (!empty($filters['date_from'])) {
             $query->where('received_at', '>=', $filters['date_from']);
@@ -30,8 +25,7 @@ class IncomeService
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('title', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('source', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+                    ->orWhere('source', 'like', '%' . $filters['search'] . '%');
             });
         }
 
@@ -57,7 +51,7 @@ class IncomeService
         }
 
         $income->update($data);
-        return $income->fresh(['category']);
+        return $income->fresh();
     }
 
     /**

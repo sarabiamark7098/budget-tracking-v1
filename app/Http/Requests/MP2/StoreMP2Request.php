@@ -16,11 +16,12 @@ class StoreMP2Request extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name'                 => ['required', 'string', 'max:255'],
             'monthly_contribution' => ['required', 'numeric', 'min:0'],
-            'duration_years' => ['required', 'integer', 'min:1', 'max:30'],
-            'start_date' => ['required', 'date'],
-            'notes' => ['nullable', 'string'],
+            'duration_years'       => ['required', 'integer', 'min:1', 'max:30'],
+            'start_date'           => ['required', 'date'],
+            'dividend_rate'        => ['nullable', 'numeric', 'min:0.01', 'max:30'],
+            'notes'                => ['nullable', 'string'],
         ];
     }
 

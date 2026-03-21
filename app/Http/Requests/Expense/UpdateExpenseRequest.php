@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Expense;
 
+use App\Models\Budget;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -20,17 +21,35 @@ class UpdateExpenseRequest extends FormRequest
             'budget_id' => [
                 'nullable',
                 Rule::exists('budgets', 'id')
-                    ->where('user_id', $this->user()->id)
-                    ->whereNull('deleted_at'),
+                    ->whereNull('deleted_at')
+                    ->where('budget_tracking_id', $this->attributes->get('budgetTracking')?->id),
             ],
-            'category_id'          => ['nullable', 'exists:categories,id'],
-            'title'                => ['nullable', 'string', 'max:255'],
-            'amount'               => ['nullable', 'numeric', 'min:0'],
-            'description'          => ['nullable', 'string'],
-            'spent_at'             => ['nullable', 'date'],
-            'is_recurring'         => ['boolean'],
-            'recurrence_interval'  => ['nullable', 'in:daily,weekly,monthly,yearly'],
-            'recurrence_end_date'  => ['nullable', 'date'],
+            'title'    => ['nullable', 'string', 'max:255'],
+            'amount'   => [
+                'nullable', 'numeric', 'min:0.01',
+                function ($attribute, $value, $fail) {
+                    $tracker = $this->attributes->get('budgetTracking');
+                    $expense = $this->route('expense');
+                    if (! $tracker) return;
+                    $creditBack = $expense ? (float) $expense->amount : 0.0;
+                    $available = $tracker->availableBalance(creditBack: $creditBack);
+                    if ((float) $value > $available) {
+                        $fail('Insufficient income balance. Available: ₱' . number_format($available, 2) . '.');
+                    }
+                },
+            ],
+            'spent_at' => [
+                'nullable',
+                'date',
+                function ($attribute, $value, $fail) {
+                    $budgetId = $this->input('budget_id') ?? $this->route('expense')?->budget_id;
+                    $budget   = $budgetId ? Budget::find($budgetId) : null;
+
+                    if ($budget && $budget->start_date && $value < $budget->start_date->toDateString()) {
+                        $fail("The expense date cannot be before the budget's start date ({$budget->start_date->toDateString()}).");
+                    }
+                },
+            ],
         ];
     }
 
@@ -38,6 +57,7 @@ class UpdateExpenseRequest extends FormRequest
     {
         return [
             'budget_id.exists' => 'The selected budget does not exist or does not belong to you.',
+            'amount.min'       => 'The expense amount must be greater than zero.',
         ];
     }
 

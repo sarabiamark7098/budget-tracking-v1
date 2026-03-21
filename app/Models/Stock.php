@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stock extends Model
@@ -15,21 +16,12 @@ class Stock extends Model
         'budget_tracking_id',
         'symbol',
         'company_name',
-        'shares',
-        'buy_price',
-        'current_price',
-        'purchase_date',
-        'notes',
+        'latest_price',
     ];
 
     protected $casts = [
-        'shares' => 'decimal:4',
-        'buy_price' => 'decimal:4',
-        'current_price' => 'decimal:4',
-        'purchase_date' => 'date',
+        'latest_price' => 'decimal:4',
     ];
-
-    protected $appends = ['current_value', 'profit_loss', 'profit_loss_percentage'];
 
     public function budgetTracking(): BelongsTo
     {
@@ -41,22 +33,8 @@ class Stock extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function getCurrentValueAttribute(): float
+    public function lots(): HasMany
     {
-        return (float) $this->shares * (float) $this->current_price;
-    }
-
-    public function getProfitLossAttribute(): float
-    {
-        return $this->current_value - ((float) $this->shares * (float) $this->buy_price);
-    }
-
-    public function getProfitLossPercentageAttribute(): float
-    {
-        $costBasis = (float) $this->shares * (float) $this->buy_price;
-        if ($costBasis == 0) {
-            return 0;
-        }
-        return round(($this->profit_loss / $costBasis) * 100, 2);
+        return $this->hasMany(StockLot::class);
     }
 }

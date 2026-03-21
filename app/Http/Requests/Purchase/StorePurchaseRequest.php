@@ -16,14 +16,14 @@ class StorePurchaseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'item_name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'total_cost' => ['required', 'numeric', 'min:0'],
-            'is_installment' => ['boolean'],
-            'installment_count' => ['required_if:is_installment,true', 'nullable', 'integer', 'min:2'],
-            'installment_amount' => ['nullable', 'numeric', 'min:0'],
-            'purchase_date' => ['required', 'date'],
+            'item_name'         => ['required', 'string', 'max:255'],
+            'total_cost'        => ['required', 'numeric', 'min:0'],
+            'payment_method'    => ['required', 'in:cash,credit_card,other'],
+            'purchase_date'     => ['required', 'date'],
+            // Credit card only
+            'installment_count' => ['required_if:payment_method,credit_card', 'nullable', 'integer', 'min:1'],
+            'installment_amount'=> ['nullable', 'numeric', 'min:0'],
+            'installments_paid' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

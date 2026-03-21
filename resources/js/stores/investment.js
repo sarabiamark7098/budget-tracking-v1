@@ -27,6 +27,7 @@ export const useInvestmentStore = defineStore('investment', () => {
     async function create(formData) {
         const { data } = await investmentService.create(formData);
         items.value.unshift(data.data);
+        await fetchPortfolio();
         return data.data;
     }
 
@@ -40,7 +41,38 @@ export const useInvestmentStore = defineStore('investment', () => {
     async function remove(id) {
         await investmentService.delete(id);
         items.value = items.value.filter(i => i.id !== id);
+        await fetchPortfolio();
     }
 
-    return { items, loading, pagination, portfolio, fetchAll, fetchPortfolio, create, update, remove };
+    async function fetchPayments(id) {
+        const { data } = await investmentService.getPayments(id);
+        return data.data;
+    }
+
+    async function addPayment(id, formData) {
+        const { data } = await investmentService.addPayment(id, formData);
+        // Update item's payment_status in the list
+        const idx = items.value.findIndex(i => i.id === id);
+        if (idx !== -1) {
+            items.value[idx] = {
+                ...items.value[idx],
+                payment_status: data.data.payment_status,
+                total_paid: data.data.total_paid,
+            };
+        }
+        return data.data;
+    }
+
+    async function markDone(id) {
+        const { data } = await investmentService.markDone(id);
+        const idx = items.value.findIndex(i => i.id === id);
+        if (idx !== -1) items.value[idx] = data.data;
+        return data.data;
+    }
+
+    return {
+        items, loading, pagination, portfolio,
+        fetchAll, fetchPortfolio, create, update, remove,
+        fetchPayments, addPayment, markDone,
+    };
 });

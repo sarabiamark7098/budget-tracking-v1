@@ -17,17 +17,17 @@ class ExpenseTest extends TestCase
 
     /**
      * Create a budget that covers the current month for the given user.
+     * The user must have been created via createUser() so getBT() works.
      */
     private function makeMonthBudget(User $user, array $overrides = []): Budget
     {
         return Budget::create(array_merge([
-            'user_id'         => $user->id,
-            'name'            => 'Test Budget',
-            'amount'          => 10000,
-            'period'          => 'monthly',
-            'start_date'      => now()->startOfMonth()->toDateString(),
-            'end_date'        => now()->endOfMonth()->toDateString(),
-            'alert_threshold' => 80,
+            'user_id'             => $user->id,
+            'budget_tracking_id'  => $this->getBT($user)->id,
+            'name'                => 'Test Budget',
+            'amount'              => 10000,
+            'period'              => 'monthly',
+            'start_date'          => now()->startOfMonth()->toDateString(),
         ], $overrides));
     }
 
@@ -35,15 +35,16 @@ class ExpenseTest extends TestCase
 
     public function test_can_list_expenses(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
         $budget = $this->makeMonthBudget($user);
 
         Expense::create([
-            'user_id'   => $user->id,
-            'budget_id' => $budget->id,
-            'title'     => 'Groceries',
-            'amount'    => 2000,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'Groceries',
+            'amount'             => 2000,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->getJson('/api/v1/expenses')
@@ -54,7 +55,8 @@ class ExpenseTest extends TestCase
 
     public function test_can_create_expense(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
+        $this->addIncome($user, 100000);
         $budget = $this->makeMonthBudget($user);
 
         $this->actingAs($user, 'sanctum')->postJson('/api/v1/expenses', [
@@ -71,7 +73,7 @@ class ExpenseTest extends TestCase
 
     public function test_create_expense_fails_without_budget_id(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
 
         $this->actingAs($user, 'sanctum')->postJson('/api/v1/expenses', [
             'title'    => 'No budget',
@@ -85,8 +87,8 @@ class ExpenseTest extends TestCase
 
     public function test_create_expense_fails_with_other_users_budget(): void
     {
-        $user  = User::factory()->create();
-        $other = User::factory()->create();
+        $user  = $this->createUser();
+        $other = $this->createUser();
 
         $otherBudget = $this->makeMonthBudget($other, ['name' => 'Other Budget']);
 
@@ -102,7 +104,7 @@ class ExpenseTest extends TestCase
 
     public function test_create_expense_validation_fails_missing_required_fields(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createUser();
 
         $this->actingAs($user, 'sanctum')->postJson('/api/v1/expenses', [
             'title' => 'Only title, missing amount and spent_at',
@@ -113,15 +115,16 @@ class ExpenseTest extends TestCase
 
     public function test_can_show_expense(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
         $budget = $this->makeMonthBudget($user);
 
         $expense = Expense::create([
-            'user_id'   => $user->id,
-            'budget_id' => $budget->id,
-            'title'     => 'Electric Bill',
-            'amount'    => 1500,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'Electric Bill',
+            'amount'             => 1500,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->getJson("/api/v1/expenses/{$expense->id}")
@@ -132,16 +135,17 @@ class ExpenseTest extends TestCase
 
     public function test_cannot_show_other_users_expense(): void
     {
-        $user      = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $user      = $this->createUser();
+        $otherUser = $this->createUser();
         $budget    = $this->makeMonthBudget($otherUser);
 
         $expense = Expense::create([
-            'user_id'   => $otherUser->id,
-            'budget_id' => $budget->id,
-            'title'     => 'Other Expense',
-            'amount'    => 1000,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $otherUser->id,
+            'budget_tracking_id' => $this->getBT($otherUser)->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'Other Expense',
+            'amount'             => 1000,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->getJson("/api/v1/expenses/{$expense->id}")
@@ -150,14 +154,16 @@ class ExpenseTest extends TestCase
 
     public function test_can_update_expense(): void
     {
-        $user    = User::factory()->create();
+        $user    = $this->createUser();
+        $this->addIncome($user, 100000);
         $budget  = $this->makeMonthBudget($user);
         $expense = Expense::create([
-            'user_id'   => $user->id,
-            'budget_id' => $budget->id,
-            'title'     => 'Old Title',
-            'amount'    => 1000,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'Old Title',
+            'amount'             => 1000,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->putJson("/api/v1/expenses/{$expense->id}", [
@@ -171,16 +177,17 @@ class ExpenseTest extends TestCase
 
     public function test_can_change_budget_when_updating_expense(): void
     {
-        $user    = User::factory()->create();
+        $user    = $this->createUser();
         $budgetA = $this->makeMonthBudget($user, ['name' => 'Budget A', 'amount' => 5000]);
         $budgetB = $this->makeMonthBudget($user, ['name' => 'Budget B', 'amount' => 8000]);
 
         $expense = Expense::create([
-            'user_id'   => $user->id,
-            'budget_id' => $budgetA->id,
-            'title'     => 'Lunch',
-            'amount'    => 300,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'budget_id'          => $budgetA->id,
+            'title'              => 'Lunch',
+            'amount'             => 300,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->putJson("/api/v1/expenses/{$expense->id}", [
@@ -193,18 +200,19 @@ class ExpenseTest extends TestCase
 
     public function test_cannot_update_budget_to_other_users_budget(): void
     {
-        $user      = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $user      = $this->createUser();
+        $otherUser = $this->createUser();
 
         $myBudget    = $this->makeMonthBudget($user,      ['name' => 'Mine']);
         $otherBudget = $this->makeMonthBudget($otherUser, ['name' => 'Theirs']);
 
         $expense = Expense::create([
-            'user_id'   => $user->id,
-            'budget_id' => $myBudget->id,
-            'title'     => 'Dinner',
-            'amount'    => 500,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'budget_id'          => $myBudget->id,
+            'title'              => 'Dinner',
+            'amount'             => 500,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->putJson("/api/v1/expenses/{$expense->id}", [
@@ -216,15 +224,16 @@ class ExpenseTest extends TestCase
 
     public function test_can_delete_expense(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
         $budget = $this->makeMonthBudget($user);
 
         $expense = Expense::create([
-            'user_id'   => $user->id,
-            'budget_id' => $budget->id,
-            'title'     => 'To Delete',
-            'amount'    => 500,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $user->id,
+            'budget_tracking_id' => $this->getBT($user)->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'To Delete',
+            'amount'             => 500,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/expenses/{$expense->id}")
@@ -236,16 +245,17 @@ class ExpenseTest extends TestCase
 
     public function test_cannot_update_other_users_expense(): void
     {
-        $user      = User::factory()->create();
-        $otherUser = User::factory()->create();
+        $user      = $this->createUser();
+        $otherUser = $this->createUser();
         $budget    = $this->makeMonthBudget($otherUser);
 
         $expense = Expense::create([
-            'user_id'   => $otherUser->id,
-            'budget_id' => $budget->id,
-            'title'     => 'Other Expense',
-            'amount'    => 1000,
-            'spent_at'  => now()->toDateString(),
+            'user_id'            => $otherUser->id,
+            'budget_tracking_id' => $this->getBT($otherUser)->id,
+            'budget_id'          => $budget->id,
+            'title'              => 'Other Expense',
+            'amount'             => 1000,
+            'spent_at'           => now()->toDateString(),
         ]);
 
         $this->actingAs($user, 'sanctum')->putJson("/api/v1/expenses/{$expense->id}", [
@@ -256,13 +266,13 @@ class ExpenseTest extends TestCase
 
     public function test_expense_list_only_shows_own_records(): void
     {
-        $user      = User::factory()->create();
-        $otherUser = User::factory()->create();
-        $myBudget  = $this->makeMonthBudget($user);
+        $user      = $this->createUser();
+        $otherUser = $this->createUser();
+        $myBudget    = $this->makeMonthBudget($user);
         $otherBudget = $this->makeMonthBudget($otherUser);
 
-        Expense::create(['user_id' => $user->id,      'budget_id' => $myBudget->id,    'title' => 'My Expense',    'amount' => 500,  'spent_at' => now()->toDateString()]);
-        Expense::create(['user_id' => $otherUser->id, 'budget_id' => $otherBudget->id, 'title' => 'Other Expense', 'amount' => 1000, 'spent_at' => now()->toDateString()]);
+        Expense::create(['user_id' => $user->id,      'budget_tracking_id' => $this->getBT($user)->id,      'budget_id' => $myBudget->id,    'title' => 'My Expense',    'amount' => 500,  'spent_at' => now()->toDateString()]);
+        Expense::create(['user_id' => $otherUser->id, 'budget_tracking_id' => $this->getBT($otherUser)->id, 'budget_id' => $otherBudget->id, 'title' => 'Other Expense', 'amount' => 1000, 'spent_at' => now()->toDateString()]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/expenses');
         $response->assertOk();
@@ -280,7 +290,8 @@ class ExpenseTest extends TestCase
 
     public function test_expense_is_linked_to_selected_budget(): void
     {
-        $user     = User::factory()->create();
+        $user     = $this->createUser();
+        $this->addIncome($user, 100000);
         $category = Category::create(['name' => 'Food', 'user_id' => $user->id, 'type' => 'expense']);
 
         $foodBudget    = $this->makeMonthBudget($user, ['name' => 'Food Budget',    'category_id' => $category->id, 'amount' => 5000]);
@@ -302,7 +313,8 @@ class ExpenseTest extends TestCase
 
     public function test_expense_budget_impact_is_returned_on_create(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
+        $this->addIncome($user, 100000);
         $budget = $this->makeMonthBudget($user, ['amount' => 5000]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/expenses', [
@@ -317,7 +329,7 @@ class ExpenseTest extends TestCase
 
         $this->assertNotNull($impact);
         $this->assertEquals('Test Budget',  $impact['budget_name']);
-        $this->assertEquals(5000,           $impact['allocated_amount']);
+        $this->assertEquals(5000,           $impact['total_budget']);
         $this->assertEquals(1500,           $impact['spent_amount']);
         $this->assertEquals(3500,           $impact['remaining_amount']);
         $this->assertEquals(30.0,           $impact['usage_pct']);
@@ -326,7 +338,8 @@ class ExpenseTest extends TestCase
 
     public function test_expense_budget_impact_shows_warning_status(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
+        $this->addIncome($user, 100000);
         $budget = $this->makeMonthBudget($user, ['amount' => 1000]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/expenses', [
@@ -343,7 +356,8 @@ class ExpenseTest extends TestCase
 
     public function test_expense_budget_impact_shows_over_budget_status_with_negative_remaining(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
+        $this->addIncome($user, 100000);
         $budget = $this->makeMonthBudget($user, ['amount' => 1000]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/expenses', [
@@ -364,12 +378,12 @@ class ExpenseTest extends TestCase
 
     public function test_budget_remaining_amount_goes_negative_when_overspent(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
         $budget = $this->makeMonthBudget($user, ['amount' => 3000]);
 
         // Two expenses totalling 4500 against a 3000 budget
-        Expense::create(['user_id' => $user->id, 'budget_id' => $budget->id, 'title' => 'Rent',  'amount' => 3000, 'spent_at' => now()->toDateString()]);
-        Expense::create(['user_id' => $user->id, 'budget_id' => $budget->id, 'title' => 'Extra', 'amount' => 1500, 'spent_at' => now()->toDateString()]);
+        Expense::create(['user_id' => $user->id, 'budget_tracking_id' => $this->getBT($user)->id, 'budget_id' => $budget->id, 'title' => 'Rent',  'amount' => 3000, 'spent_at' => now()->toDateString()]);
+        Expense::create(['user_id' => $user->id, 'budget_tracking_id' => $this->getBT($user)->id, 'budget_id' => $budget->id, 'title' => 'Extra', 'amount' => 1500, 'spent_at' => now()->toDateString()]);
 
         $budget->refresh();
 
@@ -380,7 +394,8 @@ class ExpenseTest extends TestCase
 
     public function test_budget_spent_amount_counts_all_linked_expenses(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
+        $this->addIncome($user, 100000);
         $budget = $this->makeMonthBudget($user, ['amount' => 10000]);
 
         $this->actingAs($user, 'sanctum')->postJson('/api/v1/expenses', [
@@ -398,12 +413,12 @@ class ExpenseTest extends TestCase
 
     public function test_expense_list_is_filterable_by_budget(): void
     {
-        $user    = User::factory()->create();
+        $user    = $this->createUser();
         $budgetA = $this->makeMonthBudget($user, ['name' => 'Budget A']);
         $budgetB = $this->makeMonthBudget($user, ['name' => 'Budget B']);
 
-        Expense::create(['user_id' => $user->id, 'budget_id' => $budgetA->id, 'title' => 'A Expense', 'amount' => 100, 'spent_at' => now()->toDateString()]);
-        Expense::create(['user_id' => $user->id, 'budget_id' => $budgetB->id, 'title' => 'B Expense', 'amount' => 200, 'spent_at' => now()->toDateString()]);
+        Expense::create(['user_id' => $user->id, 'budget_tracking_id' => $this->getBT($user)->id, 'budget_id' => $budgetA->id, 'title' => 'A Expense', 'amount' => 100, 'spent_at' => now()->toDateString()]);
+        Expense::create(['user_id' => $user->id, 'budget_tracking_id' => $this->getBT($user)->id, 'budget_id' => $budgetB->id, 'title' => 'B Expense', 'amount' => 200, 'spent_at' => now()->toDateString()]);
 
         $response = $this->actingAs($user, 'sanctum')
             ->getJson("/api/v1/expenses?budget_id={$budgetA->id}");
@@ -415,7 +430,7 @@ class ExpenseTest extends TestCase
 
     public function test_deleted_budget_cannot_be_used_for_new_expense(): void
     {
-        $user   = User::factory()->create();
+        $user   = $this->createUser();
         $budget = $this->makeMonthBudget($user);
         $budget->delete();   // soft-delete the budget
 

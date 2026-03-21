@@ -17,10 +17,13 @@ const props = defineProps({
 });
 
 const colorClass = computed(() => ({
-  green: 'text-green-600',
-  red: 'text-red-600',
-  blue: 'text-blue-600',
+  green:  'text-green-600',
+  red:    'text-red-600',
+  blue:   'text-blue-600',
   orange: 'text-orange-600',
   purple: 'text-purple-600',
+  violet: 'text-violet-600',
+  teal:   'text-teal-600',
+  gray:   'text-gray-500',
 }[props.color] || 'text-gray-800'));
 </script>

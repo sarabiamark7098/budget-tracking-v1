@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BudgetTracking;
 use App\Models\Debt;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -22,17 +23,21 @@ class DebtService
             $query->where('status', $filters['status']);
         }
 
-        $perPage = $filters['per_page'] ?? 15;
+        $perPage = $filters['per_page'] ?? 50;
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
     public function create(BudgetTracking $budget, User $user, array $data): Debt
     {
-        $data['remaining_balance'] = $data['remaining_balance'] ?? $data['amount'];
-        return Debt::create(array_merge($data, [
+        $data['remaining_balance'] = $data['amount'];
+        $data['status']            = 'active';
+
+        $debt = Debt::create(array_merge($data, [
             'budget_tracking_id' => $budget->id,
             'user_id'            => $user->id,
         ]));
+
+        return $debt->load('payments');
     }
 
     public function update(Debt $debt, array $data): Debt
@@ -46,118 +51,128 @@ class DebtService
         return $debt->delete();
     }
 
-    public function calculateRemainingBalance(Debt $debt): float
+    /**
+     * Record a payment for a personal "Shop Pay Later" debt.
+     * Pays off the full remaining balance in one shot.
+     */
+    public function payShopPayLater(Debt $debt, User $user): Payment
     {
-        $totalPaid = $debt->payments()->sum('amount');
-        return max(0, (float) $debt->amount - (float) $totalPaid);
+        $amount = (float) $debt->remaining_balance;
+
+        return Payment::create([
+            'debt_id'            => $debt->id,
+            'budget_tracking_id' => $debt->budget_tracking_id,
+            'user_id'            => $user->id,
+            'amount'             => $amount,
+            'payment_date'       => now()->toDateString(),
+        ]);
     }
 
     /**
-     * Generate a monthly amortization schedule for a debt with interest.
-     *
-     * Formula (compound monthly interest):
-     *   Balance_n = Balance_(n-1) × (1 + monthly_rate) − payment
-     *
-     * If monthly_payment is not given, it is derived so the debt is paid off
-     * within duration_months using the standard annuity formula:
-     *   PMT = P × r / (1 − (1 + r)^−n)
-     *
-     * @param  float  $principal       Original loan amount
-     * @param  float  $annualRatePct   Annual interest rate as percentage (e.g. 10 = 10%)
-     * @param  int    $durationMonths  Number of monthly payments
-     * @param  float|null $fixedPayment  Override computed payment amount
-     * @return array  ['monthly_payment', 'total_paid', 'total_interest', 'schedule']
+     * Record the next monthly installment for a personal "Pay Installment" debt.
      */
-    public function amortizationSchedule(
-        float $principal,
-        float $annualRatePct,
-        int   $durationMonths,
-        ?float $fixedPayment = null
-    ): array {
-        $monthlyRate = $annualRatePct / 100 / 12;
+    public function payInstallment(Debt $debt, User $user): Payment
+    {
+        $installmentNumber = $debt->payments()->count() + 1;
+        $amount            = (float) $debt->monthly_payment;
 
-        // Standard annuity PMT formula; handle 0% interest edge case
-        if ($monthlyRate > 0 && $fixedPayment === null) {
-            $pmt = $principal * $monthlyRate / (1 - pow(1 + $monthlyRate, -$durationMonths));
+        // Do not overpay beyond remaining balance
+        $amount = min($amount, (float) $debt->remaining_balance);
+
+        return Payment::create([
+            'debt_id'            => $debt->id,
+            'budget_tracking_id' => $debt->budget_tracking_id,
+            'user_id'            => $user->id,
+            'amount'             => $amount,
+            'payment_date'       => now()->toDateString(),
+            'installment_number' => $installmentNumber,
+        ]);
+    }
+
+    /**
+     * Record a payment for a business debt.
+     * Interest is computed with simple annual interest from creation date.
+     * Payment is applied to interest first, then principal.
+     *
+     * Returns [payment, breakdown] so the caller can generate an invoice.
+     */
+    public function payBusiness(Debt $debt, User $user, float $amountToPay): array
+    {
+        $principal    = (float) $debt->remaining_balance;
+        $annualRate   = (float) $debt->interest_rate;
+        $lastPayment  = $debt->payments()->latest('payment_date')->first();
+        $startDate    = $lastPayment ? $lastPayment->payment_date : $debt->created_at;
+        // Signed: negative because start date is in the past relative to now
+        // days_accumulated = days_elapsed / -1  (flips negative → positive)
+        $daysElapsed = (int) now()->diffInDays($startDate, false);
+
+        // Formula: daily_interest   = (principal × rate/100) / 30
+        //          accrued_interest = daily_interest × (days_elapsed / -1)
+        //          balance_due      = principal + accrued_interest
+        $dailyInterest   = ($principal * ($annualRate / 100)) / 30;
+        $accruedInterest = $dailyInterest * ($daysElapsed / -1);
+        $interestDue     = max(0, $accruedInterest);
+
+        // Split payment: interest first, then principal
+        if ($amountToPay >= $interestDue) {
+            $interestPaid  = $interestDue;
+            $principalPaid = $amountToPay - $interestDue;
         } else {
-            $pmt = $fixedPayment ?? ($principal / $durationMonths);
+            $interestPaid  = $amountToPay;
+            $principalPaid = 0;
         }
 
-        $balance   = $principal;
-        $schedule  = [];
-        $totalPaid = 0;
+        $principalPaid = min($principalPaid, $principal); // cap at remaining principal
 
-        for ($month = 1; $month <= $durationMonths; $month++) {
-            $interest   = $balance * $monthlyRate;
-            $principal_portion = $pmt - $interest;
+        $payment = Payment::create([
+            'debt_id'            => $debt->id,
+            'budget_tracking_id' => $debt->budget_tracking_id,
+            'user_id'            => $user->id,
+            'amount'             => round($amountToPay, 2),
+            'interest_paid'      => round($interestPaid, 2),
+            'principal_paid'     => round($principalPaid, 2),
+            'days_elapsed'       => (int) ($daysElapsed / -1), // days accumulated
+            'payment_date'       => now()->toDateString(),
+        ]);
 
-            // Last payment adjustment to clear rounding residual
-            if ($month === $durationMonths) {
-                $principal_portion = $balance;
-                $pmt               = $principal_portion + $interest;
-            }
-
-            $balance   -= $principal_portion;
-            $totalPaid += $pmt;
-
-            $schedule[] = [
-                'month'             => $month,
-                'payment'           => round($pmt, 2),
-                'principal_portion' => round($principal_portion, 2),
-                'interest_portion'  => round($interest, 2),
-                'remaining_balance' => round(max(0, $balance), 2),
-            ];
-
-            if ($balance <= 0.01) {
-                break;
-            }
-        }
-
-        return [
-            'monthly_payment'  => round($fixedPayment ?? $schedule[0]['payment'], 2),
-            'total_paid'       => round($totalPaid, 2),
-            'total_interest'   => round($totalPaid - $principal, 2),
-            'interest_to_principal_ratio' => $principal > 0
-                ? round((($totalPaid - $principal) / $principal) * 100, 2)
-                : 0,
-            'schedule'         => $schedule,
+        $balanceDue = round($principal + $accruedInterest, 2);
+        $breakdown  = [
+            'amount_borrowed'     => round($principal, 2),
+            'annual_rate'         => $annualRate,
+            'days_elapsed'        => (int) ($daysElapsed / -1),
+            'accrued_interest'    => round($accruedInterest, 2),
+            'balance_due'         => $balanceDue,
+            'rounded_balance_due' => (int) round($balanceDue),
+            'amount_paid'         => round($amountToPay, 2),
+            'interest_paid'       => round($interestPaid, 2),
+            'principal_paid'      => round($principalPaid, 2),
         ];
+
+        return [$payment, $breakdown];
     }
 
     /**
-     * Calculate accrued interest for a business debt using daily compounding.
-     *
-     * Formula (simple daily interest, common for informal business loans):
-     *   Daily interest = principal × (monthly_rate / 30)
-     *   Accrued        = daily_interest × days_elapsed
-     *   Current balance = principal + accrued − total_paid
-     *
-     * @param  float  $principal       Original loan amount
-     * @param  float  $monthlyRatePct  Monthly interest rate as percentage (e.g. 10 = 10%/month)
-     * @param  int    $daysElapsed     Days since loan start
-     * @param  float  $totalPaid       Sum of all payments made
-     * @return array  ['daily_interest', 'accrued_interest', 'current_balance']
+     * Calculate the current balance due for a business debt (readonly preview).
      */
-    public function dailyInterestAccrual(
-        float $principal,
-        float $monthlyRatePct,
-        int   $daysElapsed,
-        float $totalPaid = 0
-    ): array {
-        $dailyRate      = $monthlyRatePct / 100 / 30;
-        $dailyInterest  = $principal * $dailyRate;
-        $accruedInterest = $dailyInterest * $daysElapsed;
-        $currentBalance  = max(0, $principal + $accruedInterest - $totalPaid);
+    public function businessBalanceDue(Debt $debt): array
+    {
+        $principal   = (float) $debt->remaining_balance;
+        $annualRate  = (float) $debt->interest_rate;
+        $lastPayment     = $debt->payments()->latest('payment_date')->first();
+        $startDate       = $lastPayment ? $lastPayment->payment_date : $debt->created_at;
+        $daysElapsed = (int) now()->diffInDays($startDate, false); // negative (past date)
+
+        $dailyInterest   = ($principal * ($annualRate / 100)) / 30;
+        $accruedInterest = $dailyInterest * ($daysElapsed / -1);
 
         return [
-            'principal'         => round($principal, 2),
-            'monthly_rate_pct'  => $monthlyRatePct,
-            'daily_interest'    => round($dailyInterest, 2),
-            'days_elapsed'      => $daysElapsed,
-            'accrued_interest'  => round($accruedInterest, 2),
-            'total_paid'        => round($totalPaid, 2),
-            'current_balance'   => round($currentBalance, 2),
-            'total_cost'        => round($principal + $accruedInterest, 2),
+            'amount_borrowed'  => round($principal, 2),
+            'annual_rate'      => $annualRate,
+            'days_elapsed'     => (int) ($daysElapsed / -1), // displayed as "Days Accumulated"
+            'daily_interest'   => round($dailyInterest, 4),
+            'accrued_interest'       => round($accruedInterest, 2),
+            'balance_due'            => round($principal + $accruedInterest, 2),
+            'rounded_balance_due'    => (int) round($principal + $accruedInterest),
         ];
     }
 }

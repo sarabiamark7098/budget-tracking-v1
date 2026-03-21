@@ -23,7 +23,9 @@ use App\Models\FinancialGoal;
 use App\Models\InsurancePlan;
 use App\Models\InsurancePayment;
 use App\Models\Purchase;
+use App\Models\PurchasePayment;
 use App\Models\MP2Plan;
+use App\Models\ModuleTransfer;
 
 class BudgetTracking extends Model
 {
@@ -44,7 +46,7 @@ class BudgetTracking extends Model
         'start_date' => 'date',
     ];
 
-    protected $appends = ['total_allocated', 'total_income', 'total_expense', 'balance'];
+    protected $appends = ['total_allocated', 'total_income', 'total_expense', 'balance', 'available_balance'];
 
     // ─── Relationships ──────────────────────────────────────────────────────────
 
@@ -88,8 +90,10 @@ class BudgetTracking extends Model
     public function financialGoals(): HasMany{ return $this->hasMany(FinancialGoal::class); }
     public function insurancePlans(): HasMany{ return $this->hasMany(InsurancePlan::class); }
     public function insurancePayments(): HasMany { return $this->hasMany(InsurancePayment::class); }
-    public function purchases(): HasMany     { return $this->hasMany(Purchase::class); }
-    public function mp2Plans(): HasMany      { return $this->hasMany(MP2Plan::class); }
+    public function purchases(): HasMany        { return $this->hasMany(Purchase::class); }
+    public function purchasePayments(): HasMany { return $this->hasMany(PurchasePayment::class); }
+    public function mp2Plans(): HasMany           { return $this->hasMany(MP2Plan::class); }
+    public function moduleTransfers(): HasMany    { return $this->hasMany(ModuleTransfer::class); }
 
     // ─── Computed Attributes ────────────────────────────────────────────────────
 
@@ -111,6 +115,44 @@ class BudgetTracking extends Model
     public function getBalanceAttribute(): float
     {
         return $this->total_income - $this->total_expense;
+    }
+
+    // ─── Balance ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Current available balance = total income − total expenses − total debt payments.
+     *
+     * Pass $creditBack to temporarily add back the amount of a record being edited,
+     * so the check produces "how much room do we have after reverting that record".
+     *
+     *   $available = $tracker->availableBalance(creditBack: $expense->amount);
+     */
+    public function availableBalance(float $creditBack = 0.0): float
+    {
+        $income = (float) $this->incomes()->sum('amount');
+        $expenses = (float) $this->expenses()->sum('amount');
+
+        // Personal debt payments are OUTGOING (deducted from income)
+        $personalPayments = (float) $this->payments()
+            ->whereHas('debt', fn($q) => $q->where('type', 'personal'))
+            ->sum('amount');
+
+        // Business debt payments are INCOMING (added to income — you are the lender receiving back money)
+        $businessReceived = (float) $this->payments()
+            ->whereHas('debt', fn($q) => $q->where('type', 'business'))
+            ->sum('amount');
+
+        $purchasePayments    = (float) $this->purchasePayments()->sum('amount');
+        $moduleTransfersOut  = (float) $this->moduleTransfers()->whereIn('module', ['investment','stock','crypto'])->sum('total');
+        // Transfers from a module back to income — credit back to the income pool
+        $moduleTransfersBack = (float) $this->moduleTransfers()->where('module', 'income')->sum('amount');
+
+        return $income - $expenses - $personalPayments + $businessReceived - $purchasePayments - $moduleTransfersOut + $moduleTransfersBack + $creditBack;
+    }
+
+    public function getAvailableBalanceAttribute(): float
+    {
+        return $this->availableBalance();
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────

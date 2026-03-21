@@ -21,15 +21,14 @@ class InsurancePlan extends Model
         'coverage_amount',
         'premium_amount',
         'payment_frequency',
-        'next_payment_date',
         'policy_number',
-        'description',
+        'notes',
     ];
 
     protected $casts = [
         'coverage_amount' => 'decimal:2',
-        'premium_amount' => 'decimal:2',
-        'next_payment_date' => 'date',
+        'premium_amount'  => 'decimal:2',
+        'coverage_type'   => 'array',
     ];
 
     public function budgetTracking(): BelongsTo

@@ -16,15 +16,10 @@ class UpdateIncomeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['nullable', 'exists:categories,id'],
-            'title' => ['nullable', 'string', 'max:255'],
-            'amount' => ['nullable', 'numeric', 'min:0'],
-            'source' => ['nullable', 'in:Compensation Income,Business Income,Passive Income,Property Gains,Other Sources'],
-            'description' => ['nullable', 'string'],
+            'title'       => ['nullable', 'string', 'max:255'],
+            'amount'      => ['nullable', 'numeric', 'min:0.01'],
+            'source'      => ['nullable', 'in:Compensation Income,Business Income,Passive Income,Property Gains,Other Sources'],
             'received_at' => ['nullable', 'date'],
-            'is_recurring' => ['boolean'],
-            'recurrence_interval' => ['nullable', 'in:daily,weekly,monthly,yearly'],
-            'recurrence_end_date' => ['nullable', 'date'],
         ];
     }
 

@@ -16,13 +16,9 @@ class UpdateStockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'symbol' => ['nullable', 'string', 'max:20'],
+            'symbol'       => ['nullable', 'string', 'max:20'],
             'company_name' => ['nullable', 'string', 'max:255'],
-            'shares' => ['nullable', 'numeric', 'min:0'],
-            'buy_price' => ['nullable', 'numeric', 'min:0'],
-            'current_price' => ['nullable', 'numeric', 'min:0'],
-            'purchase_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string'],
+            'latest_price' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

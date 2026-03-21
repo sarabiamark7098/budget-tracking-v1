@@ -17,12 +17,10 @@ class StoreBudgetRequest extends FormRequest
     {
         return [
             'category_id' => ['nullable', 'exists:categories,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'period' => ['required', 'in:weekly,monthly,yearly'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after:start_date'],
-            'alert_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'name'        => ['required', 'string', 'max:255'],
+            'amount'      => ['required', 'numeric', 'min:0'],
+            'period'      => ['required', 'in:weekly,monthly,yearly'],
+            'start_date'  => ['required', 'date'],
         ];
     }
 

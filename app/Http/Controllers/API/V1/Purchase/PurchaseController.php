@@ -20,22 +20,26 @@ class PurchaseController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['category_id', 'is_installment', 'search', 'per_page']);
+        $filters   = $request->only(['payment_method', 'search', 'per_page']);
         $purchases = $this->service->getAll($this->budget($request), $filters);
         return $this->respondSuccess(PurchaseResource::collection($purchases)->response()->getData(true));
+    }
+
+    public function summary(Request $request): JsonResponse
+    {
+        $summary = $this->service->getSummary($this->budget($request));
+        return $this->respondSuccess($summary, 'Purchase summary retrieved');
     }
 
     public function store(StorePurchaseRequest $request): JsonResponse
     {
         $purchase = $this->service->create($this->budget($request), auth()->user(), $request->validated());
-        $purchase->load('category');
         return $this->respondCreated(new PurchaseResource($purchase), 'Purchase created successfully');
     }
 
     public function show(Request $request, Purchase $purchase): JsonResponse
     {
         abort_if($purchase->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
-        $purchase->load(['category', 'files']);
         return $this->respondSuccess(new PurchaseResource($purchase));
     }
 
@@ -57,6 +61,8 @@ class PurchaseController extends Controller
     {
         abort_if($purchase->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
 
+        $purchase->loadMissing('budgetTracking');
+
         if (!$purchase->is_installment) {
             return $this->respondError('This purchase is not on installment', 422);
         }
@@ -65,7 +71,12 @@ class PurchaseController extends Controller
             return $this->respondError('All installments have been paid', 422);
         }
 
-        $purchase = $this->service->payInstallment($purchase);
-        return $this->respondSuccess(new PurchaseResource($purchase), 'Installment payment recorded');
+        $result = $this->service->payInstallment($purchase);
+
+        if (is_array($result) && isset($result['error'])) {
+            return $this->respondError($result['error'], 422);
+        }
+
+        return $this->respondSuccess(new PurchaseResource($result), 'Installment payment recorded');
     }
 }

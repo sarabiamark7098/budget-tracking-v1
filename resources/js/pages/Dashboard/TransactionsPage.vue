@@ -50,9 +50,10 @@
               <div>
                 <p class="font-medium text-gray-800 text-sm">{{ tx.title }}</p>
                 <p class="text-xs text-gray-400 mt-0.5">
-                  {{ formatDate(tx.date) }}
+                  <span class="text-gray-500">Recorded {{ formatDateTime(tx.created_at) }}</span>
+                  · <span class="capitalize">{{ tx.type.replace(/_/g, ' ') }}</span>
                   <span v-if="tx.category"> · {{ tx.category }}</span>
-                  <span v-if="tx.description" class="italic"> · {{ tx.description }}</span>
+                  <span class="text-gray-300"> · {{ formatDate(tx.date) }}</span>
                 </p>
               </div>
             </div>
@@ -60,11 +61,11 @@
             <div class="text-right">
               <p
                 class="font-semibold text-sm"
-                :class="tx.type === 'income' ? 'text-green-600' : 'text-red-600'"
+                :class="['income','business_debt_received','saving_transfer'].includes(tx.type) ? 'text-green-600' : 'text-red-600'"
               >
-                {{ tx.type === 'income' ? '+' : '-' }}{{ fmt(tx.amount) }}
+                {{ ['income','business_debt_received','saving_transfer'].includes(tx.type) ? '+' : '-' }}{{ fmt(tx.amount) }}
               </p>
-              <p class="text-xs text-gray-400 capitalize mt-0.5">{{ tx.type.replace('_', ' ') }}</p>
+              <p class="text-xs text-gray-400 capitalize mt-0.5">{{ tx.type.replace(/_/g, ' ') }}</p>
             </div>
           </div>
         </div>
@@ -169,15 +170,38 @@ function fmt(val) {
 
 // formatDate imported from @/utils/date
 
+function formatDateTime(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
 function txIcon(type) {
-  return { income: '↑', expense: '↓', debt_payment: '⊘' }[type] ?? '·';
+  return {
+    income:                 '↑',
+    expense:                '↓',
+    debt_payment:           '⊘',
+    business_debt_received: '↑',
+    purchase:               '🛒',
+    purchase_payment:       '💳',
+    module_transfer:        '→',
+    module_transfer_back:   '←',
+    saving_transfer:        '↑',
+  }[type] ?? '·';
 }
 
 function txBadgeClass(type) {
   return {
-    income:       'bg-green-100 text-green-700',
-    expense:      'bg-red-100 text-red-700',
-    debt_payment: 'bg-orange-100 text-orange-700',
+    income:                 'bg-green-100 text-green-700',
+    expense:                'bg-red-100 text-red-700',
+    debt_payment:           'bg-orange-100 text-orange-700',
+    business_debt_received: 'bg-teal-100 text-teal-700',
+    purchase:               'bg-purple-100 text-purple-700',
+    purchase_payment:       'bg-violet-100 text-violet-700',
+    module_transfer:        'bg-indigo-100 text-indigo-700',
+    module_transfer_back:   'bg-green-100 text-green-700',
+    saving_transfer:        'bg-green-100 text-green-700',
   }[type] ?? 'bg-gray-100 text-gray-600';
 }
 
