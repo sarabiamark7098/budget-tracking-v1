@@ -32,8 +32,15 @@
 
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+
+        <!-- Gate banner: no tracker yet -->
+        <div v-if="btStore.hasChecked && !btStore.tracker" class="mx-1 mb-3 px-3 py-3 bg-indigo-900 rounded-lg text-xs text-indigo-200 leading-relaxed">
+          <p class="font-semibold text-indigo-100 mb-1">Get started</p>
+          Create or join a Budget Tracker to unlock all features.
+        </div>
+
         <RouterLink
-          v-for="item in navItems"
+          v-for="item in visibleNavItems"
           :key="item.path"
           :to="item.path"
           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -101,13 +108,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useBudgetTrackingStore } from '@/stores/budgetTracking';
 
-const router = useRouter();
-const route = useRoute();
+const router   = useRouter();
+const route    = useRoute();
 const authStore = useAuthStore();
+const btStore   = useBudgetTrackingStore();
 const sidebarOpen = ref(false);
 
 const userInitial = computed(() => {
@@ -115,7 +124,8 @@ const userInitial = computed(() => {
   return name.charAt(0).toUpperCase();
 });
 
-const navItems = [
+// ── All nav items ──────────────────────────────────────────────────────────────
+const allNavItems = [
   {
     path: '/dashboard',
     label: 'Dashboard',
@@ -193,6 +203,14 @@ const navItems = [
   },
 ];
 
+// Show all nav items only when user has an active tracker.
+// Before the check resolves (hasChecked=false) show all to avoid flicker on refresh.
+const visibleNavItems = computed(() => {
+  if (!btStore.hasChecked || btStore.tracker) return allNavItems;
+  // No tracker — only show Budget Tracker entry
+  return allNavItems.filter(i => i.path === '/budget-tracking');
+});
+
 const pageTitles = {
   '/dashboard': 'Dashboard',
   '/income': 'Income',
@@ -216,6 +234,17 @@ const currentPageTitle = computed(() => pageTitles[route.path] ?? 'BudgetTrack')
 function isActive(path) {
   return route.path === path;
 }
+
+// Once we know the user has no tracker, redirect any non-tracker route
+watch(
+  () => [btStore.hasChecked, btStore.tracker],
+  ([checked, tracker]) => {
+    if (checked && !tracker && route.path !== '/budget-tracking') {
+      router.replace('/budget-tracking');
+    }
+  },
+  { immediate: true },
+);
 
 async function handleLogout() {
   await authStore.logout();

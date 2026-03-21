@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useBudgetTrackingStore } from '@/stores/budgetTracking';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -11,7 +12,7 @@ const router = createRouter({
             component: () => import('@/layouts/AppLayout.vue'),
             meta: { requiresAuth: true },
             children: [
-                { path: '', redirect: '/dashboard' },
+                { path: '', redirect: '/budget-tracking' },
                 { path: 'dashboard', component: () => import('@/pages/Dashboard/DashboardPage.vue') },
                 { path: 'transactions', component: () => import('@/pages/Dashboard/TransactionsPage.vue') },
                 { path: 'income', component: () => import('@/pages/Income/IncomePage.vue') },
@@ -30,14 +31,22 @@ const router = createRouter({
                 { path: 'reports', component: () => import('@/pages/Report/ReportPage.vue') },
             ],
         },
-        { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
+        { path: '/:pathMatch(.*)*', redirect: '/budget-tracking' },
     ],
 });
 
 router.beforeEach(async (to) => {
     const auth = useAuthStore();
+
     if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login';
-    if (to.meta.guest && auth.isAuthenticated) return '/dashboard';
+    if (to.meta.guest && auth.isAuthenticated) return '/budget-tracking';
+
+    // Gate: authenticated users without a tracker can only visit /budget-tracking
+    if (to.meta.requiresAuth && auth.isAuthenticated && to.path !== '/budget-tracking') {
+        const bt = useBudgetTrackingStore();
+        // If the check has already resolved and there's no tracker, redirect
+        if (bt.hasChecked && !bt.tracker) return '/budget-tracking';
+    }
 });
 
 export default router;

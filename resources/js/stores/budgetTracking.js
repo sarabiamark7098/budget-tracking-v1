@@ -12,6 +12,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
     const loading        = ref(false);
     const txLoading      = ref(false);
     const notFound       = ref(false);
+    const hasChecked     = ref(false); // true once first fetchTracker() completes
 
     // ── Tracker ───────────────────────────────────────────────────────────────
     async function fetchTracker() {
@@ -29,6 +30,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
             }
         } finally {
             loading.value = false;
+            hasChecked.value = true;
         }
     }
 
@@ -52,6 +54,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
         consolidated.value = null;
         transactions.value = [];
         notFound.value = true;
+        hasChecked.value = true;
     }
 
     // ── Membership ────────────────────────────────────────────────────────────
@@ -69,6 +72,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
         consolidated.value = null;
         transactions.value = [];
         notFound.value = true;
+        hasChecked.value = true;
     }
 
     async function regenerateCode() {
@@ -160,7 +164,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
 
     return {
         tracker, summary, consolidated, consolidatedLoading,
-        transactions, txPagination, loading, txLoading, notFound,
+        transactions, txPagination, loading, txLoading, notFound, hasChecked,
         fetchTracker, create, update, remove,
         join, leave, regenerateCode, removeMember,
         fetchSummary, fetchConsolidated,
