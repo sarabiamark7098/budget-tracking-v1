@@ -164,6 +164,7 @@ export const budgetTrackingService = {
     createAllocation:     (data)     => api.post('/budget-tracking/allocations', data),
     updateAllocation:     (id, data) => api.put(`/budget-tracking/allocations/${id}`, data),
     deleteAllocation:     (id)       => api.delete(`/budget-tracking/allocations/${id}`),
+    getConsolidated:      ()         => api.get('/budget-tracking/consolidated'),
     getTransactions:      (params)   => api.get('/budget-tracking/transactions', { params }),
     createTransaction:    (data)     => api.post('/budget-tracking/transactions', data),
     updateTransaction:    (id, data) => api.put(`/budget-tracking/transactions/${id}`, data),

@@ -393,6 +393,445 @@
         </div>
       </div>
 
+      <!-- ────────────────────────────────────────────────────────────────
+           TAB: MEMBERS DATA (CONSOLIDATED)
+      ──────────────────────────────────────────────────────────────────── -->
+      <div v-if="activeTab === 'consolidated'" class="space-y-4">
+
+        <!-- Header row with refresh -->
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-gray-700">Members Financial Data</h2>
+          <button
+            @click="store.fetchConsolidated()"
+            :disabled="store.consolidatedLoading"
+            class="flex items-center gap-1.5 text-xs px-3 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <svg class="w-3.5 h-3.5" :class="store.consolidatedLoading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {{ store.consolidatedLoading ? 'Loading…' : 'Refresh' }}
+          </button>
+        </div>
+
+        <!-- Loading skeleton -->
+        <div v-if="store.consolidatedLoading && !store.consolidated" class="bg-white rounded-xl shadow-sm py-12 text-center text-gray-400 text-sm">
+          Loading consolidated data…
+        </div>
+
+        <template v-else-if="store.consolidated">
+
+          <!-- Sub-tabs -->
+          <div class="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto flex-nowrap w-full">
+            <button
+              v-for="st in consolidatedSubTabs"
+              :key="st.value"
+              @click="consolidatedSubTab = st.value"
+              class="px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0"
+              :class="consolidatedSubTab === st.value ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+            >{{ st.label }}</button>
+          </div>
+
+          <!-- ── OVERVIEW sub-tab ────────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'overview'" class="space-y-4">
+            <div
+              v-for="(member, mi) in store.consolidated.member_summary"
+              :key="member.user_id"
+              class="bg-white rounded-xl shadow-sm p-5"
+            >
+              <!-- Member name header -->
+              <div class="flex items-center gap-3 mb-4 pb-3 border-b">
+                <span
+                  class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                  :style="{ background: memberColor(mi) }"
+                >{{ member.name.charAt(0).toUpperCase() }}</span>
+                <div>
+                  <p class="font-semibold text-gray-800">{{ member.name }}</p>
+                  <span
+                    class="text-xs px-2 py-0.5 rounded-full font-medium"
+                    :class="member.role === 'owner' ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'"
+                  >{{ member.role }}</span>
+                </div>
+              </div>
+              <!-- 7-card stats grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-center">
+                <div class="bg-green-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Total Income</p>
+                  <p class="font-bold text-green-700 mt-0.5">{{ fmt(member.total_income) }}</p>
+                </div>
+                <div class="bg-red-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Total Expenses</p>
+                  <p class="font-bold text-red-700 mt-0.5">{{ fmt(member.total_expenses) }}</p>
+                </div>
+                <div class="bg-orange-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Total Debt</p>
+                  <p class="font-bold text-orange-700 mt-0.5">{{ fmt(member.total_debt) }}</p>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Invested</p>
+                  <p class="font-bold text-blue-700 mt-0.5">{{ fmt(member.total_invested) }}</p>
+                </div>
+                <div class="bg-indigo-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Invest. Value</p>
+                  <p class="font-bold text-indigo-700 mt-0.5">{{ fmt(member.total_invest_val) }}</p>
+                </div>
+                <div class="bg-violet-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Stocks Value</p>
+                  <p class="font-bold text-violet-700 mt-0.5">{{ fmt(member.total_stocks_val) }}</p>
+                </div>
+                <div class="bg-yellow-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Crypto Value</p>
+                  <p class="font-bold text-yellow-700 mt-0.5">{{ fmt(member.total_crypto_val) }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <p class="text-xs text-gray-500">Net (Inc−Exp)</p>
+                  <p class="font-bold mt-0.5" :class="(member.total_income - member.total_expenses) >= 0 ? 'text-green-700' : 'text-red-700'">
+                    {{ fmt(member.total_income - member.total_expenses) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── INCOME sub-tab ──────────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'income'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Income Records</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.income.length }} records</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Source</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.income.length">
+                    <td colspan="5" class="text-center py-8 text-gray-400">No income records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.income" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-700">{{ row.title ?? '—' }}</td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ row.source ?? '—' }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-green-600">+{{ fmt(row.amount) }}</td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(row.received_at) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── EXPENSES sub-tab ────────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'expenses'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Expense Records</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.expenses.length }} records</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.expenses.length">
+                    <td colspan="4" class="text-center py-8 text-gray-400">No expense records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.expenses" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-700">{{ row.title ?? '—' }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-red-600">-{{ fmt(row.amount) }}</td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(row.spent_at) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── DEBTS sub-tab ───────────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'debts'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Debt Records</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.debts.length }} records</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Lender</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Original</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Remaining</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Due</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.debts.length">
+                    <td colspan="6" class="text-center py-8 text-gray-400">No debt records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.debts" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 font-medium text-gray-700">{{ row.lender_name }}</td>
+                    <td class="px-4 py-3 text-right text-gray-500">{{ fmt(row.amount) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-orange-600">{{ fmt(row.remaining_balance) }}</td>
+                    <td class="px-4 py-3">
+                      <span class="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
+                        :class="row.status === 'paid' ? 'bg-green-100 text-green-700' : row.status === 'overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'"
+                      >{{ row.status }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(row.due_date) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── INVESTMENTS sub-tab ────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'investments'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Investments</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.investments.length }} records</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Name</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Type</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Invested</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Value</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">ROI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.investments.length">
+                    <td colspan="6" class="text-center py-8 text-gray-400">No investment records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.investments" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 font-medium text-gray-700">{{ row.name }}</td>
+                    <td class="px-4 py-3 text-gray-500 text-xs capitalize">{{ row.type ?? '—' }}</td>
+                    <td class="px-4 py-3 text-right text-gray-600">{{ fmt(row.amount_invested) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ fmt(row.current_value) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-xs" :class="row.roi >= 0 ? 'text-green-600' : 'text-red-600'">
+                      {{ row.roi >= 0 ? '+' : '' }}{{ Number(row.roi || 0).toFixed(2) }}%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── STOCKS sub-tab ─────────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'stocks'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Stock Holdings</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.stocks.length }} lots</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Symbol</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Company</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Shares</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Buy</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Current</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">P&amp;L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.stocks.length">
+                    <td colspan="7" class="text-center py-8 text-gray-400">No stock records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.stocks" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 font-bold text-indigo-600">{{ row.symbol }}</td>
+                    <td class="px-4 py-3 text-gray-600 text-xs">{{ row.company_name ?? '—' }}</td>
+                    <td class="px-4 py-3 text-right text-gray-700">{{ Number(row.shares).toLocaleString() }}</td>
+                    <td class="px-4 py-3 text-right text-gray-500">{{ fmt(row.buy_price) }}</td>
+                    <td class="px-4 py-3 text-right text-gray-700">{{ fmt(row.current_price) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-xs" :class="(row.current_price - row.buy_price) * row.shares >= 0 ? 'text-green-600' : 'text-red-600'">
+                      {{ fmt((Number(row.current_price) - Number(row.buy_price)) * Number(row.shares)) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── CRYPTO sub-tab ─────────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'crypto'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Crypto Holdings</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.crypto.length }} records</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Coin</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Qty</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Buy</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Current</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">P&amp;L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.crypto.length">
+                    <td colspan="6" class="text-center py-8 text-gray-400">No crypto records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.crypto" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <span class="font-bold text-yellow-600 uppercase">{{ row.symbol }}</span>
+                      <span class="text-xs text-gray-400 ml-1">{{ row.coin_name }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-gray-700">{{ Number(row.quantity).toLocaleString('en-PH', { minimumFractionDigits: 4 }) }}</td>
+                    <td class="px-4 py-3 text-right text-gray-500">{{ fmt(row.buy_price) }}</td>
+                    <td class="px-4 py-3 text-right text-gray-700">{{ fmt(row.current_price) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-xs" :class="(row.current_price - row.buy_price) * row.quantity >= 0 ? 'text-green-600' : 'text-red-600'">
+                      {{ fmt((Number(row.current_price) - Number(row.buy_price)) * Number(row.quantity)) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── PAYMENTS sub-tab ───────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'payments'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Debt Payments</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.payments.length }} records</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Debt / Lender</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.payments.length">
+                    <td colspan="5" class="text-center py-8 text-gray-400">No payment records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.payments" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-700">{{ row.debt?.lender_name ?? '—' }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ fmt(row.amount) }}</td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(row.payment_date) }}</td>
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ row.notes ?? '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── PURCHASES sub-tab ──────────────────────────────────────── -->
+          <div v-if="consolidatedSubTab === 'purchases'" class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-3 border-b flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700">Purchases</span>
+              <span class="text-xs text-gray-400">{{ store.consolidated.purchases.length }} records</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Item</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Total Cost</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Type</th>
+                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Installment</th>
+                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!store.consolidated.purchases.length">
+                    <td colspan="6" class="text-center py-8 text-gray-400">No purchase records</td>
+                  </tr>
+                  <tr v-for="(row, i) in store.consolidated.purchases" :key="i" class="border-b last:border-0 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <span class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
+                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 font-medium text-gray-700">{{ row.item_name }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-gray-800">{{ fmt(row.total_cost) }}</td>
+                    <td class="px-4 py-3">
+                      <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                        :class="row.is_installment ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                      >{{ row.is_installment ? 'Installment' : 'Lump Sum' }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-gray-500 text-xs">
+                      <template v-if="row.is_installment">
+                        {{ fmt(row.installment_amount) }}/mo
+                        · {{ row.installments_paid }}/{{ row.installment_count }} paid
+                      </template>
+                      <template v-else>—</template>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(row.purchase_date) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </template><!-- end consolidated loaded -->
+      </div>
+
     </template><!-- end has-tracker -->
 
     <!-- ══════════════════════════════════════════════════════════════════════
@@ -595,7 +1034,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useBudgetTrackingStore } from '@/stores/budgetTracking';
 import { useAuthStore } from '@/stores/auth';
 import { formatDate } from '@/utils/date';
@@ -609,6 +1048,7 @@ const tabs = [
   { value: 'allocations',  label: 'Allocations' },
   { value: 'transactions', label: 'Transactions' },
   { value: 'members',      label: 'Members' },
+  { value: 'consolidated', label: 'Members Data' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -880,6 +1320,42 @@ async function handleRemoveMember() {
     confirmRemoveMember.value = null;
   }
 }
+
+// ── Consolidated tab ──────────────────────────────────────────────────────
+const consolidatedSubTab = ref('overview');
+const consolidatedSubTabs = [
+  { value: 'overview',     label: 'Overview' },
+  { value: 'income',       label: 'Income' },
+  { value: 'expenses',     label: 'Expenses' },
+  { value: 'debts',        label: 'Debts' },
+  { value: 'investments',  label: 'Investments' },
+  { value: 'stocks',       label: 'Stocks' },
+  { value: 'crypto',       label: 'Crypto' },
+  { value: 'payments',     label: 'Payments' },
+  { value: 'purchases',    label: 'Purchases' },
+];
+
+async function loadConsolidated() {
+  if (!store.consolidated) {
+    await store.fetchConsolidated();
+  }
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'consolidated' && store.tracker) {
+    loadConsolidated();
+  }
+});
+
+function memberColor(index) {
+  const colors = ['#6366F1','#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6','#EC4899','#14B8A6'];
+  return colors[index % colors.length];
+}
+
+const consolidatedMemberColors = computed(() => {
+  const members = store.consolidated?.member_summary ?? [];
+  return Object.fromEntries(members.map((m, i) => [m.name, memberColor(i)]));
+});
 
 // ── Mount ─────────────────────────────────────────────────────────────────
 onMounted(async () => {

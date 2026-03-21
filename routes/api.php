@@ -108,6 +108,9 @@ Route::prefix('v1')->group(function () {
             // Summary dashboard
             Route::get('summary',                [BudgetTrackingController::class, 'summary']);
 
+            // Consolidated member data (all modules, attributed by user)
+            Route::get('consolidated',           [BudgetTrackingController::class, 'consolidated']);
+
             // Change history log
             Route::get('history',                [BudgetTrackingController::class, 'history']);
 

@@ -3,13 +3,15 @@ import { ref } from 'vue';
 import { budgetTrackingService } from '@/services/index';
 
 export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
-    const tracker      = ref(null);
-    const summary      = ref(null);
-    const transactions = ref([]);
-    const txPagination = ref(null);
-    const loading      = ref(false);
-    const txLoading    = ref(false);
-    const notFound     = ref(false);
+    const tracker        = ref(null);
+    const summary        = ref(null);
+    const consolidated   = ref(null);
+    const consolidatedLoading = ref(false);
+    const transactions   = ref([]);
+    const txPagination   = ref(null);
+    const loading        = ref(false);
+    const txLoading      = ref(false);
+    const notFound       = ref(false);
 
     // ── Tracker ───────────────────────────────────────────────────────────────
     async function fetchTracker() {
@@ -47,6 +49,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
         await budgetTrackingService.delete();
         tracker.value = null;
         summary.value = null;
+        consolidated.value = null;
         transactions.value = [];
         notFound.value = true;
     }
@@ -63,6 +66,7 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
         await budgetTrackingService.leave();
         tracker.value = null;
         summary.value = null;
+        consolidated.value = null;
         transactions.value = [];
         notFound.value = true;
     }
@@ -85,6 +89,18 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
         const { data } = await budgetTrackingService.getSummary();
         summary.value = data.data;
         return data.data;
+    }
+
+    // ── Consolidated member data ───────────────────────────────────────────────
+    async function fetchConsolidated() {
+        consolidatedLoading.value = true;
+        try {
+            const { data } = await budgetTrackingService.getConsolidated();
+            consolidated.value = data.data;
+            return data.data;
+        } finally {
+            consolidatedLoading.value = false;
+        }
     }
 
     // ── Allocations ───────────────────────────────────────────────────────────
@@ -143,10 +159,11 @@ export const useBudgetTrackingStore = defineStore('budgetTracking', () => {
     }
 
     return {
-        tracker, summary, transactions, txPagination, loading, txLoading, notFound,
+        tracker, summary, consolidated, consolidatedLoading,
+        transactions, txPagination, loading, txLoading, notFound,
         fetchTracker, create, update, remove,
         join, leave, regenerateCode, removeMember,
-        fetchSummary,
+        fetchSummary, fetchConsolidated,
         addAllocation, updateAllocation, deleteAllocation,
         fetchTransactions, addTransaction, updateTransaction, deleteTransaction,
     };

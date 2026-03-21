@@ -7,6 +7,14 @@ use App\Models\BudgetTrackingAllocation;
 use App\Models\BudgetTrackingHistory;
 use App\Models\BudgetTrackingMember;
 use App\Models\BudgetTrackingTransaction;
+use App\Models\CryptoAsset;
+use App\Models\Debt;
+use App\Models\Expense;
+use App\Models\Income;
+use App\Models\Investment;
+use App\Models\Payment;
+use App\Models\Purchase;
+use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -430,6 +438,82 @@ class BudgetTrackingService
             ->when(! empty($filters['user_id']), fn($q) => $q->where('user_id', $filters['user_id']))
             ->orderByDesc('created_at')
             ->paginate($perPage);
+    }
+
+    // ─── Consolidated Member Data ─────────────────────────────────────────────────
+
+    /**
+     * Return a full consolidated view of every member's financial data:
+     * income, expenses, budgets, debts, investments, stocks, crypto, payments, purchases.
+     * Every record includes a `user_name` key for attribution.
+     */
+    public function getConsolidatedData(BudgetTracking $budget): array
+    {
+        // Build a map of userId → name for fast lookup
+        $members = $budget->members()->with('user')->get()->map(fn($m) => [
+            'user_id'   => $m->user_id,
+            'name'      => $m->user->name,
+            'role'      => $m->role,
+            'joined_at' => $m->joined_at,
+        ]);
+
+        $userIds  = $members->pluck('user_id')->toArray();
+        $nameMap  = $members->pluck('name', 'user_id')->toArray();
+
+        // Helper: append user_name to every model row
+        $tag = function ($collection) use ($nameMap) {
+            return $collection->map(function ($row) use ($nameMap) {
+                $arr              = $row->toArray();
+                $arr['user_name'] = $nameMap[$row->user_id] ?? 'Unknown';
+                return $arr;
+            })->values()->toArray();
+        };
+
+        // ── Fetch from every module ──────────────────────────────────────────────
+        $incomes     = Income::whereIn('user_id', $userIds)->latest('received_at')->get();
+        $expenses    = Expense::whereIn('user_id', $userIds)->latest('spent_at')->get();
+        $debts       = Debt::whereIn('user_id', $userIds)->get();
+        $investments = Investment::whereIn('user_id', $userIds)->get();
+        $stocks      = Stock::whereIn('user_id', $userIds)->get();
+        $crypto      = CryptoAsset::whereIn('user_id', $userIds)->get();
+        $payments    = Payment::with('debt')->whereIn('user_id', $userIds)->latest()->get();
+        $purchases   = Purchase::whereIn('user_id', $userIds)->get();
+
+        // ── Per-member summary for the overview panel ────────────────────────────
+        $memberSummary = $members->map(function ($m) use (
+            $incomes, $expenses, $debts, $investments, $stocks, $crypto
+        ) {
+            $uid = $m['user_id'];
+            return [
+                'user_id'          => $uid,
+                'name'             => $m['name'],
+                'role'             => $m['role'],
+                'total_income'     => round((float) $incomes->where('user_id', $uid)->sum('amount'), 2),
+                'total_expenses'   => round((float) $expenses->where('user_id', $uid)->sum('amount'), 2),
+                'total_debt'       => round((float) $debts->where('user_id', $uid)->sum('remaining_balance'), 2),
+                'total_invested'   => round((float) $investments->where('user_id', $uid)->sum('amount_invested'), 2),
+                'total_invest_val' => round((float) $investments->where('user_id', $uid)->sum('current_value'), 2),
+                'total_stocks_val' => round((float) $stocks->where('user_id', $uid)->sum(
+                    fn($s) => (float) $s->shares * (float) $s->current_price
+                ), 2),
+                'total_crypto_val' => round((float) $crypto->where('user_id', $uid)->sum(
+                    fn($a) => (float) $a->quantity * (float) $a->current_price
+                ), 2),
+            ];
+        })->values()->toArray();
+
+        return [
+            'member_count'   => count($userIds),
+            'member_summary' => $memberSummary,
+            'income'         => $tag($incomes),
+            'expenses'       => $tag($expenses),
+            'debts'          => $tag($debts),
+            'investments'    => $tag($investments),
+            'stocks'         => $tag($stocks),
+            'crypto'         => $tag($crypto),
+            'payments'       => $tag($payments),
+            'purchases'      => $tag($purchases),
+        ];
     }
 
     // ─── Internal Helpers ─────────────────────────────────────────────────────────

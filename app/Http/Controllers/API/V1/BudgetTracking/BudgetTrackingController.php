@@ -124,6 +124,17 @@ class BudgetTrackingController extends Controller
     }
 
     /**
+     * GET /api/v1/budget-tracking/consolidated
+     * Consolidated financial data from ALL members' accounts,
+     * each record attributed by user name.
+     */
+    public function consolidated(): JsonResponse
+    {
+        $budget = $this->resolveOrFail();
+        return $this->respondSuccess($this->service->getConsolidatedData($budget));
+    }
+
+    /**
      * GET /api/v1/budget-tracking/history
      * Paginated change history log for the budget tracking.
      */

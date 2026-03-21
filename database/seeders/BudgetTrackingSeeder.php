@@ -27,10 +27,10 @@ class BudgetTrackingSeeder extends Seeder
     public function run(): void
     {
         $this->user = User::firstOrCreate(
-            ['email' => 'mark.sarabia@example.com'],
+            ['email' => 'sarabiamark0012@gmail.com'],
             [
                 'name'     => 'Mark Sarabia',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('pass@word@123'),
             ]
         );
 
