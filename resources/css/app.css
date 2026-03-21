@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* ── Safe-area padding for iPhone notch / home indicator ────────────────── */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Prevent text zoom on input focus in iOS Safari ─────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  font-size: 16px;
+}
+
+@media (min-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 0.875rem; /* 14px — restore sm: text-sm */
+  }
+}

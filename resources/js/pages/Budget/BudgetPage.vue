@@ -1,83 +1,128 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Budget</h1>
-      <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add Budget</button>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Budget</h1>
+      <button @click="openModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add</button>
     </div>
 
     <!-- Summary Cards -->
-    <div v-if="store.summary" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-sm text-gray-500 mb-1">Total Budget</p>
-        <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(store.summary.total_budget) }}</p>
-        <p class="text-xs text-gray-400 mt-1">Cumulative since start</p>
+    <div v-if="store.summary" class="grid grid-cols-3 gap-3 lg:gap-4">
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs lg:text-sm text-gray-500 mb-1 leading-tight">Total Budget</p>
+        <p class="text-lg lg:text-2xl font-bold text-blue-600 leading-tight">{{ formatCurrency(store.summary.total_budget) }}</p>
+        <p class="text-[10px] lg:text-xs text-gray-400 mt-1">Cumulative</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-sm text-gray-500 mb-1">Total Spent</p>
-        <p class="text-2xl font-bold text-red-600">{{ formatCurrency(store.summary.total_spent) }}</p>
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs lg:text-sm text-gray-500 mb-1 leading-tight">Total Spent</p>
+        <p class="text-lg lg:text-2xl font-bold text-red-600 leading-tight">{{ formatCurrency(store.summary.total_spent) }}</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-sm text-gray-500 mb-1">Remaining</p>
-        <p class="text-2xl font-bold" :class="store.summary.total_remaining >= 0 ? 'text-green-600' : 'text-red-600'">
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs lg:text-sm text-gray-500 mb-1 leading-tight">Remaining</p>
+        <p class="text-lg lg:text-2xl font-bold leading-tight" :class="store.summary.total_remaining >= 0 ? 'text-green-600' : 'text-red-600'">
           {{ formatCurrency(store.summary.total_remaining) }}
         </p>
-        <p v-if="store.summary.total_remaining < 0" class="text-xs text-red-400 mt-1">Over budget</p>
+        <p v-if="store.summary.total_remaining < 0" class="text-[10px] lg:text-xs text-red-400 mt-1">Over budget</p>
       </div>
     </div>
 
     <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
       <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
-      <table v-else class="w-full text-sm">
-        <thead class="bg-gray-50 border-b">
-          <tr>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Name</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Period</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Start Date</th>
-            <th class="text-right px-4 py-3 text-gray-500 font-medium">Per Period</th>
-            <th class="text-right px-4 py-3 text-gray-500 font-medium">Total Budget</th>
-            <th class="text-right px-4 py-3 text-gray-500 font-medium">Spent</th>
-            <th class="text-right px-4 py-3 text-gray-500 font-medium">Remaining</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Usage</th>
-            <th class="px-4 py-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="store.items.length === 0">
-            <td colspan="9" class="text-center py-10 text-gray-400">No budget records found</td>
-          </tr>
-          <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
-            <td class="px-4 py-3 font-medium text-gray-700">{{ item.name }}</td>
-            <td class="px-4 py-3 text-gray-500 capitalize">{{ item.period }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ formatDate(item.start_date) }}</td>
-            <td class="px-4 py-3 text-right text-gray-600">{{ formatCurrency(item.amount) }}</td>
-            <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ formatCurrency(item.total_budget) }}</td>
-            <td class="px-4 py-3 text-right text-red-600">{{ formatCurrency(item.spent_amount) }}</td>
-            <td class="px-4 py-3 text-right font-semibold" :class="item.remaining_amount >= 0 ? 'text-green-600' : 'text-red-600'">
-              {{ formatCurrency(item.remaining_amount) }}
-              <span v-if="item.remaining_amount < 0" class="block text-xs font-normal text-red-400">Over budget</span>
-            </td>
-            <td class="px-4 py-3 min-w-[120px]">
-              <div class="flex items-center gap-2">
-                <div class="flex-1 bg-gray-100 rounded-full h-2">
-                  <div
-                    class="h-2 rounded-full transition-all"
-                    :class="usagePct(item) >= 100 ? 'bg-red-500' : usagePct(item) >= 80 ? 'bg-yellow-500' : 'bg-green-500'"
-                    :style="{ width: Math.min(100, usagePct(item)) + '%' }"
-                  ></div>
-                </div>
-                <span class="text-xs text-gray-500 w-10 text-right">{{ usagePct(item).toFixed(0) }}%</span>
+      <template v-else>
+        <!-- Mobile card list -->
+        <div class="sm:hidden divide-y divide-gray-100">
+          <div v-if="store.items.length === 0" class="text-center py-10 text-gray-400 text-sm">No budget records found</div>
+          <div v-for="item in store.items" :key="item.id" class="px-4 py-3">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-gray-700 text-sm">{{ item.name }}</p>
+                <p class="text-xs text-gray-400 capitalize mt-0.5">{{ item.period }} · from {{ formatDate(item.start_date) }}</p>
               </div>
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex gap-2 justify-end">
+              <div class="flex gap-1.5 flex-shrink-0">
                 <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
-                <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+                <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Del</button>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs mb-2">
+              <div>
+                <span class="text-gray-400">Budget</span>
+                <p class="font-semibold text-blue-600">{{ formatCurrency(item.total_budget) }}</p>
+              </div>
+              <div>
+                <span class="text-gray-400">Spent</span>
+                <p class="font-semibold text-red-600">{{ formatCurrency(item.spent_amount) }}</p>
+              </div>
+              <div>
+                <span class="text-gray-400">Left</span>
+                <p class="font-semibold" :class="item.remaining_amount >= 0 ? 'text-green-600' : 'text-red-600'">{{ formatCurrency(item.remaining_amount) }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-gray-100 rounded-full h-1.5">
+                <div
+                  class="h-1.5 rounded-full transition-all"
+                  :class="usagePct(item) >= 100 ? 'bg-red-500' : usagePct(item) >= 80 ? 'bg-yellow-500' : 'bg-green-500'"
+                  :style="{ width: Math.min(100, usagePct(item)) + '%' }"
+                ></div>
+              </div>
+              <span class="text-xs text-gray-500 w-8 text-right">{{ usagePct(item).toFixed(0) }}%</span>
+            </div>
+          </div>
+        </div>
+        <!-- Desktop table -->
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="w-full text-sm min-w-[700px]">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Name</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Period</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Start Date</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Per Period</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Total Budget</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Spent</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Remaining</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Usage</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="store.items.length === 0">
+                <td colspan="9" class="text-center py-10 text-gray-400">No budget records found</td>
+              </tr>
+              <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium text-gray-700">{{ item.name }}</td>
+                <td class="px-4 py-3 text-gray-500 capitalize">{{ item.period }}</td>
+                <td class="px-4 py-3 text-gray-500">{{ formatDate(item.start_date) }}</td>
+                <td class="px-4 py-3 text-right text-gray-600">{{ formatCurrency(item.amount) }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ formatCurrency(item.total_budget) }}</td>
+                <td class="px-4 py-3 text-right text-red-600">{{ formatCurrency(item.spent_amount) }}</td>
+                <td class="px-4 py-3 text-right font-semibold" :class="item.remaining_amount >= 0 ? 'text-green-600' : 'text-red-600'">
+                  {{ formatCurrency(item.remaining_amount) }}
+                  <span v-if="item.remaining_amount < 0" class="block text-xs font-normal text-red-400">Over budget</span>
+                </td>
+                <td class="px-4 py-3 min-w-[120px]">
+                  <div class="flex items-center gap-2">
+                    <div class="flex-1 bg-gray-100 rounded-full h-2">
+                      <div
+                        class="h-2 rounded-full transition-all"
+                        :class="usagePct(item) >= 100 ? 'bg-red-500' : usagePct(item) >= 80 ? 'bg-yellow-500' : 'bg-green-500'"
+                        :style="{ width: Math.min(100, usagePct(item)) + '%' }"
+                      ></div>
+                    </div>
+                    <span class="text-xs text-gray-500 w-10 text-right">{{ usagePct(item).toFixed(0) }}%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-2 justify-end">
+                    <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
+                    <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </div>
 
     <!-- Pagination -->

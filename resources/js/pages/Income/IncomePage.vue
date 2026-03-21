@@ -1,56 +1,87 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Income</h1>
-      <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add Income</button>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Income</h1>
+      <button @click="openModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add</button>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3">
-      <input v-model="filters.date_from" type="date" class="border rounded-lg px-3 py-2 text-sm" />
-      <input v-model="filters.date_to" type="date" class="border rounded-lg px-3 py-2 text-sm" />
-      <input v-model="filters.search" type="text" class="border rounded-lg px-3 py-2 text-sm min-w-[180px]" placeholder="Search..." />
-      <button @click="loadData" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">Filter</button>
-      <button @click="resetFilters" class="text-gray-400 text-sm px-2 py-2 hover:text-gray-600">Reset</button>
+    <div class="bg-white rounded-xl shadow-sm p-4 space-y-2 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-3">
+      <div class="grid grid-cols-2 gap-2 sm:contents">
+        <input v-model="filters.date_from" type="date" class="border rounded-lg px-3 py-2 text-sm w-full sm:w-auto" />
+        <input v-model="filters.date_to" type="date" class="border rounded-lg px-3 py-2 text-sm w-full sm:w-auto" />
+      </div>
+      <input v-model="filters.search" type="text" class="border rounded-lg px-3 py-2 text-sm w-full sm:min-w-[180px] sm:w-auto" placeholder="Search..." />
+      <div class="flex gap-2 sm:contents">
+        <button @click="loadData" class="flex-1 sm:flex-none bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">Filter</button>
+        <button @click="resetFilters" class="text-gray-400 text-sm px-3 py-2 hover:text-gray-600">Reset</button>
+      </div>
     </div>
 
-    <!-- Table -->
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
-      <table v-else class="w-full text-sm">
-        <thead class="bg-gray-50 border-b">
-          <tr>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Source</th>
-            <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
-            <th class="px-4 py-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="store.items.length === 0">
-            <td colspan="5" class="text-center py-10 text-gray-400">No income records found</td>
-          </tr>
-          <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
-            <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
-            <td class="px-4 py-3">
-              <span v-if="item.source" class="text-xs font-medium px-2 py-1 rounded-full" :class="sourceBadgeClass(item.source)">
+    <!-- Loading -->
+    <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
+
+    <template v-else>
+      <!-- Mobile card list -->
+      <div class="sm:hidden space-y-2">
+        <div v-if="store.items.length === 0" class="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">No income records found</div>
+        <div v-for="item in store.items" :key="item.id" class="bg-white rounded-xl shadow-sm p-4">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="font-medium text-gray-800 truncate">{{ item.title }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ formatDate(item.received_at) }}</p>
+              <span v-if="item.source" class="inline-block mt-1.5 text-xs font-medium px-2 py-0.5 rounded-full" :class="sourceBadgeClass(item.source)">
                 {{ item.source }}
               </span>
-              <span v-else class="text-gray-400 text-xs">—</span>
-            </td>
-            <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ formatDate(item.received_at) }}</td>
-            <td class="px-4 py-3">
-              <div class="flex gap-2 justify-end">
-                <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
-                <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <p class="text-base font-bold text-green-600">{{ formatCurrency(item.amount) }}</p>
+              <div class="flex gap-2 mt-2 justify-end">
+                <button @click="openModal(item)" class="text-blue-500 text-xs px-2.5 py-1 border rounded-lg">Edit</button>
+                <button @click="confirmDelete(item)" class="text-red-500 text-xs px-2.5 py-1 border rounded-lg">Delete</button>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop table -->
+      <div class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[500px]">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Source</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Date</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="store.items.length === 0">
+                <td colspan="5" class="text-center py-10 text-gray-400">No income records found</td>
+              </tr>
+              <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
+                <td class="px-4 py-3">
+                  <span v-if="item.source" class="text-xs font-medium px-2 py-1 rounded-full" :class="sourceBadgeClass(item.source)">{{ item.source }}</span>
+                  <span v-else class="text-gray-400 text-xs">—</span>
+                </td>
+                <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
+                <td class="px-4 py-3 text-gray-500">{{ formatDate(item.received_at) }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-2 justify-end">
+                    <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
+                    <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </template>
 
     <!-- Pagination -->
     <div v-if="store.pagination" class="flex justify-between items-center text-sm text-gray-500">

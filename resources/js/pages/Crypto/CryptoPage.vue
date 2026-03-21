@@ -2,45 +2,45 @@
   <div class="space-y-6">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Crypto</h1>
-      <button @click="openAddCryptoModal()" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 text-sm font-medium">
-        + Add Crypto
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Crypto</h1>
+      <button @click="openAddCryptoModal()" class="bg-yellow-500 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-yellow-600 text-sm font-medium">
+        + Add
       </button>
     </div>
 
     <!-- Portfolio Summary Cards -->
-    <div v-if="portfolio" class="grid grid-cols-2 lg:grid-cols-3 gap-4">
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-xs text-gray-500 mb-1">Total Invested</p>
-        <p class="text-xl font-bold text-gray-800">{{ fmt(portfolio.total_cost_basis) }}</p>
+    <div v-if="portfolio" class="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs text-gray-500 mb-1 leading-tight">Total Invested</p>
+        <p class="text-lg lg:text-xl font-bold text-gray-800 leading-tight">{{ fmt(portfolio.total_cost_basis) }}</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-xs text-gray-500 mb-1">Portfolio Value</p>
-        <p class="text-xl font-bold text-blue-600">{{ fmt(portfolio.total_current_value) }}</p>
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs text-gray-500 mb-1 leading-tight">Portfolio Value</p>
+        <p class="text-lg lg:text-xl font-bold text-blue-600 leading-tight">{{ fmt(portfolio.total_current_value) }}</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-xs text-gray-500 mb-1">Unrealized P&amp;L</p>
-        <p class="text-xl font-bold" :class="portfolio.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'">
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs text-gray-500 mb-1 leading-tight">Unrealized P&amp;L</p>
+        <p class="text-lg lg:text-xl font-bold leading-tight" :class="portfolio.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'">
           {{ portfolio.total_profit_loss >= 0 ? '+' : '' }}{{ fmt(portfolio.total_profit_loss) }}
         </p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-xs text-gray-500 mb-1">Overall Return</p>
-        <p class="text-xl font-bold" :class="portfolio.total_profit_loss_percentage >= 0 ? 'text-green-600' : 'text-red-600'">
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs text-gray-500 mb-1 leading-tight">Overall Return</p>
+        <p class="text-lg lg:text-xl font-bold leading-tight" :class="portfolio.total_profit_loss_percentage >= 0 ? 'text-green-600' : 'text-red-600'">
           {{ portfolio.total_profit_loss_percentage >= 0 ? '+' : '' }}{{ Number(portfolio.total_profit_loss_percentage || 0).toFixed(2) }}%
         </p>
-        <p class="text-xs text-gray-400 mt-1">{{ portfolio.count }} coins</p>
+        <p class="text-[10px] lg:text-xs text-gray-400 mt-1">{{ portfolio.count }} coins</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-xs text-gray-500 mb-1">Total Transferred</p>
-        <p class="text-xl font-bold text-indigo-600">{{ fmt(portfolio.total_transferred ?? 0) }}</p>
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs text-gray-500 mb-1 leading-tight">Total Transferred</p>
+        <p class="text-lg lg:text-xl font-bold text-indigo-600 leading-tight">{{ fmt(portfolio.total_transferred ?? 0) }}</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm p-5">
-        <p class="text-xs text-gray-500 mb-1">Available Balance</p>
-        <p class="text-xl font-bold" :class="(portfolio.available_balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">
+      <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+        <p class="text-xs text-gray-500 mb-1 leading-tight">Available Balance</p>
+        <p class="text-lg lg:text-xl font-bold leading-tight" :class="(portfolio.available_balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">
           {{ fmt(portfolio.available_balance ?? 0) }}
         </p>
-        <p class="text-xs text-gray-400 mt-1">Transferred − Cost Basis</p>
+        <p class="text-[10px] lg:text-xs text-gray-400 mt-1">Transferred − Cost Basis</p>
       </div>
     </div>
 

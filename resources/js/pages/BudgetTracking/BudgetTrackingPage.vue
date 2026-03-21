@@ -3,7 +3,7 @@
 
     <!-- ── Header ─────────────────────────────────────────────────────────── -->
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Budget Tracker</h1>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Budget Tracker</h1>
       <div v-if="store.tracker" class="flex gap-2">
         <button
           v-if="store.tracker.is_owner"
@@ -159,29 +159,29 @@
       </div>
 
       <!-- ── Summary Cards ─────────────────────────────────────────────── -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Total Allocated</p>
-          <p class="text-xl font-bold text-blue-600">{{ fmt(store.tracker.total_allocated) }}</p>
+          <p class="text-xs text-gray-500 mb-1 leading-tight">Total Allocated</p>
+          <p class="text-lg lg:text-xl font-bold text-blue-600 leading-tight">{{ fmt(store.tracker.total_allocated) }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Total Income</p>
-          <p class="text-xl font-bold text-green-600">{{ fmt(store.tracker.total_income) }}</p>
+          <p class="text-xs text-gray-500 mb-1 leading-tight">Total Income</p>
+          <p class="text-lg lg:text-xl font-bold text-green-600 leading-tight">{{ fmt(store.tracker.total_income) }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Total Expense</p>
-          <p class="text-xl font-bold text-red-600">{{ fmt(store.tracker.total_expense) }}</p>
+          <p class="text-xs text-gray-500 mb-1 leading-tight">Total Expense</p>
+          <p class="text-lg lg:text-xl font-bold text-red-600 leading-tight">{{ fmt(store.tracker.total_expense) }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Balance</p>
-          <p class="text-xl font-bold" :class="store.tracker.balance >= 0 ? 'text-indigo-600' : 'text-red-600'">
+          <p class="text-xs text-gray-500 mb-1 leading-tight">Balance</p>
+          <p class="text-lg lg:text-xl font-bold leading-tight" :class="store.tracker.balance >= 0 ? 'text-indigo-600' : 'text-red-600'">
             {{ fmt(store.tracker.balance) }}
           </p>
         </div>
       </div>
 
       <!-- ── Tabs ──────────────────────────────────────────────────────── -->
-      <div class="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit flex-wrap">
+      <div class="flex gap-1 bg-gray-100 rounded-lg p-1 w-full sm:w-fit overflow-x-auto flex-nowrap sm:flex-wrap">
         <button
           v-for="tab in tabs"
           :key="tab.value"
@@ -200,8 +200,8 @@
           <button
             v-if="store.tracker.is_owner"
             @click="openAllocModal()"
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-          >+ Add Allocation</button>
+            class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg text-sm font-medium hover:bg-blue-700"
+          >+ Add</button>
         </div>
 
         <div v-if="!store.tracker.allocations?.length" class="bg-white rounded-xl shadow-sm py-12 text-center text-gray-400 text-sm">

@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Insurance</h1>
-      <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add Plan</button>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Insurance</h1>
+      <button @click="openModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add</button>
     </div>
 
     <!-- Insurance Plans Table -->
@@ -12,49 +12,77 @@
         <span class="text-xs text-gray-400">{{ store.pagination?.total ?? store.items.length }} plans</span>
       </div>
       <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50 border-b">
-            <tr>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Provider / Plan</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Type</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium hidden sm:table-cell">Policy No.</th>
-              <th class="text-right px-4 py-3 text-gray-500 font-medium">Premium</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Frequency</th>
-              <th class="text-right px-4 py-3 text-gray-500 font-medium">Total Paid</th>
-              <th class="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="store.items.length === 0">
-              <td colspan="7" class="text-center py-10 text-gray-400">No insurance plans found. Add your first plan to get started.</td>
-            </tr>
-            <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
-              <td class="px-4 py-3">
-                <div class="font-medium text-gray-800">{{ item.provider_name }}</div>
-                <div class="text-xs text-gray-400">{{ item.plan_name }}</div>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-1">
-                  <span v-for="t in (item.coverage_type ?? [])" :key="t" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full capitalize">{{ t }}</span>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-gray-400 font-mono text-xs hidden sm:table-cell">{{ item.policy_number ?? '—' }}</td>
-              <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ fmt(item.premium_amount) }}</td>
-              <td class="px-4 py-3 text-gray-500 capitalize">{{ item.payment_frequency?.replace('_', ' ') }}</td>
-              <td class="px-4 py-3 text-right font-semibold text-green-600">{{ fmt(item.total_paid ?? 0) }}</td>
-              <td class="px-4 py-3">
-                <div class="flex gap-2 justify-end">
-                  <button @click="openPayModal(item)" class="text-green-600 hover:text-green-800 text-xs px-2 py-1 border border-green-300 rounded">Pay</button>
-                  <button @click="openHistoryModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">History</button>
-                  <button @click="openModal(item)" class="text-gray-500 hover:text-gray-700 text-xs px-2 py-1 border rounded">Edit</button>
-                  <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <template v-else>
+        <!-- Mobile card list -->
+        <div class="sm:hidden divide-y divide-gray-100">
+          <div v-if="store.items.length === 0" class="text-center py-10 text-gray-400 text-sm">No insurance plans found.</div>
+          <div v-for="item in store.items" :key="item.id" class="px-4 py-3">
+            <div class="flex items-start justify-between gap-2 mb-1.5">
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-gray-800 text-sm">{{ item.provider_name }}</p>
+                <p class="text-xs text-gray-400">{{ item.plan_name }}</p>
+              </div>
+              <div class="flex gap-1 flex-shrink-0">
+                <button @click="openPayModal(item)" class="text-green-600 hover:text-green-800 text-xs px-1.5 py-1 border border-green-300 rounded">Pay</button>
+                <button @click="openHistoryModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-1.5 py-1 border rounded">Hist</button>
+                <button @click="openModal(item)" class="text-gray-500 hover:text-gray-700 text-xs px-1.5 py-1 border rounded">Edit</button>
+                <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-1.5 py-1 border rounded">Del</button>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1 mb-1.5">
+              <span v-for="t in (item.coverage_type ?? [])" :key="t" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full capitalize">{{ t }}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500">
+              <span>{{ item.payment_frequency?.replace('_', ' ') }} · {{ fmt(item.premium_amount) }}</span>
+              <span class="font-semibold text-green-600">Paid: {{ fmt(item.total_paid ?? 0) }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Desktop table -->
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="w-full text-sm min-w-[600px]">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Provider / Plan</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Type</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium hidden sm:table-cell">Policy No.</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Premium</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Frequency</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Total Paid</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="store.items.length === 0">
+                <td colspan="7" class="text-center py-10 text-gray-400">No insurance plans found. Add your first plan to get started.</td>
+              </tr>
+              <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
+                <td class="px-4 py-3">
+                  <div class="font-medium text-gray-800">{{ item.provider_name }}</div>
+                  <div class="text-xs text-gray-400">{{ item.plan_name }}</div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-1">
+                    <span v-for="t in (item.coverage_type ?? [])" :key="t" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full capitalize">{{ t }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-gray-400 font-mono text-xs hidden sm:table-cell">{{ item.policy_number ?? '—' }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ fmt(item.premium_amount) }}</td>
+                <td class="px-4 py-3 text-gray-500 capitalize">{{ item.payment_frequency?.replace('_', ' ') }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-green-600">{{ fmt(item.total_paid ?? 0) }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex gap-2 justify-end">
+                    <button @click="openPayModal(item)" class="text-green-600 hover:text-green-800 text-xs px-2 py-1 border border-green-300 rounded">Pay</button>
+                    <button @click="openHistoryModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">History</button>
+                    <button @click="openModal(item)" class="text-gray-500 hover:text-gray-700 text-xs px-2 py-1 border rounded">Edit</button>
+                    <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
       <div v-if="store.pagination && store.pagination.last_page > 1" class="flex justify-between items-center px-5 py-3 border-t text-sm text-gray-500">
         <span>Page {{ store.pagination.current_page }} of {{ store.pagination.last_page }}</span>
         <div class="flex gap-2">

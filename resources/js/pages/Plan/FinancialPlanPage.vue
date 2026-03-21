@@ -1,48 +1,71 @@
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-gray-800">Financial Plans &amp; Goals</h1>
+    <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Financial Plans &amp; Goals</h1>
 
     <!-- Plans Section -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-gray-700">Plans</h2>
-        <button @click="openPlanModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add Plan</button>
+        <button @click="openPlanModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add</button>
       </div>
 
       <div class="bg-white rounded-xl shadow-sm overflow-hidden">
         <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
-        <table v-else class="w-full text-sm">
-          <thead class="bg-gray-50 border-b">
-            <tr>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Description</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Start Date</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">End Date</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
-              <th class="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="store.items.length === 0">
-              <td colspan="6" class="text-center py-10 text-gray-400">No financial plans yet</td>
-            </tr>
-            <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
-              <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ item.description ?? '—' }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ formatDate(item.start_date) }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ formatDate(item.end_date) }}</td>
-              <td class="px-4 py-3">
-                <span class="text-xs px-2 py-1 rounded-full capitalize" :class="planStatusClass(item.status)">{{ item.status ?? 'active' }}</span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex gap-2 justify-end">
-                  <button @click="openPlanModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
-                  <button @click="confirmDeletePlan(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+        <template v-else>
+          <!-- Mobile card list -->
+          <div class="sm:hidden divide-y divide-gray-100">
+            <div v-if="store.items.length === 0" class="text-center py-10 text-gray-400 text-sm">No financial plans yet</div>
+            <div v-for="item in store.items" :key="item.id" class="px-4 py-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                  <p class="font-medium text-gray-700 text-sm">{{ item.title }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5 truncate">{{ item.description ?? '—' }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ formatDate(item.start_date) }} — {{ formatDate(item.end_date) }}</p>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <span class="text-xs px-2 py-1 rounded-full capitalize" :class="planStatusClass(item.status)">{{ item.status ?? 'active' }}</span>
+                  <button @click="openPlanModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
+                  <button @click="confirmDeletePlan(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Del</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Desktop table -->
+          <div class="hidden sm:block overflow-x-auto">
+            <table class="w-full text-sm min-w-[500px]">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="text-left px-4 py-3 text-gray-500 font-medium">Title</th>
+                  <th class="text-left px-4 py-3 text-gray-500 font-medium">Description</th>
+                  <th class="text-left px-4 py-3 text-gray-500 font-medium">Start Date</th>
+                  <th class="text-left px-4 py-3 text-gray-500 font-medium">End Date</th>
+                  <th class="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
+                  <th class="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="store.items.length === 0">
+                  <td colspan="6" class="text-center py-10 text-gray-400">No financial plans yet</td>
+                </tr>
+                <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
+                  <td class="px-4 py-3 font-medium text-gray-700">{{ item.title }}</td>
+                  <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ item.description ?? '—' }}</td>
+                  <td class="px-4 py-3 text-gray-500">{{ formatDate(item.start_date) }}</td>
+                  <td class="px-4 py-3 text-gray-500">{{ formatDate(item.end_date) }}</td>
+                  <td class="px-4 py-3">
+                    <span class="text-xs px-2 py-1 rounded-full capitalize" :class="planStatusClass(item.status)">{{ item.status ?? 'active' }}</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex gap-2 justify-end">
+                      <button @click="openPlanModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
+                      <button @click="confirmDeletePlan(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -50,7 +73,7 @@
     <div class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-gray-700">Goals</h2>
-        <button @click="openGoalModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">+ Add Goal</button>
+        <button @click="openGoalModal()" class="bg-green-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-green-700 text-sm font-medium">+ Add</button>
       </div>
 
       <div v-if="store.goals.length === 0 && !store.loading" class="bg-white rounded-xl shadow-sm p-10 text-center text-gray-400">

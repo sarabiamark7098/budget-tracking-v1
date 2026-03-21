@@ -9,7 +9,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
         </router-link>
-        <h1 class="text-2xl font-bold text-gray-800">All Transactions</h1>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800">All Transactions</h1>
       </div>
       <span class="text-sm text-gray-400">{{ pagination.total }} total</span>
     </div>

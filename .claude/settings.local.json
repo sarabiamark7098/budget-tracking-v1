@@ -45,7 +45,8 @@
       "Bash(php -r \"require ''vendor/autoload.php''; echo class_exists\\(''PhpOffice\\\\PhpSpreadsheet\\\\Spreadsheet''\\) ? ''OK'' : ''MISSING'';\")",
       "Bash(php -r \"require ''vendor/autoload.php''; echo \\\\PhpOffice\\\\PhpSpreadsheet\\\\Spreadsheet::VERSION;\")",
       "Bash(composer show:*)",
-      "Bash(1:*)"
+      "Bash(1:*)",
+      "Bash(grep -E \"\\\\.vue$|^[A-Z]\")"
     ]
   }
 }

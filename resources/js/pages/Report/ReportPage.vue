@@ -28,17 +28,19 @@
           {{ preset.label }}
         </button>
       </div>
-      <div class="flex flex-wrap gap-3 items-end">
+      <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
         <div>
           <label class="block text-xs text-gray-500 mb-1">From</label>
-          <input v-model="filters.date_from" type="date" @change="activePreset = null" class="border rounded-lg px-3 py-2 text-sm" />
+          <input v-model="filters.date_from" type="date" @change="activePreset = null" class="border rounded-lg px-3 py-2 text-sm w-full" />
         </div>
         <div>
           <label class="block text-xs text-gray-500 mb-1">To</label>
-          <input v-model="filters.date_to" type="date" @change="activePreset = null" class="border rounded-lg px-3 py-2 text-sm" />
+          <input v-model="filters.date_to" type="date" @change="activePreset = null" class="border rounded-lg px-3 py-2 text-sm w-full" />
         </div>
-        <button @click="loadReports" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">Generate Report</button>
-        <button @click="resetFilters" class="text-gray-400 text-sm px-2 py-2 hover:text-gray-600">Reset</button>
+        <div class="col-span-2 flex gap-2 sm:contents">
+          <button @click="loadReports" class="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">Generate</button>
+          <button @click="resetFilters" class="text-gray-400 text-sm px-3 py-2 hover:text-gray-600">Reset</button>
+        </div>
       </div>
     </div>
 
@@ -60,7 +62,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 pt-4 border-t border-indigo-400">
+        <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4 pt-4 border-t border-indigo-400">
           <div>
             <p class="text-indigo-200 text-xs">Total Assets</p>
             <p class="font-semibold">{{ fmt(store.netWorth.total_assets) }}</p>
@@ -98,7 +100,7 @@
       </div>
 
       <!-- ── Summary Stat Cards ─────────────────────────────────────────── -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
         <div class="bg-white rounded-xl shadow-sm p-4 col-span-1">
           <p class="text-xs text-gray-500 mb-1">Total Income</p>
           <p class="text-xl font-bold text-green-600">{{ fmt(rpt.total_income) }}</p>
@@ -126,7 +128,7 @@
       </div>
 
       <!-- ── Key Metrics Row ─────────────────────────────────────────────── -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:gap-4">
         <div class="bg-white rounded-xl shadow-sm p-5 border-l-4" :class="rpt.net >= 0 ? 'border-blue-500' : 'border-red-500'">
           <p class="text-xs text-gray-500 mb-1">Net</p>
           <p class="text-2xl font-bold" :class="rpt.net >= 0 ? 'text-blue-600' : 'text-red-600'">{{ fmt(rpt.net) }}</p>

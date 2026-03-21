@@ -1,63 +1,63 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Investments</h1>
-      <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add Investment</button>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Investments</h1>
+      <button @click="openModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add</button>
     </div>
 
     <!-- Portfolio Summary -->
-    <div v-if="store.portfolio" class="space-y-4">
+    <div v-if="store.portfolio" class="space-y-3 lg:space-y-4">
       <!-- Row 1: Market / ROI stats -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Invested</p>
-          <p class="text-2xl font-bold text-blue-600">{{ fmt(store.portfolio.total_invested) }}</p>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Total Invested</p>
+          <p class="text-lg lg:text-2xl font-bold text-blue-600 leading-tight">{{ fmt(store.portfolio.total_invested) }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Current Value</p>
-          <p class="text-2xl font-bold text-green-600">{{ fmt(store.portfolio.total_current_value) }}</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Current Value</p>
+          <p class="text-lg lg:text-2xl font-bold text-green-600 leading-tight">{{ fmt(store.portfolio.total_current_value) }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Gain / Loss</p>
-          <p class="text-2xl font-bold" :class="store.portfolio.total_roi_amount >= 0 ? 'text-green-600' : 'text-red-600'">
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Gain / Loss</p>
+          <p class="text-lg lg:text-2xl font-bold leading-tight" :class="store.portfolio.total_roi_amount >= 0 ? 'text-green-600' : 'text-red-600'">
             {{ store.portfolio.total_roi_amount >= 0 ? '+' : '' }}{{ fmt(store.portfolio.total_roi_amount) }}
           </p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Overall ROI</p>
-          <p class="text-2xl font-bold" :class="store.portfolio.total_roi_percentage >= 0 ? 'text-green-600' : 'text-red-600'">
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Overall ROI</p>
+          <p class="text-lg lg:text-2xl font-bold leading-tight" :class="store.portfolio.total_roi_percentage >= 0 ? 'text-green-600' : 'text-red-600'">
             {{ store.portfolio.total_roi_percentage >= 0 ? '+' : '' }}{{ Number(store.portfolio.total_roi_percentage || 0).toFixed(2) }}%
           </p>
         </div>
       </div>
 
       <!-- Row 2: Transfers + Payment Obligations -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Transferred In</p>
-          <p class="text-2xl font-bold text-indigo-600">{{ fmt(store.portfolio.total_transferred ?? 0) }}</p>
-          <p class="text-xs text-gray-400 mt-1">From dashboard</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Transferred In</p>
+          <p class="text-lg lg:text-2xl font-bold text-indigo-600 leading-tight">{{ fmt(store.portfolio.total_transferred ?? 0) }}</p>
+          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">From dashboard</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Available Balance</p>
-          <p class="text-2xl font-bold" :class="(store.portfolio.available_balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Available</p>
+          <p class="text-lg lg:text-2xl font-bold leading-tight" :class="(store.portfolio.available_balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">
             {{ fmt(store.portfolio.available_balance ?? 0) }}
           </p>
-          <p class="text-xs text-gray-400 mt-1">Transferred − Invested</p>
+          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">Transferred − Invested</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Obligations</p>
-          <p class="text-2xl font-bold text-orange-500">{{ fmt(store.portfolio.total_obligations ?? 0) }}</p>
-          <p class="text-xs text-gray-400 mt-1">RE + Other payables</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Obligations</p>
+          <p class="text-lg lg:text-2xl font-bold text-orange-500 leading-tight">{{ fmt(store.portfolio.total_obligations ?? 0) }}</p>
+          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">RE + Other payables</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Paid</p>
-          <p class="text-2xl font-bold text-emerald-600">{{ fmt(store.portfolio.total_paid_all ?? 0) }}</p>
-          <p class="text-xs text-gray-400 mt-1">All payment types</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Total Paid</p>
+          <p class="text-lg lg:text-2xl font-bold text-emerald-600 leading-tight">{{ fmt(store.portfolio.total_paid_all ?? 0) }}</p>
+          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">All payment types</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Remaining</p>
-          <p class="text-2xl font-bold text-rose-600">{{ fmt(store.portfolio.remaining_obligations ?? 0) }}</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Remaining</p>
+          <p class="text-lg lg:text-2xl font-bold text-rose-600 leading-tight">{{ fmt(store.portfolio.remaining_obligations ?? 0) }}</p>
           <!-- mini progress bar -->
           <div v-if="store.portfolio.total_obligations > 0" class="mt-2 w-full bg-gray-200 rounded-full h-1.5">
             <div
@@ -65,7 +65,7 @@
               :style="{ width: obligationProgress + '%' }"
             ></div>
           </div>
-          <p v-if="store.portfolio.total_obligations > 0" class="text-xs text-gray-400 mt-1">{{ obligationProgress }}% paid</p>
+          <p v-if="store.portfolio.total_obligations > 0" class="text-[10px] lg:text-xs text-gray-400 mt-1">{{ obligationProgress }}% paid</p>
         </div>
       </div>
     </div>

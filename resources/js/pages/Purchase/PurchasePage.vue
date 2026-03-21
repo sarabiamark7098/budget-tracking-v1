@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Purchases</h1>
-      <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add Purchase</button>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Purchases</h1>
+      <button @click="openModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Add</button>
     </div>
 
     <!-- Summary Cards -->
@@ -25,16 +25,20 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm p-4 flex flex-wrap gap-3">
-      <select v-model="filters.payment_method" class="border rounded-lg px-3 py-2 text-sm bg-white">
-        <option value="">All Payment Methods</option>
-        <option value="cash">Cash</option>
-        <option value="credit_card">Credit Card</option>
-        <option value="other">Other</option>
-      </select>
-      <input v-model="filters.search" type="text" class="border rounded-lg px-3 py-2 text-sm min-w-[180px]" placeholder="Search item..." />
-      <button @click="loadData" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">Filter</button>
-      <button @click="resetFilters" class="text-gray-400 text-sm px-2 py-2 hover:text-gray-600">Reset</button>
+    <div class="bg-white rounded-xl shadow-sm p-4 space-y-2 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-3">
+      <div class="grid grid-cols-2 gap-2 sm:contents">
+        <select v-model="filters.payment_method" class="border rounded-lg px-3 py-2 text-sm bg-white w-full sm:w-auto">
+          <option value="">All Methods</option>
+          <option value="cash">Cash</option>
+          <option value="credit_card">Credit Card</option>
+          <option value="other">Other</option>
+        </select>
+        <input v-model="filters.search" type="text" class="border rounded-lg px-3 py-2 text-sm w-full sm:min-w-[180px] sm:w-auto" placeholder="Search item..." />
+      </div>
+      <div class="flex gap-2 sm:contents">
+        <button @click="loadData" class="flex-1 sm:flex-none bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">Filter</button>
+        <button @click="resetFilters" class="text-gray-400 text-sm px-3 py-2 hover:text-gray-600">Reset</button>
+      </div>
     </div>
 
     <!-- Table -->

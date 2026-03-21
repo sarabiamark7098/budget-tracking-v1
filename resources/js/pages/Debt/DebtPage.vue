@@ -3,9 +3,9 @@
 
     <!-- ── Page header ─────────────────────────────────────────────────── -->
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Debts</h1>
-      <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">
-        + Add Debt
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Debts</h1>
+      <button @click="openModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">
+        + Add
       </button>
     </div>
 
@@ -16,7 +16,8 @@
       <section>
         <h2 class="text-base font-semibold text-gray-700 mb-3">Personal Debts</h2>
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[600px]">
             <thead class="bg-gray-50 border-b">
               <tr>
                 <th class="text-left px-4 py-3 text-gray-500 font-medium">Lender</th>
@@ -117,6 +118,7 @@
               </template>
             </tbody>
           </table>
+          </div>
         </div>
       </section>
 
@@ -124,7 +126,8 @@
       <section>
         <h2 class="text-base font-semibold text-gray-700 mb-3">Business Debts</h2>
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[600px]">
             <thead class="bg-gray-50 border-b">
               <tr>
                 <th class="text-left px-4 py-3 text-gray-500 font-medium">Lender</th>
@@ -176,6 +179,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </section>
     </template>

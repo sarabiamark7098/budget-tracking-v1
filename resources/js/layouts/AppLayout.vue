@@ -156,20 +156,21 @@
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <!-- Header -->
       <header class="bg-white shadow-sm z-10 flex items-center justify-between px-4 py-3 lg:px-6">
-        <button
-          class="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-          @click="sidebarOpen = true"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            class="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            @click="sidebarOpen = true"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 class="text-base font-semibold text-gray-800 lg:text-lg">
+            {{ currentPageTitle }}
+          </h1>
+        </div>
 
-        <h1 class="text-lg font-semibold text-gray-800 hidden lg:block">
-          {{ currentPageTitle }}
-        </h1>
-
-        <div class="flex items-center gap-3 ml-auto">
+        <div class="flex items-center gap-3">
           <span class="text-sm text-gray-600 hidden sm:block">{{ authStore.user?.name }}</span>
           <button
             class="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -184,10 +185,39 @@
       </header>
 
       <!-- Page Content -->
-      <main class="flex-1 overflow-auto p-4 lg:p-6">
+      <main class="flex-1 overflow-auto p-4 pb-20 lg:p-6 lg:pb-6">
         <RouterView />
       </main>
     </div>
+
+    <!-- ── Mobile Bottom Nav ───────────────────────────────────────────────── -->
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 safe-area-bottom">
+      <div class="flex items-stretch">
+        <RouterLink
+          v-for="tab in bottomNavItems"
+          :key="tab.path"
+          :to="tab.path"
+          class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors"
+          :class="isActive(tab.path)
+            ? 'text-indigo-600'
+            : 'text-gray-400 active:text-gray-600'"
+        >
+          <span class="w-5 h-5" v-html="tab.icon" />
+          {{ tab.label }}
+        </RouterLink>
+
+        <!-- More: opens sidebar -->
+        <button
+          class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium text-gray-400 active:text-gray-600 transition-colors"
+          @click="sidebarOpen = true"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+          </svg>
+          More
+        </button>
+      </div>
+    </nav>
   </div>
 </template>
 
@@ -281,6 +311,35 @@ const allNavItems = [
     path: '/mp2',
     label: 'MP2 Calculator',
     icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>',
+  },
+  {
+    path: '/reports',
+    label: 'Reports',
+    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>',
+  },
+];
+
+// Bottom nav — 5 primary tabs always visible on mobile
+const bottomNavItems = [
+  {
+    path: '/dashboard',
+    label: 'Home',
+    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>',
+  },
+  {
+    path: '/income',
+    label: 'Income',
+    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m0 0l-4-4m4 4l4-4" /></svg>',
+  },
+  {
+    path: '/expenses',
+    label: 'Expenses',
+    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V4m0 0l-4 4m4-4l4 4" /></svg>',
+  },
+  {
+    path: '/debts',
+    label: 'Debts',
+    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>',
   },
   {
     path: '/reports',

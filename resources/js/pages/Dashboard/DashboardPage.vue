@@ -3,11 +3,11 @@
 
     <!-- ── Header & Date Filter ─────────────────────────────────────────── -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Dashboard</h1>
       <div class="flex gap-2 flex-wrap items-center">
-        <input v-model="dateFrom" type="date" class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        <input v-model="dateFrom" type="date" class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none flex-1 sm:flex-none" />
         <span class="text-gray-400 text-sm">to</span>
-        <input v-model="dateTo" type="date" class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        <input v-model="dateTo" type="date" class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none flex-1 sm:flex-none" />
         <button @click="loadData" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition">Filter</button>
         <button @click="resetFilter" class="text-gray-400 text-sm px-3 py-2 hover:text-gray-600 transition">Reset</button>
       </div>
@@ -25,7 +25,7 @@
     <template v-else-if="store.summary">
 
       <!-- ── 1. Overview Stat Cards ───────────────────────────────────────── -->
-      <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
         <StatCard title="Total Income"           :value="fmt(store.summary.total_income)"                   color="green"  subtitle="All-time income" />
         <StatCard title="Expenses"               :value="fmt(store.summary.total_expenses)"                 color="red"    subtitle="Category-based expenses" />
         <StatCard title="Personal Debt Payments" :value="fmt(store.summary.total_debt_payments)"            color="orange" subtitle="Outgoing debt repayments" />
@@ -40,7 +40,7 @@
         />
       </div>
       <!-- Outstanding debt card on its own row -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <StatCard title="Outstanding Debt"   :value="fmt(store.summary.total_debt)"               color="orange" subtitle="Unpaid debt balance" />
         <StatCard title="Total Investments"  :value="fmt(store.summary.total_investments)"         color="green"  subtitle="Portfolio value" />
         <StatCard title="Total Outgoing"     :value="fmt(store.summary.total_outgoing)"            color="red"    subtitle="All spending (all-time)" />

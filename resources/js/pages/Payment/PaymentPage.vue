@@ -1,40 +1,57 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-800">Debt Payments</h1>
-      <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Record Payment</button>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Debt Payments</h1>
+      <button @click="openModal()" class="bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">+ Record</button>
     </div>
 
     <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
       <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
-      <table v-else class="w-full text-sm">
-        <thead class="bg-gray-50 border-b">
-          <tr>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Debt / Lender</th>
-            <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount Paid</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Payment Date</th>
-            <th class="text-left px-4 py-3 text-gray-500 font-medium">Note</th>
-            <th class="px-4 py-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="store.items.length === 0">
-            <td colspan="5" class="text-center py-10 text-gray-400">No payment records found</td>
-          </tr>
-          <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
-            <td class="px-4 py-3 font-medium text-gray-700">
-              {{ item.debt?.lender_name ?? '—' }}
-            </td>
-            <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
-            <td class="px-4 py-3 text-gray-500">{{ formatDate(item.payment_date) }}</td>
-            <td class="px-4 py-3 text-gray-400 text-xs">{{ item.note ?? '—' }}</td>
-            <td class="px-4 py-3">
-              <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <template v-else>
+        <!-- Mobile card list -->
+        <div class="sm:hidden divide-y divide-gray-100">
+          <div v-if="store.items.length === 0" class="text-center py-10 text-gray-400 text-sm">No payment records found</div>
+          <div v-for="item in store.items" :key="item.id" class="px-4 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="font-medium text-gray-700 text-sm truncate">{{ item.debt?.lender_name ?? '—' }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ formatDate(item.payment_date) }}{{ item.note ? ' · ' + item.note : '' }}</p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="text-sm font-semibold text-green-600">{{ formatCurrency(item.amount) }}</span>
+              <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Del</button>
+            </div>
+          </div>
+        </div>
+        <!-- Desktop table -->
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="w-full text-sm min-w-[500px]">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Debt / Lender</th>
+                <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount Paid</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Payment Date</th>
+                <th class="text-left px-4 py-3 text-gray-500 font-medium">Note</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="store.items.length === 0">
+                <td colspan="5" class="text-center py-10 text-gray-400">No payment records found</td>
+              </tr>
+              <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium text-gray-700">{{ item.debt?.lender_name ?? '—' }}</td>
+                <td class="px-4 py-3 text-right text-green-600 font-semibold">{{ formatCurrency(item.amount) }}</td>
+                <td class="px-4 py-3 text-gray-500">{{ formatDate(item.payment_date) }}</td>
+                <td class="px-4 py-3 text-gray-400 text-xs">{{ item.note ?? '—' }}</td>
+                <td class="px-4 py-3">
+                  <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
     </div>
 
     <!-- Pagination -->

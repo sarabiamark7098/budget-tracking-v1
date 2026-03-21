@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-gray-800">MP2 Calculator</h1>
+    <h1 class="text-xl sm:text-2xl font-bold text-gray-800">MP2 Calculator</h1>
 
     <!-- Calculator + Summary -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
 
       <!-- Calculator Form -->
       <div class="bg-white rounded-xl shadow-sm p-6">
