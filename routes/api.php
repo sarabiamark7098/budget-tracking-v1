@@ -26,14 +26,16 @@ use App\Http\Controllers\API\V1\Transfer\ModuleTransferController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // Public routes
-    Route::prefix('auth')->group(function () {
-        Route::post('register', [AuthController::class, 'register']);
-        Route::post('login', [AuthController::class, 'login']);
-    });
+    // Public routes — rate-limited to prevent brute-force (S-01 fix: 10 req/min)
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::prefix('auth')->group(function () {
+            Route::post('register', [AuthController::class, 'register']);
+            Route::post('login', [AuthController::class, 'login']);
+        });
 
-    // Public MP2 calculator
-    Route::post('mp2/calculate', [MP2Controller::class, 'calculate']);
+        // Public MP2 calculator
+        Route::post('mp2/calculate', [MP2Controller::class, 'calculate']);
+    });
 
     // Protected routes — authentication only
     Route::middleware('auth:sanctum')->group(function () {

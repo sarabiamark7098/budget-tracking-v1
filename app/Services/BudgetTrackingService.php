@@ -147,6 +147,12 @@ class BudgetTrackingService
 
         $oldCode = $budget->join_code;
         $newCode = BudgetTracking::generateJoinCode();
+
+        // S-08: The old code is atomically replaced — any in-flight join attempt
+        // using $oldCode will fail immediately after this update because the join
+        // route validates against the current DB value. Existing members retain
+        // their access (they joined via code, not via an ongoing session token tied
+        // to the code). No further token/session revocation is required.
         $budget->update(['join_code' => $newCode]);
 
         $this->log($budget, $user, 'code_regenerated', 'budget_tracking', $budget->id, ['join_code' => $oldCode], ['join_code' => $newCode], 'Join code regenerated.');

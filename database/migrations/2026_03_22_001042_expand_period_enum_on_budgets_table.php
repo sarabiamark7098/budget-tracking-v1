@@ -10,11 +10,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE budgets MODIFY period ENUM('daily','weekdays','weekends','weekly','monthly','yearly') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE budgets MODIFY period ENUM('daily','weekdays','weekends','weekly','monthly','yearly') NOT NULL");
+        }
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE budgets MODIFY period ENUM('weekly','monthly','yearly') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE budgets MODIFY period ENUM('weekly','monthly','yearly') NOT NULL");
+        }
     }
 };

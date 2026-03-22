@@ -17,6 +17,7 @@ use App\Models\Stock;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
@@ -29,38 +30,36 @@ class DashboardService
         $dateFrom = $filters['date_from'] ?? now()->startOfMonth()->toDateString();
         $dateTo   = $filters['date_to']   ?? now()->endOfMonth()->toDateString();
 
-        // ── ALL-TIME overview totals (no date filter) ────────────────────────────
-        $totalIncome = (float) Income::where('budget_tracking_id', $btId)->sum('amount');
+        // ── ALL-TIME overview totals (cached for 5 minutes — P-03 fix) ──────────
+        $allTimeTotals = Cache::remember("bt:{$btId}:all_time_totals", 300, function () use ($btId) {
+            return [
+                'income'            => (float) Income::where('budget_tracking_id', $btId)->sum('amount'),
+                'expenses'          => (float) Expense::where('budget_tracking_id', $btId)->sum('amount'),
+                'personal_debt_pmts'=> (float) Payment::where('budget_tracking_id', $btId)
+                    ->whereHas('debt', fn($q) => $q->where('type', 'personal'))->sum('amount'),
+                'business_debt_rcvd'=> (float) Payment::where('budget_tracking_id', $btId)
+                    ->whereHas('debt', fn($q) => $q->where('type', 'business'))->sum('amount'),
+                'purchase_payments' => (float) PurchasePayment::where('budget_tracking_id', $btId)->sum('amount'),
+                'cash_purchases'    => (float) Purchase::where('budget_tracking_id', $btId)
+                    ->whereIn('payment_method', ['cash', 'other'])->sum('total_cost'),
+                'insurance_payments'=> (float) InsurancePayment::where('budget_tracking_id', $btId)->sum('amount'),
+                'outgoing_transfers'=> (float) ModuleTransfer::where('budget_tracking_id', $btId)
+                    ->whereIn('module', ['investment', 'stock', 'crypto', 'saving'])->sum('total'),
+                'incoming_transfers'=> (float) ModuleTransfer::where('budget_tracking_id', $btId)
+                    ->where('module', 'income')->sum('amount'),
+            ];
+        });
 
-        $totalExpenses = (float) Expense::where('budget_tracking_id', $btId)->sum('amount');
-
-        // Personal debt payments are OUTGOING (you pay out)
-        $totalPersonalDebtPayments = (float) Payment::where('budget_tracking_id', $btId)
-            ->whereHas('debt', fn($q) => $q->where('type', 'personal'))
-            ->sum('amount');
-
-        // Business debt payments are INCOMING (borrower pays you back)
-        $totalBusinessDebtReceived = (float) Payment::where('budget_tracking_id', $btId)
-            ->whereHas('debt', fn($q) => $q->where('type', 'business'))
-            ->sum('amount');
-
-        $totalDebtPayments = $totalPersonalDebtPayments; // for display (outgoing only)
-
-        // CC installment payments recorded via "Pay Month" button
-        $totalPurchasePayments = (float) PurchasePayment::where('budget_tracking_id', $btId)->sum('amount');
-
-        // Cash / other purchases (paid in full on purchase date)
-        $totalCashPurchases = (float) Purchase::where('budget_tracking_id', $btId)
-            ->whereIn('payment_method', ['cash', 'other'])
-            ->sum('total_cost');
-
-        $totalInsurancePayments = (float) InsurancePayment::where('budget_tracking_id', $btId)->sum('amount');
-
-        $totalOutgoingTransfers = (float) ModuleTransfer::where('budget_tracking_id', $btId)
-            ->whereIn('module', ['investment', 'stock', 'crypto', 'saving'])->sum('total');
-
-        $totalIncomingTransfers = (float) ModuleTransfer::where('budget_tracking_id', $btId)
-            ->where('module', 'income')->sum('amount');
+        $totalIncome              = $allTimeTotals['income'];
+        $totalExpenses            = $allTimeTotals['expenses'];
+        $totalPersonalDebtPayments= $allTimeTotals['personal_debt_pmts'];
+        $totalBusinessDebtReceived= $allTimeTotals['business_debt_rcvd'];
+        $totalDebtPayments        = $totalPersonalDebtPayments;
+        $totalPurchasePayments    = $allTimeTotals['purchase_payments'];
+        $totalCashPurchases       = $allTimeTotals['cash_purchases'];
+        $totalInsurancePayments   = $allTimeTotals['insurance_payments'];
+        $totalOutgoingTransfers   = $allTimeTotals['outgoing_transfers'];
+        $totalIncomingTransfers   = $allTimeTotals['incoming_transfers'];
 
         // Deployed amounts per module (cost basis / amount invested)
         $deployedAmounts = [
@@ -70,36 +69,51 @@ class DashboardService
             'saving'     => 0,
         ];
 
+        // ── Transfer summary: 2 GROUP BY queries instead of 8 individual queries ─────
+        $transferIn  = ModuleTransfer::where('budget_tracking_id', $btId)
+            ->selectRaw('module, SUM(amount) as total_in, COUNT(*) as cnt')
+            ->groupBy('module')
+            ->pluck('total_in', 'module')
+            ->toArray();
+
+        $transferOut = ModuleTransfer::where('budget_tracking_id', $btId)
+            ->selectRaw('transfer_from, SUM(total) as total_out')
+            ->groupBy('transfer_from')
+            ->pluck('total_out', 'transfer_from')
+            ->toArray();
+
+        $transferCounts = ModuleTransfer::where('budget_tracking_id', $btId)
+            ->selectRaw('module, COUNT(*) as cnt')
+            ->groupBy('module')
+            ->pluck('cnt', 'module')
+            ->toArray();
+
+        // Latest transfer per module (single query)
+        $latestTransfers = ModuleTransfer::where('budget_tracking_id', $btId)
+            ->whereIn('module', ['investment', 'stock', 'crypto', 'saving'])
+            ->orderByDesc('transfer_date')
+            ->get()
+            ->groupBy('module')
+            ->map(fn($rows) => $rows->first());
+
         $transferSummary = [];
         foreach (['investment', 'stock', 'crypto', 'saving'] as $mod) {
-            // All money transferred INTO this fund (from any source)
-            $rows          = ModuleTransfer::where('budget_tracking_id', $btId)->where('module', $mod)->get();
-            $transferredIn = round($rows->sum('amount'), 2);
-
-            // All money transferred OUT of this fund (to any destination, full total incl. fee)
-            $outRows        = ModuleTransfer::where('budget_tracking_id', $btId)->where('transfer_from', $mod)->get();
-            $transferredOut = round($outRows->sum('total'), 2);
-
-            // Deployed = money already committed to assets in this fund (cannot be re-transferred)
-            $deployed = $deployedAmounts[$mod] ?? 0;
-
-            // Available = incoming − outgoing − deployed (true spendable/transferable balance)
+            $transferredIn  = round((float) ($transferIn[$mod]  ?? 0), 2);
+            $transferredOut = round((float) ($transferOut[$mod] ?? 0), 2);
+            $deployed       = $deployedAmounts[$mod] ?? 0;
             $availableBalance = round($transferredIn - $transferredOut - $deployed, 2);
-
-            // Latest single transfer INTO this fund
-            $latest = $rows->sortByDesc('transfer_date')->first();
+            $latest         = $latestTransfers[$mod] ?? null;
 
             $transferSummary[$mod] = [
-                'total_transferred'   => $transferredIn,
-                'total_outgoing'      => $transferredOut,
-                'deployed'            => round($deployed, 2),
-                'available_balance'   => $availableBalance,
-                'count'               => $rows->count(),
-                // Latest transfer details
-                'latest_amount'       => $latest ? round((float) $latest->amount, 2) : null,
-                'latest_fee'          => $latest ? round((float) $latest->transfer_fee, 2) : null,
-                'latest_total'        => $latest ? round((float) $latest->total, 2) : null,
-                'latest_date'         => $latest?->transfer_date?->toDateString(),
+                'total_transferred' => $transferredIn,
+                'total_outgoing'    => $transferredOut,
+                'deployed'          => round($deployed, 2),
+                'available_balance' => $availableBalance,
+                'count'             => (int) ($transferCounts[$mod] ?? 0),
+                'latest_amount'     => $latest ? round((float) $latest->amount, 2)       : null,
+                'latest_fee'        => $latest ? round((float) $latest->transfer_fee, 2) : null,
+                'latest_total'      => $latest ? round((float) $latest->total, 2)        : null,
+                'latest_date'       => $latest?->transfer_date?->toDateString(),
             ];
         }
 
@@ -571,9 +585,13 @@ class DashboardService
         $savingsRate = $income > 0 ? round(($balance / $income) * 100, 2) : 0;
 
         $allTimeIncome = (float) Income::where('budget_tracking_id', $btId)->sum('amount');
+        $driver = DB::getDriverName();
         $monthsWithIncome = Income::where('budget_tracking_id', $btId)
-            ->selectRaw('YEAR(received_at) as yr, MONTH(received_at) as mo')
-            ->groupBy('yr', 'mo')
+            ->when(
+                $driver === 'sqlite',
+                fn($q) => $q->selectRaw("strftime('%Y-%m', received_at) as ym")->groupBy('ym'),
+                fn($q) => $q->selectRaw("DATE_FORMAT(received_at, '%Y-%m') as ym")->groupBy('ym')
+            )
             ->get()
             ->count();
 
@@ -808,8 +826,9 @@ class DashboardService
         }
 
         // Budget tracking allocations summary — no end date, scope from start_date to today
-        $txFrom  = $budget->start_date?->toDateString() ?? '1970-01-01';
-        $txTo    = now()->toDateString();
+        // Use datetime bounds so records stored as 'Y-m-d H:i:s' (Eloquent default) are included
+        $txFrom  = ($budget->start_date?->toDateString() ?? '1970-01-01') . ' 00:00:00';
+        $txTo    = now()->format('Y-m-d') . ' 23:59:59';
 
         $txQuery     = BudgetTrackingTransaction::where('budget_tracking_id', $btId)
             ->whereBetween('date', [$txFrom, $txTo]);

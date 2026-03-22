@@ -1,5 +1,71 @@
 @import "tailwindcss";
 
+/* ── Dark mode class strategy ─────────────────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Dark mode global overrides ───────────────────────────────────────────── */
+
+/* Cards / surfaces */
+.dark .bg-gray-950      { background-color: #0d1117 !important; }
+.dark .bg-white         { background-color: #1e2433 !important; }
+.dark .bg-gray-50       { background-color: #171e2e !important; }
+.dark .bg-gray-100      { background-color: #111827 !important; }
+.dark .bg-gray-200      { background-color: #1f2a3c !important; }
+
+/* Text */
+.dark .text-gray-900    { color: #f9fafb !important; }
+.dark .text-gray-800    { color: #f3f4f6 !important; }
+.dark .text-gray-700    { color: #e5e7eb !important; }
+.dark .text-gray-600    { color: #d1d5db !important; }
+.dark .text-gray-500    { color: #9ca3af !important; }
+.dark .text-gray-400    { color: #6b7280 !important; }
+.dark .text-gray-300    { color: #4b5563 !important; }
+
+/* Borders */
+.dark .border-gray-100  { border-color: #2d3a4e !important; }
+.dark .border-gray-200  { border-color: #2d3a4e !important; }
+.dark .border-gray-300  { border-color: #374151 !important; }
+.dark .divide-gray-100  > * + * { border-color: #2d3a4e !important; }
+.dark .divide-gray-200  > * + * { border-color: #2d3a4e !important; }
+
+/* Inputs */
+.dark input,
+.dark select,
+.dark textarea {
+    background-color: #1e2d3d !important;
+    border-color: #374151 !important;
+    color: #f3f4f6 !important;
+    color-scheme: dark;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #6b7280 !important; }
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover  { background-color: #1a2535 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #1e2a3c !important; }
+
+/* Shadow */
+.dark .shadow-sm { box-shadow: 0 1px 3px 0 rgba(0,0,0,.5) !important; }
+.dark .shadow    { box-shadow: 0 2px 6px 0 rgba(0,0,0,.5) !important; }
+.dark .shadow-xl { box-shadow: 0 8px 24px 0 rgba(0,0,0,.6) !important; }
+
+/* Table rows */
+.dark .hover\:bg-gray-50:hover { background-color: #1a2535 !important; }
+
+/* Subtle tinted backgrounds (badges, pills) */
+.dark .bg-green-50  { background-color: rgba(16,185,129,.12) !important; }
+.dark .bg-red-50    { background-color: rgba(239,68,68,.12)  !important; }
+.dark .bg-blue-50   { background-color: rgba(59,130,246,.12) !important; }
+.dark .bg-amber-50  { background-color: rgba(245,158,11,.12) !important; }
+.dark .bg-indigo-50 { background-color: rgba(99,102,241,.12) !important; }
+.dark .bg-orange-50 { background-color: rgba(249,115,22,.12) !important; }
+.dark .bg-purple-50 { background-color: rgba(168,85,247,.12) !important; }
+.dark .bg-violet-50 { background-color: rgba(139,92,246,.12) !important; }
+.dark .bg-teal-50   { background-color: rgba(20,184,166,.12) !important; }
+.dark .bg-pink-50   { background-color: rgba(236,72,153,.12) !important; }
+.dark .bg-emerald-50{ background-color: rgba(52,211,153,.12) !important; }
+.dark .bg-cyan-50   { background-color: rgba(6,182,212,.12)  !important; }
+
 /* ── Safe-area padding for iPhone notch / home indicator ────────────────── */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);

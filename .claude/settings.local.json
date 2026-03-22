@@ -48,7 +48,20 @@
       "Bash(1:*)",
       "Bash(grep -E \"\\\\.vue$|^[A-Z]\")",
       "Bash(php -r \"echo date\\(''Y_m_d_His''\\);\")",
-      "Bash(dir \"C:\\\\laragon\\\\www\\\\budget-tracking-v1\\\\database\\\\migrations\" /b /o:d)"
+      "Bash(dir \"C:\\\\laragon\\\\www\\\\budget-tracking-v1\\\\database\\\\migrations\" /b /o:d)",
+      "Bash(ls /c/laragon/www/budget-tracking-v1/app/Http/Requests/**/*.php)",
+      "Bash(find /c/laragon/www/budget-tracking-v1/app -name *.php -path *Trait* -o -path *Resource*)",
+      "Bash(python -c \"from reportlab.lib.pagesizes import A4; print\\(''reportlab ok''\\)\")",
+      "Bash(python -c \"from reportlab.lib.pagesizes import A4; print\\(''ok''\\)\")",
+      "Bash(python -c \"import reportlab; print\\(''''ok''''\\)\")",
+      "Bash(python generate_report.py)",
+      "Bash(mysql -u root -e \"SHOW DATABASES;\")",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\mysql\\\\mysql-8.0.30-winx64\\\\bin\\\\mysql.exe\" -u root -e \"SHOW DATABASES;\")",
+      "Bash(php -i)",
+      "Bash(sed -i \"s/;extension=pdo_sqlite/extension=pdo_sqlite/\" \"C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.ini\")",
+      "Bash(sed -i \"s/;extension=sqlite3/extension=sqlite3/\" \"C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.ini\")",
+      "Bash(taskkill /F /IM AcroRd32.exe /IM Acrobat.exe /IM SumatraPDF.exe)",
+      "Bash(del \"C:\\\\laragon\\\\www\\\\budget-tracking-v1\\\\storage\\\\app\\\\public\\\\BudgetTrack_Test_Report.pdf\")"
     ]
   }
 }

@@ -31,7 +31,7 @@ class FileController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,csv,txt,zip'],
             'fileable_type' => ['required', 'string'],
             'fileable_id' => ['required', 'integer'],
         ]);

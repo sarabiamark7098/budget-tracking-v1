@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen bg-gray-100 overflow-hidden">
+  <div class="flex h-screen bg-gray-100 overflow-hidden dark:bg-gray-900">
     <!-- Mobile overlay -->
     <div
       v-if="sidebarOpen"
@@ -10,7 +10,7 @@
     <!-- Sidebar -->
     <aside
       :class="[
-        'fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white flex flex-col transition-transform duration-300',
+        'fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 dark:bg-gray-950 text-white flex flex-col transition-transform duration-300',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         'lg:relative lg:translate-x-0'
       ]"
@@ -55,7 +55,30 @@
       </nav>
 
       <!-- User info -->
-      <div class="px-4 py-4 border-t border-gray-700">
+      <!-- Theme toggle in sidebar footer -->
+      <div class="px-4 py-3 border-t border-gray-700 dark:border-gray-800">
+        <button
+          @click="themeStore.toggle()"
+          class="flex items-center gap-3 w-full text-left hover:bg-gray-800 rounded-lg px-2 py-1.5 transition-colors"
+        >
+          <span class="w-9 h-9 rounded-full bg-gray-700 dark:bg-gray-600 flex items-center justify-center shrink-0">
+            <!-- Sun icon (light mode) -->
+            <svg v-if="themeStore.isDark" class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 110 14A7 7 0 0112 5z"/>
+            </svg>
+            <!-- Moon icon (dark mode) -->
+            <svg v-else class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white">{{ themeStore.isDark ? 'Light Mode' : 'Dark Mode' }}</p>
+            <p class="text-xs text-gray-400">{{ themeStore.isDark ? 'Switch to light' : 'Switch to dark' }}</p>
+          </div>
+        </button>
+      </div>
+
+      <div class="px-4 py-4 border-t border-gray-700 dark:border-gray-800">
         <button
           class="flex items-center gap-3 w-full text-left hover:bg-gray-800 rounded-lg px-2 py-1.5 transition-colors group"
           @click="openAccountModal"
@@ -76,11 +99,11 @@
 
     <!-- ── Manage Account Modal ──────────────────────────────────────────────── -->
     <div v-if="showAccountModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md">
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b">
-          <h2 class="text-lg font-semibold text-gray-800">Manage Account</h2>
-          <button @click="showAccountModal = false" class="text-gray-400 hover:text-gray-600">
+        <div class="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Manage Account</h2>
+          <button @click="showAccountModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -110,7 +133,7 @@
             </form>
           </div>
 
-          <div class="border-t"></div>
+          <div class="border-t dark:border-gray-700"></div>
 
           <!-- Change Password -->
           <div>
@@ -155,7 +178,7 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <!-- Header -->
-      <header class="bg-white shadow-sm z-10 flex items-center justify-between px-4 py-3 lg:px-6">
+      <header class="bg-white dark:bg-gray-900 shadow-sm dark:shadow-gray-950 z-10 flex items-center justify-between px-4 py-3 lg:px-6">
         <div class="flex items-center gap-3">
           <button
             class="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
@@ -165,13 +188,13 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 class="text-base font-semibold text-gray-800 lg:text-lg">
+          <h1 class="text-base font-semibold text-gray-800 dark:text-gray-100 lg:text-lg">
             {{ currentPageTitle }}
           </h1>
         </div>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm text-gray-600 hidden sm:block">{{ authStore.user?.name }}</span>
+          <span class="text-sm text-gray-600 dark:text-gray-300 hidden sm:block">{{ authStore.user?.name }}</span>
           <button
             class="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             @click="handleLogout"
@@ -185,13 +208,13 @@
       </header>
 
       <!-- Page Content -->
-      <main class="flex-1 overflow-auto p-4 pb-20 lg:p-6 lg:pb-6">
+      <main class="flex-1 overflow-auto p-4 pb-20 lg:p-6 lg:pb-6 dark:bg-gray-900">
         <RouterView />
       </main>
     </div>
 
     <!-- ── Mobile Bottom Nav ───────────────────────────────────────────────── -->
-    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 safe-area-bottom">
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 safe-area-bottom">
       <div class="flex items-stretch">
         <RouterLink
           v-for="tab in bottomNavItems"
@@ -226,13 +249,15 @@ import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useBudgetTrackingStore } from '@/stores/budgetTracking';
+import { useThemeStore } from '@/stores/theme';
 
 // ── Account modal ─────────────────────────────────────────────────────────────
 
 const router   = useRouter();
 const route    = useRoute();
-const authStore = useAuthStore();
-const btStore   = useBudgetTrackingStore();
+const authStore  = useAuthStore();
+const btStore    = useBudgetTrackingStore();
+const themeStore = useThemeStore();
 const sidebarOpen = ref(false);
 
 const userInitial = computed(() => {
