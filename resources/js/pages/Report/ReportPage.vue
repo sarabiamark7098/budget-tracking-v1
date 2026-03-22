@@ -101,29 +101,35 @@
 
       <!-- ── Summary Stat Cards ─────────────────────────────────────────── -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
-        <div class="bg-white rounded-xl shadow-sm p-4 col-span-1">
-          <p class="text-xs text-gray-500 mb-1">Total Income</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 border-t-2 border-green-400">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Income</p>
           <p class="text-xl font-bold text-green-600">{{ fmt(rpt.total_income) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">Period inflow</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Expenses</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 border-t-2 border-red-400">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Expenses</p>
           <p class="text-xl font-bold text-red-500">{{ fmt(rpt.total_expenses) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">{{ rpt.expense_ratio_pct?.toFixed(1) }}% of income</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Debt Payments</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 border-t-2 border-orange-400">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Debt Payments</p>
           <p class="text-xl font-bold text-orange-500">{{ fmt(rpt.total_debt_payments) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">Personal debt</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">CC Installments</p>
-          <p class="text-xl font-bold text-purple-500">{{ fmt(rpt.total_purchase_payments) }}</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 border-t-2 border-violet-400">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">CC Installments</p>
+          <p class="text-xl font-bold text-violet-500">{{ fmt(rpt.total_purchase_payments) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">Credit card</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Cash Purchases</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 border-t-2 border-pink-400">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Cash Purchases</p>
           <p class="text-xl font-bold text-pink-500">{{ fmt(rpt.total_cash_purchases) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">Direct spend</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-4">
-          <p class="text-xs text-gray-500 mb-1">Business Received</p>
+        <div class="bg-white rounded-xl shadow-sm p-4 border-t-2 border-teal-400">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Biz Received</p>
           <p class="text-xl font-bold text-teal-600">{{ fmt(rpt.business_debt_received) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">Business debt in</p>
         </div>
       </div>
 
@@ -152,20 +158,40 @@
 
       <!-- ── Expense Breakdown ───────────────────────────────────────────── -->
       <div v-if="rpt.expense_breakdown?.length" class="bg-white rounded-xl shadow-sm p-5">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-start justify-between mb-4">
           <div>
             <h2 class="font-semibold text-gray-700">Expense Breakdown</h2>
-            <p class="text-xs text-gray-400 mt-0.5">{{ rpt.expense_breakdown.length }} categories</p>
+            <p class="text-xs text-gray-400 mt-0.5">
+              {{ rpt.expense_breakdown.length }} {{ rpt.expense_breakdown.length === 1 ? 'category' : 'categories' }} ·
+              {{ rpt.expense_breakdown.reduce((s, i) => s + i.count, 0) }} expenses
+            </p>
           </div>
           <span class="text-sm font-semibold text-red-500">{{ fmt(rpt.total_expenses) }}</span>
         </div>
+
+        <!-- Donut chart + legend -->
+        <div class="flex items-center gap-5 mb-5">
+          <DonutChart :segments="expenseSegments" :size="120">
+            <span class="text-[10px] text-gray-400 leading-tight text-center">Spend<br>split</span>
+          </DonutChart>
+          <div class="flex-1 space-y-1.5 min-w-0">
+            <div v-for="(seg, i) in expenseSegments.slice(0, 6)" :key="i" class="flex items-center gap-2 text-xs">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: seg.color }"></span>
+              <span class="truncate text-gray-600">{{ seg.label }}</span>
+              <span class="ml-auto shrink-0 font-medium text-gray-700">{{ seg.pct.toFixed(1) }}%</span>
+            </div>
+            <p v-if="expenseSegments.length > 6" class="text-[10px] text-gray-400 pl-4">
+              +{{ expenseSegments.length - 6 }} more
+            </p>
+          </div>
+        </div>
+
+        <!-- Breakdown list -->
         <div class="space-y-3">
           <div v-for="(cat, i) in rpt.expense_breakdown" :key="cat.id" class="group">
             <div class="flex items-center gap-3">
-              <!-- Rank badge -->
               <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                 :style="{ backgroundColor: cat.color }">{{ i + 1 }}</span>
-              <!-- Name + count -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-sm text-gray-700 font-medium truncate">{{ cat.name }}</span>
@@ -192,7 +218,34 @@
 
       <!-- ── Monthly Trend Table ─────────────────────────────────────────── -->
       <div v-if="rpt.monthly_trend?.length" class="bg-white rounded-xl shadow-sm p-5">
-        <h2 class="font-semibold text-gray-700 mb-4">Monthly Trend</h2>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-700">Monthly Trend</h2>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block"></span> Income</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block"></span> Outflow</span>
+          </div>
+        </div>
+
+        <!-- Visual bar chart strip -->
+        <div class="space-y-1.5 mb-5">
+          <div v-for="m in rpt.monthly_trend" :key="m.month + '-bar'"
+            class="flex items-center gap-2 text-xs">
+            <span class="w-10 shrink-0 text-right text-gray-500">{{ m.label?.slice(0, 3) }}</span>
+            <div class="flex-1 flex gap-0.5 h-4 items-center">
+              <div class="h-full rounded-sm bg-green-400 transition-all duration-500 min-w-[2px]"
+                :style="{ width: monthlyBarWidth(m.income) + '%' }"
+                :title="`Income: ${fmt(m.income)}`" />
+              <div class="h-full rounded-sm bg-red-400 transition-all duration-500 min-w-[2px]"
+                :style="{ width: monthlyBarWidth(m.total_outflow) + '%' }"
+                :title="`Outflow: ${fmt(m.total_outflow)}`" />
+            </div>
+            <span class="shrink-0 w-20 text-right font-semibold text-xs px-1.5 py-0.5 rounded-full"
+              :class="m.net >= 0 ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'">
+              {{ m.net >= 0 ? '+' : '' }}{{ fmtShort(m.net) }}
+            </span>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
@@ -310,6 +363,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useReportStore } from '@/stores/report';
+import DonutChart from '@/components/charts/DonutChart.vue';
 
 const store = useReportStore();
 const exporting = ref(false);
@@ -380,6 +434,33 @@ function fmt(val) {
 }
 function pct(val) {
   return Number(val || 0).toFixed(1) + '%';
+}
+
+function fmtShort(val) {
+  const n = Number(val || 0);
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+  return n.toFixed(0);
+}
+
+const expenseSegments = computed(() => {
+  const total = rpt.value.total_expenses ?? 0;
+  if (!total) return [];
+  return (rpt.value.expense_breakdown ?? []).map(item => ({
+    label: item.name || 'Uncategorized',
+    value: item.total,
+    pct:   total > 0 ? (item.total / total) * 100 : 0,
+    color: item.color || '#6B7280',
+  }));
+});
+
+const monthlyMax = computed(() => {
+  const rows = rpt.value.monthly_trend ?? [];
+  return Math.max(...rows.map(m => m.income ?? 0), ...rows.map(m => m.total_outflow ?? 0), 1);
+});
+
+function monthlyBarWidth(val) {
+  return Math.min(50, ((val ?? 0) / monthlyMax.value) * 50);
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────

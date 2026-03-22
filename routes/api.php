@@ -146,7 +146,8 @@ Route::prefix('v1')->group(function () {
         Route::prefix('reports')->group(function () {
             Route::get('income-expense', [ReportController::class, 'incomeExpense']);
             Route::get('net-worth', [ReportController::class, 'netWorth']);
-            Route::get('export/csv', [ReportController::class, 'exportCsv']);
+            Route::get('export/csv',   [ReportController::class, 'exportCsv']);
+            Route::get('export/excel', [ReportController::class, 'exportCsv']); // alias
             Route::get('export/pdf', [ReportController::class, 'exportPdf']);
         });
     });

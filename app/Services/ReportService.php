@@ -4,16 +4,19 @@ namespace App\Services;
 
 use App\Models\BudgetTracking;
 use App\Models\CryptoAsset;
+use App\Models\CryptoDividend;
 use App\Models\CryptoLot;
 use App\Models\Debt;
 use App\Models\Expense;
 use App\Models\Income;
 use App\Models\Investment;
+use App\Models\InvestmentDividend;
 use App\Models\ModuleTransfer;
 use App\Models\Payment;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\Stock;
+use App\Models\StockDividend;
 use App\Models\StockLot;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -614,6 +617,89 @@ class ReportService
         foreach (['C','D','E','F','G','H','I'] as $col) {
             $sh->getColumnDimension($col)->setWidth(16);
         }
+
+        // 15. Investment Dividends
+        $investmentDividends = InvestmentDividend::with('investment')
+            ->where('budget_tracking_id', $btId)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $sh = $spreadsheet->createSheet();
+        $sh->setTitle('Investment Dividends');
+        $this->xlsxHeader($sh, ['Date', 'Investment Name', 'Type', 'Amount', 'Notes'], 1);
+        $idRows = [];
+        foreach ($investmentDividends as $div) {
+            $idRows[] = [
+                (string) $div->paid_at,
+                $div->investment?->name ?? '',
+                $div->investment?->type ?? '',
+                (float) $div->amount,
+                $div->notes ?? '',
+            ];
+        }
+        $this->xlsxRows($sh, $idRows, 2);
+        $sh->getColumnDimension('A')->setWidth(14);
+        $sh->getColumnDimension('B')->setWidth(30);
+        $sh->getColumnDimension('C')->setWidth(18);
+        $sh->getColumnDimension('D')->setWidth(16);
+        $sh->getColumnDimension('E')->setWidth(28);
+
+        // 16. Stock Dividends
+        $stockDividends = StockDividend::with('stock')
+            ->where('budget_tracking_id', $btId)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $sh = $spreadsheet->createSheet();
+        $sh->setTitle('Stock Dividends');
+        $this->xlsxHeader($sh, ['Date', 'Symbol', 'Company', 'Amount', 'Notes'], 1);
+        $sdRows = [];
+        foreach ($stockDividends as $div) {
+            $sdRows[] = [
+                (string) $div->paid_at,
+                $div->stock?->symbol ?? '',
+                $div->stock?->company_name ?? '',
+                (float) $div->amount,
+                $div->notes ?? '',
+            ];
+        }
+        $this->xlsxRows($sh, $sdRows, 2);
+        $sh->getColumnDimension('A')->setWidth(14);
+        $sh->getColumnDimension('B')->setWidth(12);
+        $sh->getColumnDimension('C')->setWidth(28);
+        $sh->getColumnDimension('D')->setWidth(16);
+        $sh->getColumnDimension('E')->setWidth(28);
+
+        // 17. Crypto Rewards
+        $cryptoRewards = CryptoDividend::with('cryptoAsset')
+            ->where('budget_tracking_id', $btId)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $sh = $spreadsheet->createSheet();
+        $sh->setTitle('Crypto Rewards');
+        $this->xlsxHeader($sh, ['Date', 'Symbol', 'Coin Name', 'Qty Rewarded', 'Price at Reward', 'Est. Value (PHP)', 'Notes'], 1);
+        $crwRows = [];
+        foreach ($cryptoRewards as $rwd) {
+            $estValue = (float) $rwd->quantity_rewarded * (float) $rwd->price_at_reward;
+            $crwRows[] = [
+                (string) $rwd->paid_at,
+                $rwd->cryptoAsset?->symbol ?? '',
+                $rwd->cryptoAsset?->coin_name ?? '',
+                round((float) $rwd->quantity_rewarded, 8),
+                round((float) $rwd->price_at_reward, 8),
+                round($estValue, 2),
+                $rwd->notes ?? '',
+            ];
+        }
+        $this->xlsxRows($sh, $crwRows, 2);
+        $sh->getColumnDimension('A')->setWidth(14);
+        $sh->getColumnDimension('B')->setWidth(12);
+        $sh->getColumnDimension('C')->setWidth(24);
+        $sh->getColumnDimension('D')->setWidth(16);
+        $sh->getColumnDimension('E')->setWidth(18);
+        $sh->getColumnDimension('F')->setWidth(20);
+        $sh->getColumnDimension('G')->setWidth(28);
 
         // ── Stream XLSX ────────────────────────────────────────────────────────
         $filename = 'full_report_' . now()->format('Y_m_d') . '.xlsx';

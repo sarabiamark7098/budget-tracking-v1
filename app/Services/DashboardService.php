@@ -131,12 +131,15 @@ class DashboardService
         $healthScore        = $this->calculateFinancialHealthScore(
             $totalIncome, $totalOutgoing, $totalDebt, $totalInvestments
         );
-        $budgetMonitor      = $this->getBudgetMonitor($budget, $dateFrom, $dateTo, $periodIncome);
-        $budgetList         = $this->getBudgetList($budget, $dateFrom, $dateTo);
-        $debtList           = $this->getDebtList($budget);
-        $monthReport        = $this->getMonthReport($budget);
-        $yearReport         = $this->getYearReport($budget);
-        $purchaseList       = $this->getPurchaseList($budget);
+        $budgetMonitor         = $this->getBudgetMonitor($budget, $dateFrom, $dateTo, $periodIncome);
+        $budgetList            = $this->getBudgetList($budget, $dateFrom, $dateTo);
+        $debtList              = $this->getDebtList($budget);
+        $monthReport           = $this->getMonthReport($budget);
+        $yearReport            = $this->getYearReport($budget);
+        $purchaseList          = $this->getPurchaseList($budget);
+        $incomeTransactions    = $this->getIncomeTransactions($budget, $dateFrom, $dateTo);
+        $expenseTransactions   = $this->getExpenseTransactions($budget, $dateFrom, $dateTo);
+        $otherTransactions     = $this->getOtherTransactions($budget, $dateFrom, $dateTo);
 
         return [
             'total_income'                  => round($totalIncome, 2),
@@ -163,6 +166,9 @@ class DashboardService
             'month_report'              => $monthReport,
             'year_report'               => $yearReport,
             'monthly_data'              => $monthlyData,
+            'income_transactions'       => $incomeTransactions,
+            'expense_transactions'      => $expenseTransactions,
+            'other_transactions'        => $otherTransactions,
             'period'                    => ['from' => $dateFrom, 'to' => $dateTo],
         ];
     }
@@ -333,6 +339,121 @@ class DashboardService
         return $incomes->concat($expenses)->concat($payments)->concat($cashPurchases)->concat($purchasePayments)->concat($moduleTransfers)
             ->sortByDesc('created_at')
             ->values();
+    }
+
+    // ─── Income Transactions ──────────────────────────────────────────────────────
+
+    private function getIncomeTransactions(BudgetTracking $budget, string $dateFrom, string $dateTo): array
+    {
+        return Income::where('budget_tracking_id', $budget->id)
+            ->whereBetween('received_at', [$dateFrom, $dateTo])
+            ->orderByDesc('received_at')
+            ->get()
+            ->map(fn($i) => [
+                'id'     => $i->id,
+                'title'  => $i->title,
+                'source' => $i->source,
+                'amount' => (float) $i->amount,
+                'date'   => $i->received_at?->toDateString(),
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    // ─── Expense Transactions ─────────────────────────────────────────────────────
+
+    private function getExpenseTransactions(BudgetTracking $budget, string $dateFrom, string $dateTo): array
+    {
+        return Expense::with('category')
+            ->where('budget_tracking_id', $budget->id)
+            ->whereBetween('spent_at', [$dateFrom, $dateTo])
+            ->orderByDesc('spent_at')
+            ->get()
+            ->map(fn($e) => [
+                'id'             => $e->id,
+                'description'    => $e->description ?? $e->title,
+                'category'       => $e->category?->name ?? 'Uncategorized',
+                'category_color' => $e->category?->color ?? '#6B7280',
+                'amount'         => (float) $e->amount,
+                'date'           => $e->spent_at?->toDateString(),
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    // ─── Other Transactions ───────────────────────────────────────────────────────
+
+    private function getOtherTransactions(BudgetTracking $budget, string $dateFrom, string $dateTo): array
+    {
+        $btId = $budget->id;
+
+        $debtPayments = Payment::with('debt')
+            ->where('budget_tracking_id', $btId)
+            ->whereBetween('payment_date', [$dateFrom, $dateTo])
+            ->orderByDesc('payment_date')
+            ->get()
+            ->map(function ($p) {
+                $isBusiness = $p->debt?->type === 'business';
+                return [
+                    'id'     => $p->id,
+                    'type'   => $isBusiness ? 'business_debt_received' : 'debt_payment',
+                    'label'  => $isBusiness ? 'Biz Debt Received' : 'Debt Payment',
+                    'title'  => $isBusiness
+                        ? ($p->debt?->borrower_name ?? 'Business Debt')
+                        : ($p->debt?->lender_name   ?? 'Debt'),
+                    'amount' => (float) $p->amount,
+                    'date'   => $p->payment_date?->toDateString(),
+                ];
+            });
+
+        $cashPurchases = Purchase::where('budget_tracking_id', $btId)
+            ->whereIn('payment_method', ['cash', 'other'])
+            ->whereBetween('purchase_date', [$dateFrom, $dateTo])
+            ->orderByDesc('purchase_date')
+            ->get()
+            ->map(fn($p) => [
+                'id'     => $p->id,
+                'type'   => 'purchase',
+                'label'  => 'Cash Purchase',
+                'title'  => $p->item_name,
+                'amount' => (float) $p->total_cost,
+                'date'   => $p->purchase_date?->toDateString(),
+            ]);
+
+        $ccInstallments = PurchasePayment::with('purchase')
+            ->where('budget_tracking_id', $btId)
+            ->whereBetween('paid_at', [$dateFrom, $dateTo])
+            ->orderByDesc('paid_at')
+            ->get()
+            ->map(fn($pp) => [
+                'id'     => $pp->id,
+                'type'   => 'purchase_payment',
+                'label'  => 'CC Installment #' . $pp->installment_number,
+                'title'  => $pp->purchase?->item_name ?? 'Purchase',
+                'amount' => (float) $pp->amount,
+                'date'   => $pp->paid_at?->toDateString(),
+            ]);
+
+        $transfers = ModuleTransfer::where('budget_tracking_id', $btId)
+            ->whereBetween('transfer_date', [$dateFrom, $dateTo])
+            ->orderByDesc('transfer_date')
+            ->get()
+            ->map(fn($t) => [
+                'id'     => $t->id,
+                'type'   => $t->module === 'income' ? 'module_transfer_back' : 'module_transfer',
+                'label'  => $t->module === 'income' ? 'Transfer In' : 'Fund Transfer',
+                'title'  => ucfirst($t->transfer_from) . ' → ' . ucfirst($t->module),
+                'amount' => $t->module === 'income' ? (float) $t->amount : (float) $t->total,
+                'date'   => $t->transfer_date?->toDateString(),
+            ]);
+
+        return $debtPayments
+            ->concat($cashPurchases)
+            ->concat($ccInstallments)
+            ->concat($transfers)
+            ->sortByDesc('date')
+            ->values()
+            ->toArray();
     }
 
     // ─── Expense Breakdown ────────────────────────────────────────────────────────
