@@ -91,7 +91,7 @@
                   <div class="flex gap-2 justify-end flex-wrap">
                     <button
                       v-if="item.payment_method === 'credit_card' && item.remaining_installments > 0"
-                      @click="handlePayInstallment(item)"
+                      @click="confirmPayInstallment(item)"
                       class="text-green-600 hover:text-green-800 text-xs px-2 py-1 border border-green-300 rounded bg-green-50 hover:bg-green-100"
                     >Pay Month</button>
                     <button
@@ -261,6 +261,43 @@
         </div>
       </div>
     </div>
+
+    <!-- Confirm Pay Month -->
+    <div v-if="payInstallmentTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-800">Record Monthly Payment</h3>
+            <p class="text-xs text-gray-400 mt-0.5">Installment #{{ (payInstallmentTarget.installments_paid ?? 0) + 1 }} of {{ payInstallmentTarget.installment_count }}</p>
+          </div>
+        </div>
+        <div class="bg-gray-50 rounded-lg px-4 py-3 mb-4 space-y-1.5 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Item</span>
+            <span class="font-medium text-gray-700">{{ payInstallmentTarget.item_name }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Amount to pay</span>
+            <span class="font-semibold text-green-600">{{ formatCurrency(payInstallmentTarget.installment_amount) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Remaining after</span>
+            <span class="font-medium text-gray-700">{{ payInstallmentTarget.remaining_installments - 1 }} months</span>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button @click="payInstallmentTarget = null" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button @click="handlePayInstallment" :disabled="paying" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
+            {{ paying ? 'Processing...' : 'Confirm Payment' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -271,13 +308,15 @@ import { formatDate } from '@/utils/date';
 
 const store = usePurchaseStore();
 
-const showModal    = ref(false);
-const editing      = ref(null);
-const deleteTarget = ref(null);
-const saving       = ref(false);
-const formError    = ref('');
-const filters      = ref({ payment_method: '', search: '' });
-const expandedId   = ref(null); // which purchase row has payment history expanded
+const showModal             = ref(false);
+const editing               = ref(null);
+const deleteTarget          = ref(null);
+const payInstallmentTarget  = ref(null);
+const saving                = ref(false);
+const paying                = ref(false);
+const formError             = ref('');
+const filters               = ref({ payment_method: '', search: '' });
+const expandedId            = ref(null); // which purchase row has payment history expanded
 
 const paymentMethods = [
   { value: 'cash',        label: 'Cash'        },
@@ -348,12 +387,20 @@ function confirmDelete(item) {
   deleteTarget.value = item;
 }
 
-async function handlePayInstallment(item) {
+function confirmPayInstallment(item) {
+  payInstallmentTarget.value = item;
+}
+
+async function handlePayInstallment() {
+  paying.value = true;
   try {
-    await store.payInstallment(item.id);
+    await store.payInstallment(payInstallmentTarget.value.id);
     store.fetchSummary();
+    payInstallmentTarget.value = null;
   } catch (e) {
     alert(e.response?.data?.message ?? 'Failed to record payment.');
+  } finally {
+    paying.value = false;
   }
 }
 

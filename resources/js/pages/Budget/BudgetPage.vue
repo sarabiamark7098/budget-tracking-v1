@@ -162,6 +162,9 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Period *</label>
             <select v-model="form.period" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="daily">Daily</option>
+              <option value="weekdays">Weekdays (Mon–Fri)</option>
+              <option value="weekends">Weekends (Sat–Sun)</option>
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
@@ -170,7 +173,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
             <input v-model="form.start_date" type="date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <p class="text-xs text-gray-400 mt-1">Total budget = amount × number of {{ form.period ?? 'period' }}s elapsed</p>
+            <p class="text-xs text-gray-400 mt-1">Total budget = amount × number of {{ form.period ?? 'period' }}{{ form.period === 'daily' ? '' : 's' }} elapsed</p>
           </div>
           <div v-if="formError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ formError }}</div>
           <div class="flex justify-end gap-3 pt-2">

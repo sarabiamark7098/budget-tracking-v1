@@ -49,9 +49,12 @@ class Budget extends Model
 
     /**
      * Cumulative budget: amount × number of complete/started periods since start_date.
-     * For monthly: each calendar month adds one cycle.
-     * For weekly: each calendar week adds one cycle.
-     * For yearly: each calendar year adds one cycle.
+     * For daily:    each calendar day adds one cycle.
+     * For weekdays: each Mon–Fri day adds one cycle (weekends are skipped).
+     * For weekends: each Sat–Sun day adds one cycle (weekdays are skipped).
+     * For weekly:   each calendar week adds one cycle.
+     * For monthly:  each calendar month adds one cycle.
+     * For yearly:   each calendar year adds one cycle.
      */
     public function getTotalBudgetAttribute(): float
     {
@@ -65,16 +68,19 @@ class Budget extends Model
 
         $now = Carbon::now();
 
-        // Budget hasn't started yet
-        if ($start->gt($now)) {
-            return (float) $this->amount;
+        // Budget hasn't started yet — return 0 so nothing is reflected until start_date
+        if ($start->startOfDay()->gt($now->copy()->startOfDay())) {
+            return 0.0;
         }
 
         $periods = match ($this->period) {
-            'weekly'  => (int) $start->diffInWeeks($now) + 1,
-            'monthly' => (int) $start->diffInMonths($now) + 1,
-            'yearly'  => (int) $start->diffInYears($now) + 1,
-            default   => 1,
+            'daily'    => (int) $start->diffInDays($now) + 1,
+            'weekdays' => (int) $start->diffInWeekdays($now) + 1,
+            'weekends' => (int) $start->diffInWeekendDays($now) + 1,
+            'weekly'   => (int) $start->diffInWeeks($now) + 1,
+            'monthly'  => (int) $start->diffInMonths($now) + 1,
+            'yearly'   => (int) $start->diffInYears($now) + 1,
+            default    => 1,
         };
 
         return (float) $this->amount * max(1, $periods);

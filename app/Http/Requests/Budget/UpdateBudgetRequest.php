@@ -19,7 +19,7 @@ class UpdateBudgetRequest extends FormRequest
             'category_id' => ['nullable', 'exists:categories,id'],
             'name'        => ['nullable', 'string', 'max:255'],
             'amount'      => ['nullable', 'numeric', 'min:0'],
-            'period'      => ['nullable', 'in:weekly,monthly,yearly'],
+            'period'      => ['nullable', 'in:daily,weekdays,weekends,weekly,monthly,yearly'],
             'start_date'  => ['nullable', 'date'],
         ];
     }
