@@ -143,9 +143,11 @@ class BudgetTracking extends Model
             ->sum('amount');
 
         $purchasePayments    = (float) $this->purchasePayments()->sum('amount');
-        // Deduct ALL outgoing transfers to any fund (investment, stock, crypto, saving)
-        $moduleTransfersOut  = (float) $this->moduleTransfers()->whereIn('module', ['investment','stock','crypto','saving'])->sum('total');
-        // Transfers from a module back to income — credit back to the income pool
+        // Only deduct transfers that originated FROM income. Cross-fund transfers
+        // (e.g. Investment → Stock) must NOT be counted here — they do not move
+        // money out of the income pool and double-deducting them is a bug.
+        $moduleTransfersOut  = (float) $this->moduleTransfers()->where('transfer_from', 'income')->sum('total');
+        // Transfers from any module back TO income — credit back to the income pool
         $moduleTransfersBack = (float) $this->moduleTransfers()->where('module', 'income')->sum('amount');
 
         return $income - $expenses - $personalPayments + $businessReceived - $purchasePayments - $moduleTransfersOut + $moduleTransfersBack + $creditBack;

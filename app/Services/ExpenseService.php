@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class ExpenseService
 {
+    private static function bustCache(int $btId): void
+    {
+        DashboardService::clearAllTimeCache($btId);
+    }
     public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Expense::with(['budget'])
@@ -43,12 +47,15 @@ class ExpenseService
         $data['user_id']            = $user->id;
         $data['spent_at']           = now()->toDateString(); // always recorded as today
 
-        return Expense::create($data);
+        $expense = Expense::create($data);
+        self::bustCache($budget->id);
+        return $expense;
     }
 
     public function update(Expense $expense, array $data): Expense
     {
         $expense->update($data);
+        self::bustCache((int) $expense->budget_tracking_id);
         return $expense->fresh(['budget']);
     }
 
@@ -89,7 +96,10 @@ class ExpenseService
 
     public function delete(Expense $expense): bool
     {
-        return $expense->delete();
+        $btId = (int) $expense->budget_tracking_id;
+        $result = $expense->delete();
+        self::bustCache($btId);
+        return $result;
     }
 
     public function getMonthlySummary(BudgetTracking $budget, int $year): array

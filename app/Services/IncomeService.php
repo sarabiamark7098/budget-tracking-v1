@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class IncomeService
 {
+    // Clear the dashboard all-time totals cache whenever income changes.
+    private static function bustCache(int $btId): void
+    {
+        DashboardService::clearAllTimeCache($btId);
+    }
     public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Income::where('budget_tracking_id', $budget->id);
@@ -41,7 +46,9 @@ class IncomeService
         $data['user_id'] = $user->id;
         $data['source']  = $this->sanitizeSource($data['source'] ?? null);
 
-        return Income::create($data);
+        $income = Income::create($data);
+        self::bustCache($budget->id);
+        return $income;
     }
 
     public function update(Income $income, array $data): Income
@@ -51,6 +58,7 @@ class IncomeService
         }
 
         $income->update($data);
+        self::bustCache((int) $income->budget_tracking_id);
         return $income->fresh();
     }
 
@@ -74,7 +82,10 @@ class IncomeService
 
     public function delete(Income $income): bool
     {
-        return $income->delete();
+        $btId = (int) $income->budget_tracking_id;
+        $result = $income->delete();
+        self::bustCache($btId);
+        return $result;
     }
 
     public function getMonthlySummary(BudgetTracking $budget, int $year): array

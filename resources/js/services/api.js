@@ -36,8 +36,18 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Session expired mid-use — redirect to login.
-            window.location.href = '/login';
+            const url = error.config?.url ?? '';
+            const onAuthPage = ['/login', '/register'].some(
+                (p) => window.location.pathname.startsWith(p)
+            );
+            // Don't redirect when:
+            //  • The 401 came from the session-probe itself (/auth/me) — that
+            //    route always returns 200+null, so a 401 here is an edge case
+            //    that the router guard will handle gracefully via auth.ready.
+            //  • The user is already on a guest page (avoids infinite reload).
+            if (!url.includes('auth/me') && !onAuthPage) {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }

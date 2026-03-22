@@ -35,8 +35,22 @@ const router = createRouter({
     ],
 });
 
+// Holds the in-flight fetchUser() promise so the guard only calls it once per page load.
+let authInitPromise = null;
+
 router.beforeEach(async (to) => {
     const auth = useAuthStore();
+
+    // On every page load (or hard reload) the Pinia store is empty and auth.ready
+    // is false. We must await the session probe before making any auth decisions,
+    // otherwise the guard always sees isAuthenticated=false and redirects to /login
+    // before the session cookie has had a chance to restore the user.
+    if (!auth.ready) {
+        if (!authInitPromise) {
+            authInitPromise = auth.fetchUser();
+        }
+        await authInitPromise;
+    }
 
     if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login';
     if (to.meta.guest && auth.isAuthenticated) return '/budget-tracking';

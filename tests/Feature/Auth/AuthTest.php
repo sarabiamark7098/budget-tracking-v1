@@ -76,10 +76,16 @@ class AuthTest extends TestCase
         $response->assertStatus(422)->assertJsonPath('success', false);
     }
 
-    public function test_unauthenticated_access_returns_401(): void
+    public function test_unauthenticated_me_returns_200_with_null_data(): void
     {
+        // /auth/me is intentionally public and returns 200+null when not authenticated
+        // so the SPA can probe session state on boot without triggering a 401
+        // interceptor redirect loop. Authenticated behaviour is covered by
+        // test_me_returns_authenticated_user above.
         $response = $this->getJson('/api/v1/auth/me');
-        $response->assertStatus(401);
+        $response->assertOk()
+                 ->assertJsonPath('success', true)
+                 ->assertJsonPath('data', null);
     }
 
     public function test_register_validation_requires_name(): void

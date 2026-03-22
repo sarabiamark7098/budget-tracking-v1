@@ -10,6 +10,10 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class InsuranceService
 {
+    private static function bustCache(int $btId): void
+    {
+        DashboardService::clearAllTimeCache($btId);
+    }
     public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = InsurancePlan::with(['insurancePayments', 'files'])
@@ -44,10 +48,12 @@ class InsuranceService
 
     public function recordPayment(BudgetTracking $budget, User $user, array $data): InsurancePayment
     {
-        return InsurancePayment::create(array_merge($data, [
+        $payment = InsurancePayment::create(array_merge($data, [
             'budget_tracking_id' => $budget->id,
             'user_id'            => $user->id,
         ]));
+        self::bustCache($budget->id);
+        return $payment;
     }
 
     public function getPayments(BudgetTracking $budget, array $filters = []): LengthAwarePaginator

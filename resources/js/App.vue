@@ -11,7 +11,9 @@ const authStore = useAuthStore();
 const btStore   = useBudgetTrackingStore();
 
 onMounted(async () => {
-    await authStore.fetchUser();
+    // The router's beforeEach guard already called fetchUser() and awaited it
+    // before this component mounted, so auth.ready is always true here.
+    // We only need to trigger the budget tracker fetch.
     if (authStore.isAuthenticated) {
         btStore.fetchTracker();
     }

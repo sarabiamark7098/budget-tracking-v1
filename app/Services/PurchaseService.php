@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseService
 {
+    private static function bustCache(int $btId): void
+    {
+        DashboardService::clearAllTimeCache($btId);
+    }
     public function getAll(BudgetTracking $budget, array $filters = []): LengthAwarePaginator
     {
         $query = Purchase::where('budget_tracking_id', $budget->id);
@@ -49,10 +53,12 @@ class PurchaseService
 
         $data['installments_paid'] = $data['installments_paid'] ?? 0;
 
-        return Purchase::create(array_merge($data, [
+        $purchase = Purchase::create(array_merge($data, [
             'budget_tracking_id' => $budget->id,
             'user_id'            => $user->id,
         ]));
+        self::bustCache($budget->id);
+        return $purchase;
     }
 
     public function update(Purchase $purchase, array $data): Purchase
@@ -78,12 +84,16 @@ class PurchaseService
         }
 
         $purchase->update($data);
+        self::bustCache((int) $purchase->budget_tracking_id);
         return $purchase->fresh();
     }
 
     public function delete(Purchase $purchase): bool
     {
-        return $purchase->delete();
+        $btId = (int) $purchase->budget_tracking_id;
+        $result = $purchase->delete();
+        self::bustCache($btId);
+        return $result;
     }
 
     public function payInstallment(Purchase $purchase): array|Purchase
@@ -108,6 +118,7 @@ class PurchaseService
             ]);
         });
 
+        self::bustCache((int) $purchase->budget_tracking_id);
         return $purchase->fresh(['payments']);
     }
 

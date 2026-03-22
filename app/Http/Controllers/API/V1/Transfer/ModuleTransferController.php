@@ -7,6 +7,7 @@ use App\Models\CryptoLot;
 use App\Models\Investment;
 use App\Models\ModuleTransfer;
 use App\Models\StockLot;
+use App\Services\DashboardService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -69,6 +70,7 @@ class ModuleTransferController extends Controller
         $data['user_id']            = auth()->id();
 
         $transfer = ModuleTransfer::create($data);
+        DashboardService::clearAllTimeCache($budget->id);
 
         return $this->respondCreated($transfer, 'Transfer recorded successfully');
     }

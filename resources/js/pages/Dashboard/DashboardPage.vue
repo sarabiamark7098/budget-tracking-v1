@@ -46,18 +46,19 @@
         </div>
         <!-- Balance -->
         <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5 border-t-2"
-          :class="store.summary.balance >= 0 ? 'border-blue-400' : 'border-red-500'">
+          :class="(transferSummary.income?.available_balance ?? store.summary.balance) >= 0 ? 'border-blue-400' : 'border-red-500'">
           <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Available Balance</p>
-          <p class="text-lg lg:text-xl font-bold" :class="store.summary.balance >= 0 ? 'text-blue-600' : 'text-red-600'">
-            {{ fmt(store.summary.balance) }}
+          <p class="text-lg lg:text-xl font-bold"
+            :class="(transferSummary.income?.available_balance ?? store.summary.balance) >= 0 ? 'text-blue-600' : 'text-red-600'">
+            {{ fmt(transferSummary.income?.available_balance ?? store.summary.balance) }}
           </p>
           <div class="mt-2 w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500"
-              :class="store.summary.balance >= 0 ? 'bg-blue-400' : 'bg-red-400'"
-              :style="{ width: Math.min(100, Math.abs(store.summary.balance) / Math.max(store.summary.total_income, 1) * 100) + '%' }"
+              :class="(transferSummary.income?.available_balance ?? store.summary.balance) >= 0 ? 'bg-blue-400' : 'bg-red-400'"
+              :style="{ width: Math.min(100, Math.abs(transferSummary.income?.available_balance ?? store.summary.balance) / Math.max(store.summary.total_income, 1) * 100) + '%' }"
             />
           </div>
-          <p class="text-[10px] text-gray-400 mt-1">Income − all outflows</p>
+          <p class="text-[10px] text-gray-400 mt-1">After outflows &amp; transfers</p>
         </div>
         <!-- Savings -->
         <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5 border-t-2"
@@ -66,7 +67,12 @@
           <p class="text-lg lg:text-xl font-bold" :class="store.summary.total_savings > 0 ? 'text-emerald-600' : 'text-gray-500'">
             {{ fmt(store.summary.total_savings) }}
           </p>
-          <p class="text-[10px] text-gray-400 mt-1">Income surplus</p>
+          <p class="text-[10px] text-gray-400 mt-1">
+            <span v-if="(transferSummary.saving?.available_balance ?? 0) > 0" class="text-teal-500 font-medium">
+              🏦 {{ fmt(transferSummary.saving?.available_balance ?? 0) }} in saving fund
+            </span>
+            <span v-else>Income surplus</span>
+          </p>
         </div>
       </div>
 
@@ -176,7 +182,7 @@
             </div>
 
             <!-- Quick stats strip -->
-            <div class="grid grid-cols-2 gap-2 pt-1">
+            <div class="grid grid-cols-3 gap-2 pt-1">
               <div class="bg-orange-50 rounded-lg px-3 py-2">
                 <p class="text-[10px] text-gray-400 uppercase mb-0.5">Total Debt</p>
                 <p class="text-sm font-bold text-orange-600">{{ fmt(store.summary.month_report.total_debt) }}</p>
@@ -184,6 +190,10 @@
               <div class="bg-indigo-50 rounded-lg px-3 py-2">
                 <p class="text-[10px] text-gray-400 uppercase mb-0.5">Investments</p>
                 <p class="text-sm font-bold text-indigo-600">{{ fmt(store.summary.month_report.total_investments) }}</p>
+              </div>
+              <div class="bg-teal-50 rounded-lg px-3 py-2">
+                <p class="text-[10px] text-gray-400 uppercase mb-0.5">Saving Fund</p>
+                <p class="text-sm font-bold text-teal-600">{{ fmt(transferSummary.saving?.available_balance ?? 0) }}</p>
               </div>
             </div>
 
@@ -298,7 +308,7 @@
             </div>
 
             <!-- Quick stats strip -->
-            <div class="grid grid-cols-2 gap-2 pt-1">
+            <div class="grid grid-cols-3 gap-2 pt-1">
               <div class="bg-orange-50 rounded-lg px-3 py-2">
                 <p class="text-[10px] text-gray-400 uppercase mb-0.5">Total Debt</p>
                 <p class="text-sm font-bold text-orange-600">{{ fmt(store.summary.year_report.total_debt) }}</p>
@@ -306,6 +316,10 @@
               <div class="bg-indigo-50 rounded-lg px-3 py-2">
                 <p class="text-[10px] text-gray-400 uppercase mb-0.5">Investments</p>
                 <p class="text-sm font-bold text-indigo-600">{{ fmt(store.summary.year_report.total_investments) }}</p>
+              </div>
+              <div class="bg-teal-50 rounded-lg px-3 py-2">
+                <p class="text-[10px] text-gray-400 uppercase mb-0.5">Saving Fund</p>
+                <p class="text-sm font-bold text-teal-600">{{ fmt(transferSummary.saving?.available_balance ?? 0) }}</p>
               </div>
             </div>
 
@@ -639,26 +653,63 @@
       <!-- ── 6. Module Transfers ─────────────────────────────────────────── -->
       <div class="bg-white rounded-xl shadow-sm p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="font-semibold text-gray-700">Module Fund Transfers</h2>
+          <h2 class="font-semibold text-gray-700">Fund Balances</h2>
           <button
             @click="openTransferModal"
             class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition font-medium"
           >
-            + Transfer Funds
+            ⇄ Transfer Funds
           </button>
         </div>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <!-- ── All 5 fund cards (Income + 4 modules) ── -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+
+          <!-- Income fund card -->
+          <div class="rounded-xl border-2 border-green-200 bg-green-50/40 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-base leading-none">💵</span>
+                <span class="text-sm font-bold text-gray-700">Income</span>
+              </div>
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-600">
+                source
+              </span>
+            </div>
+            <div class="space-y-1.5 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-500">Sent Out</span>
+                <span class="font-medium text-red-500">{{ fmt(transferSummary.income?.total_outgoing ?? 0) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">Received Back</span>
+                <span class="font-medium text-green-600">{{ fmt(transferSummary.income?.total_transferred ?? 0) }}</span>
+              </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-dashed border-gray-200">
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-semibold text-gray-600">Available</span>
+                <span class="text-base font-bold"
+                  :class="(transferSummary.income?.available_balance ?? store.summary.balance) >= 0 ? 'text-green-700' : 'text-red-600'">
+                  {{ fmt(transferSummary.income?.available_balance ?? store.summary.balance) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Investment / Stock / Crypto / Saving cards -->
           <div
             v-for="mod in ['investment', 'stock', 'crypto', 'saving']"
             :key="mod"
-            class="rounded-xl border-2 p-4"
+            class="rounded-xl border-2 p-4 cursor-pointer transition hover:shadow-md"
             :class="{
               'border-emerald-200 bg-emerald-50/40': mod === 'investment',
               'border-blue-200   bg-blue-50/40':     mod === 'stock',
               'border-yellow-200 bg-yellow-50/40':   mod === 'crypto',
               'border-teal-200   bg-teal-50/40':     mod === 'saving',
             }"
+            @click="openTransferModalFor(mod)"
+            title="Click to transfer into this fund"
           >
             <!-- Card header -->
             <div class="flex items-center justify-between mb-3">
@@ -674,40 +725,71 @@
                   'bg-teal-100   text-teal-600':     mod === 'saving',
                 }"
               >
-                {{ transferSummary[mod]?.count ?? 0 }} transfer{{ (transferSummary[mod]?.count ?? 0) !== 1 ? 's' : '' }}
+                {{ transferSummary[mod]?.count ?? 0 }}×
               </span>
             </div>
 
             <!-- Fund balance rows -->
             <div class="space-y-1.5 text-sm">
               <div class="flex justify-between">
-                <span class="text-gray-500">Total In</span>
+                <span class="text-gray-500">↓ Total In</span>
                 <span class="font-medium text-green-600">{{ fmt(transferSummary[mod]?.total_transferred ?? 0) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-500">Total Out</span>
+                <span class="text-gray-500">↑ Total Out</span>
                 <span class="font-medium text-red-500">{{ fmt(transferSummary[mod]?.total_outgoing ?? 0) }}</span>
               </div>
               <div v-if="mod !== 'saving'" class="flex justify-between">
-                <span class="text-gray-500">Deployed</span>
+                <span class="text-gray-500">⊙ Deployed</span>
                 <span class="font-medium text-orange-500">{{ fmt(transferSummary[mod]?.deployed ?? 0) }}</span>
               </div>
             </div>
-            <div v-if="transferSummary[mod]?.count === 0" class="text-xs text-gray-400 pt-1">No transfers yet</div>
 
             <!-- Available Funds -->
             <div class="mt-3 pt-3 border-t border-dashed border-gray-200">
               <div class="flex justify-between items-center">
-                <span class="text-sm font-semibold text-gray-600">Available Funds</span>
-                <span
-                  class="text-base font-bold"
-                  :class="(transferSummary[mod]?.available_balance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-600'"
-                >
+                <span class="text-sm font-semibold text-gray-600">Available</span>
+                <span class="text-base font-bold"
+                  :class="(transferSummary[mod]?.available_balance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-600'">
                   {{ fmt(transferSummary[mod]?.available_balance ?? 0) }}
                 </span>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- ── Recent transfer log ── -->
+        <div v-if="transferLogs.length" class="mt-5 border-t pt-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Recent Transfers</p>
+          <div class="space-y-2">
+            <div v-for="log in transferLogs" :key="log.id"
+              class="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
+              <!-- Flow arrow -->
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full"
+                  :class="fundBadgeClass(log.from)">
+                  {{ fundLabel(log.from) }}
+                </span>
+                <span class="text-gray-400 shrink-0">→</span>
+                <span class="shrink-0 text-xs font-bold px-2 py-0.5 rounded-full"
+                  :class="fundBadgeClass(log.to)">
+                  {{ fundLabel(log.to) }}
+                </span>
+                <span v-if="log.note" class="text-gray-400 truncate text-xs hidden sm:inline">· {{ log.note }}</span>
+              </div>
+              <!-- Amount + date -->
+              <div class="flex items-center gap-3 shrink-0 ml-2">
+                <div class="text-right">
+                  <div class="font-semibold text-gray-800">{{ fmt(log.amount) }}</div>
+                  <div v-if="log.fee > 0" class="text-[10px] text-gray-400">+{{ fmt(log.fee) }} fee</div>
+                </div>
+                <span class="text-xs text-gray-400 hidden sm:inline">{{ log.date }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="mt-4 text-center text-sm text-gray-400 py-3">
+          No transfers yet. Click <strong>⇄ Transfer Funds</strong> to move money between funds.
         </div>
       </div>
 
@@ -822,12 +904,24 @@
         <button @click="closeTransferModal" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
       </div>
 
-      <!-- Source balance indicator -->
-      <div class="flex justify-between items-center bg-blue-50 rounded-lg px-4 py-2 mb-2 text-sm">
-        <span class="text-gray-500">{{ moduleLabel(transferForm.transfer_from) }} Available Funds</span>
-        <span class="font-bold" :class="sourceAvailableBalance >= 0 ? 'text-blue-700' : 'text-red-600'">
-          {{ fmt(sourceAvailableBalance) }}
-        </span>
+      <!-- Source → Destination balance preview -->
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <div class="flex flex-col bg-red-50 rounded-lg px-3 py-2 text-sm">
+          <span class="text-[10px] text-gray-400 uppercase mb-0.5">From · {{ moduleLabel(transferForm.transfer_from) }}</span>
+          <span class="font-bold" :class="sourceAvailableBalance >= 0 ? 'text-red-700' : 'text-red-500'">
+            {{ fmt(sourceAvailableBalance) }}
+          </span>
+          <span v-if="transferTotal > 0" class="text-[10px] text-gray-400 mt-0.5">
+            After: {{ fmt(sourceAvailableBalance - transferTotal) }}
+          </span>
+        </div>
+        <div class="flex flex-col bg-green-50 rounded-lg px-3 py-2 text-sm">
+          <span class="text-[10px] text-gray-400 uppercase mb-0.5">To · {{ moduleLabel(transferForm.module) }}</span>
+          <span class="font-bold text-green-700">{{ fmt(destAvailableBalance) }}</span>
+          <span v-if="transferForm.amount > 0" class="text-[10px] text-gray-400 mt-0.5">
+            After: {{ fmt(destAvailableBalance + (parseFloat(transferForm.amount) || 0)) }}
+          </span>
+        </div>
       </div>
 
       <form @submit.prevent="submitTransfer" class="space-y-4">
@@ -1015,6 +1109,14 @@ const transferSummary = computed(() =>
   store.summary?.transfer_summary ?? { investment: {}, stock: {}, crypto: {}, saving: {} }
 );
 
+const transferLogs = computed(() => store.summary?.transfer_logs ?? []);
+
+const destAvailableBalance = computed(() => {
+  const to = transferForm.value.module;
+  if (to === 'income') return transferSummary.value.income?.available_balance ?? store.summary?.balance ?? 0;
+  return transferSummary.value[to]?.available_balance ?? 0;
+});
+
 
 // ── Expense donut segments ─────────────────────────────────────────────────
 const expenseSegments = computed(() => {
@@ -1048,10 +1150,11 @@ function fmtShort(val) {
 // ── Report outflow rows helper ─────────────────────────────────────────────
 function monthOutflows(report) {
   return [
-    { label: 'Expenses',       value: report.total_expenses  ?? 0, color: 'text-red-600',    barColor: 'bg-red-400' },
-    { label: 'Debt Payments',  value: report.debt_payments   ?? 0, color: 'text-orange-600', barColor: 'bg-orange-400' },
+    { label: 'Expenses',       value: report.total_expenses    ?? 0, color: 'text-red-600',    barColor: 'bg-red-400' },
+    { label: 'Debt Payments',  value: report.debt_payments     ?? 0, color: 'text-orange-600', barColor: 'bg-orange-400' },
     { label: 'CC Installments',value: report.purchase_payments ?? 0, color: 'text-violet-600', barColor: 'bg-violet-400' },
-    { label: 'Cash Purchases', value: report.cash_purchases  ?? 0, color: 'text-purple-600', barColor: 'bg-purple-400' },
+    { label: 'Cash Purchases', value: report.cash_purchases    ?? 0, color: 'text-purple-600', barColor: 'bg-purple-400' },
+    { label: 'Transfers Out',  value: report.transfers_out     ?? 0, color: 'text-indigo-600', barColor: 'bg-indigo-400' },
   ].filter(r => r.value > 0);
 }
 
@@ -1092,12 +1195,38 @@ watch(() => transferForm.value.transfer_from, (from) => {
 
 const sourceAvailableBalance = computed(() => {
   const from = transferForm.value.transfer_from;
-  if (from === 'income') return store.summary?.balance ?? 0;
+  if (from === 'income') return transferSummary.value.income?.available_balance ?? store.summary?.balance ?? 0;
   return transferSummary.value[from]?.available_balance ?? 0;
 });
 
 function moduleLabel(mod) {
   return { income: 'Income', investment: 'Investment', stock: 'Stocks', crypto: 'Crypto', saving: 'Saving' }[mod] ?? mod;
+}
+
+// Alias used by the transfer-log section in the template
+const fundLabel = moduleLabel;
+
+function fundBadgeClass(mod) {
+  return {
+    income:     'bg-green-100 text-green-700',
+    investment: 'bg-emerald-100 text-emerald-700',
+    stock:      'bg-blue-100 text-blue-700',
+    crypto:     'bg-yellow-100 text-yellow-700',
+    saving:     'bg-teal-100 text-teal-700',
+  }[mod] ?? 'bg-gray-100 text-gray-600';
+}
+
+function openTransferModalFor(mod) {
+  transferError.value = '';
+  transferForm.value = {
+    module:        mod,
+    transfer_from: 'income',
+    amount:        '',
+    transfer_fee:  0,
+    transfer_date: new Date().toISOString().slice(0, 10),
+    note:          '',
+  };
+  showTransferModal.value = true;
 }
 
 const transferTotal = computed(() => {
@@ -1130,7 +1259,7 @@ async function submitTransfer() {
       transfer_fee: parseFloat(transferForm.value.transfer_fee) || 0,
     });
     closeTransferModal();
-    store.fetchSummary();
+    await store.fetchSummary();
   } catch (e) {
     transferError.value = e.response?.data?.message ?? 'Transfer failed.';
   } finally {

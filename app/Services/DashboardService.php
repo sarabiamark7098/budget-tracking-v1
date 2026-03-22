@@ -22,6 +22,19 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    // ─── Cache helpers ────────────────────────────────────────────────────────────
+
+    /**
+     * Clear the all-time totals cache for a budget tracker.
+     * Call this from every service that creates, updates, or deletes a record
+     * that contributes to the cached totals (Income, Expense, Payment,
+     * PurchasePayment, Purchase, InsurancePayment, ModuleTransfer).
+     */
+    public static function clearAllTimeCache(int $btId): void
+    {
+        Cache::forget("bt:{$btId}:all_time_totals");
+    }
+
     // ─── Main Summary ─────────────────────────────────────────────────────────────
 
     public function getSummary(BudgetTracking $budget, array $filters = []): array
@@ -43,8 +56,11 @@ class DashboardService
                 'cash_purchases'    => (float) Purchase::where('budget_tracking_id', $btId)
                     ->whereIn('payment_method', ['cash', 'other'])->sum('total_cost'),
                 'insurance_payments'=> (float) InsurancePayment::where('budget_tracking_id', $btId)->sum('amount'),
+                // Only deduct transfers that actually LEFT the income pool.
+                // Cross-fund transfers (e.g. Investment → Stock) must NOT be
+                // counted here — they would double-deduct from income balance.
                 'outgoing_transfers'=> (float) ModuleTransfer::where('budget_tracking_id', $btId)
-                    ->whereIn('module', ['investment', 'stock', 'crypto', 'saving'])->sum('total'),
+                    ->where('transfer_from', 'income')->sum('total'),
                 'incoming_transfers'=> (float) ModuleTransfer::where('budget_tracking_id', $btId)
                     ->where('module', 'income')->sum('amount'),
             ];
@@ -88,21 +104,21 @@ class DashboardService
             ->pluck('cnt', 'module')
             ->toArray();
 
-        // Latest transfer per module (single query)
+        // Latest transfer per module (single query, all modules including income)
         $latestTransfers = ModuleTransfer::where('budget_tracking_id', $btId)
-            ->whereIn('module', ['investment', 'stock', 'crypto', 'saving'])
             ->orderByDesc('transfer_date')
+            ->orderByDesc('id')
             ->get()
             ->groupBy('module')
             ->map(fn($rows) => $rows->first());
 
         $transferSummary = [];
         foreach (['investment', 'stock', 'crypto', 'saving'] as $mod) {
-            $transferredIn  = round((float) ($transferIn[$mod]  ?? 0), 2);
-            $transferredOut = round((float) ($transferOut[$mod] ?? 0), 2);
-            $deployed       = $deployedAmounts[$mod] ?? 0;
+            $transferredIn    = round((float) ($transferIn[$mod]  ?? 0), 2);
+            $transferredOut   = round((float) ($transferOut[$mod] ?? 0), 2);
+            $deployed         = $deployedAmounts[$mod] ?? 0;
             $availableBalance = round($transferredIn - $transferredOut - $deployed, 2);
-            $latest         = $latestTransfers[$mod] ?? null;
+            $latest           = $latestTransfers[$mod] ?? null;
 
             $transferSummary[$mod] = [
                 'total_transferred' => $transferredIn,
@@ -117,11 +133,41 @@ class DashboardService
             ];
         }
 
+        // Income "fund" entry — shows how much has left / come back / is available
+        $transferSummary['income'] = [
+            'total_transferred' => round((float) ($transferIn['income']  ?? 0), 2), // received back
+            'total_outgoing'    => round((float) ($transferOut['income'] ?? 0), 2), // sent out
+            'deployed'          => 0,
+            'available_balance' => 0, // filled below after $balance is computed
+            'count'             => (int) ($transferCounts['income'] ?? 0),
+        ];
+
+        // 10 most-recent transfers across all funds — used for real-time history list
+        $recentTransferLogs = ModuleTransfer::where('budget_tracking_id', $btId)
+            ->orderByDesc('transfer_date')
+            ->orderByDesc('id')
+            ->take(10)
+            ->get(['id', 'module', 'transfer_from', 'amount', 'transfer_fee', 'total', 'transfer_date', 'note'])
+            ->map(fn($t) => [
+                'id'     => $t->id,
+                'from'   => $t->transfer_from,
+                'to'     => $t->module,
+                'amount' => round((float) $t->amount, 2),
+                'fee'    => round((float) $t->transfer_fee, 2),
+                'total'  => round((float) $t->total, 2),
+                'date'   => $t->transfer_date?->toDateString(),
+                'note'   => $t->note,
+            ])
+            ->toArray();
+
         $balance = $totalIncome + $totalBusinessDebtReceived
                  - $totalExpenses - $totalPersonalDebtPayments
                  - $totalPurchasePayments - $totalCashPurchases
                  - $totalInsurancePayments
                  - $totalOutgoingTransfers + $totalIncomingTransfers;
+
+        // Back-fill income fund's available_balance now that $balance is known
+        $transferSummary['income']['available_balance'] = round($balance, 2);
 
         $totalDebt = (float) Debt::where('budget_tracking_id', $btId)
             ->where('status', '!=', 'paid')
@@ -176,6 +222,7 @@ class DashboardService
             'debt_list'                 => $debtList,
             'purchase_list'             => $purchaseList,
             'transfer_summary'          => $transferSummary,
+            'transfer_logs'             => $recentTransferLogs,
             'total_module_transfers'    => round($totalOutgoingTransfers, 2),
             'month_report'              => $monthReport,
             'year_report'               => $yearReport,

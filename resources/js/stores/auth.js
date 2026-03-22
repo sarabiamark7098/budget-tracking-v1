@@ -17,7 +17,11 @@ import { authService } from '@/services/index';
 import { initCsrf } from '@/services/api';
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref(null);
+    const user  = ref(null);
+    // ready becomes true after the first fetchUser() call resolves.
+    // The router guard waits for this before making auth decisions so that
+    // a page reload doesn't redirect to /login before the session is restored.
+    const ready = ref(false);
 
     // Authentication is determined by whether the user object is set.
     // The actual credential is the HttpOnly session cookie — not a localStorage token.
@@ -44,13 +48,20 @@ export const useAuthStore = defineStore('auth', () => {
 
     /**
      * Probe the server to restore auth state on app load.
-     * /auth/me always returns 200: data.data is the user object when a valid
-     * session exists, or null when there is no active session.
-     * No try/catch needed — the endpoint never returns 4xx/5xx for this case.
+     * /auth/me returns 200+user when a valid session exists, 200+null when not.
+     * try/catch guards against any unexpected network or server error so the
+     * app always boots cleanly even when the API is temporarily unreachable.
+     * Sets ready=true so the router guard knows it's safe to make auth decisions.
      */
     async function fetchUser() {
-        const { data } = await authService.me();
-        user.value = data.data ?? null;
+        try {
+            const { data } = await authService.me();
+            user.value = data.data ?? null;
+        } catch {
+            user.value = null;
+        } finally {
+            ready.value = true;
+        }
     }
 
     async function updateProfile(profileData) {
@@ -63,5 +74,5 @@ export const useAuthStore = defineStore('auth', () => {
         await authService.changePassword(data);
     }
 
-    return { user, isAuthenticated, login, register, logout, fetchUser, updateProfile, changePassword };
+    return { user, ready, isAuthenticated, login, register, logout, fetchUser, updateProfile, changePassword };
 });

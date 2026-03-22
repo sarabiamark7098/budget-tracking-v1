@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Payment;
+use App\Services\DashboardService;
 
 class PaymentObserver
 {
@@ -28,6 +29,9 @@ class PaymentObserver
             'remaining_balance' => $newBalance,
             'status'            => $status,
         ]);
+
+        // Payment totals feed into dashboard all-time balance; bust the cache.
+        DashboardService::clearAllTimeCache((int) $payment->budget_tracking_id);
     }
 
     public function deleted(Payment $payment): void
@@ -46,5 +50,7 @@ class PaymentObserver
             'remaining_balance' => $newBalance,
             'status'            => $status,
         ]);
+
+        DashboardService::clearAllTimeCache((int) $payment->budget_tracking_id);
     }
 }
