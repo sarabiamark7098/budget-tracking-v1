@@ -100,18 +100,26 @@ Route::prefix('v1')->group(function () {
         Route::get('investments/{investment}/payments', [InvestmentController::class, 'getPayments']);
         Route::post('investments/{investment}/payments', [InvestmentController::class, 'storePayment']);
         Route::patch('investments/{investment}/done', [InvestmentController::class, 'markDone']);
+        Route::get('investments/{investment}/dividends', [InvestmentController::class, 'getDividends']);
+        Route::post('investments/{investment}/dividends', [InvestmentController::class, 'storeDividend']);
         Route::apiResource('investments', InvestmentController::class);
 
         Route::get('stocks/portfolio', [StockController::class, 'portfolio']);
         Route::get('stocks/{stock}/lots', [StockController::class, 'getLots']);
         Route::post('stocks/{stock}/lots', [StockController::class, 'storeLot']);
         Route::patch('stocks/{stock}/price', [StockController::class, 'updateLatestPrice']);
+        Route::post('stocks/{stock}/sell', [StockController::class, 'sell']);
+        Route::get('stocks/{stock}/dividends', [StockController::class, 'getDividends']);
+        Route::post('stocks/{stock}/dividends', [StockController::class, 'storeDividend']);
         Route::apiResource('stocks', StockController::class);
 
         Route::get('crypto/portfolio', [CryptoController::class, 'portfolio']);
         Route::get('crypto/{crypto}/lots', [CryptoController::class, 'getLots']);
         Route::post('crypto/{crypto}/lots', [CryptoController::class, 'storeLot']);
         Route::patch('crypto/{crypto}/price', [CryptoController::class, 'updateLatestPrice']);
+        Route::post('crypto/{crypto}/sell', [CryptoController::class, 'sell']);
+        Route::get('crypto/{crypto}/dividends', [CryptoController::class, 'getDividends']);
+        Route::post('crypto/{crypto}/dividends', [CryptoController::class, 'storeDividend']);
         Route::apiResource('crypto', CryptoController::class);
 
         Route::get('module-transfers', [ModuleTransferController::class, 'index']);

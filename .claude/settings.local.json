@@ -46,7 +46,9 @@
       "Bash(php -r \"require ''vendor/autoload.php''; echo \\\\PhpOffice\\\\PhpSpreadsheet\\\\Spreadsheet::VERSION;\")",
       "Bash(composer show:*)",
       "Bash(1:*)",
-      "Bash(grep -E \"\\\\.vue$|^[A-Z]\")"
+      "Bash(grep -E \"\\\\.vue$|^[A-Z]\")",
+      "Bash(php -r \"echo date\\(''Y_m_d_His''\\);\")",
+      "Bash(dir \"C:\\\\laragon\\\\www\\\\budget-tracking-v1\\\\database\\\\migrations\" /b /o:d)"
     ]
   }
 }

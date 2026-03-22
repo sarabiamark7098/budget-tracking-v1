@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Stock\StoreStockRequest;
 use App\Http\Requests\Stock\UpdateStockRequest;
 use App\Http\Resources\Stock\StockResource;
+use App\Models\ModuleTransfer;
 use App\Models\Stock;
+use App\Models\StockDividend;
+use App\Models\StockLot;
+use App\Models\StockSale;
 use App\Services\StockService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -76,15 +80,18 @@ class StockController extends Controller
 
         $data['purchase_date'] = $data['purchase_date'] ?? now()->toDateString();
 
-        // Check available balance
-        $btId        = $this->budget($request)->id;
-        $transferred = (float) \App\Models\ModuleTransfer::where('budget_tracking_id', $btId)
+        // Available balance check (all-direction transfer accounting + sales + dividends)
+        $btId           = $this->budget($request)->id;
+        $transferred    = (float) ModuleTransfer::where('budget_tracking_id', $btId)
             ->where('module', 'stock')->sum('amount');
-        $transferredOut = (float) \App\Models\ModuleTransfer::where('budget_tracking_id', $btId)
-            ->where('transfer_from', 'stock')->where('module', 'income')->sum('total');
-        $deployed = (float) \App\Models\StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))
-            ->selectRaw('SUM(shares * buy_price) as total')->value('total');
-        $available = $transferred - $transferredOut - $deployed;
+        $transferredOut = (float) ModuleTransfer::where('budget_tracking_id', $btId)
+            ->where('transfer_from', 'stock')->sum('total');
+        $deployed       = (float) (StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))
+            ->selectRaw('SUM(shares * buy_price) as total')->value('total') ?? 0);
+        $saleProceeds   = (float) StockSale::where('budget_tracking_id', $btId)->sum('proceeds');
+        $dividends      = (float) StockDividend::where('budget_tracking_id', $btId)->sum('amount');
+
+        $available = $transferred - $transferredOut - $deployed + $saleProceeds + $dividends;
         $required  = round((float) $data['shares'] * (float) $data['buy_price'], 2);
 
         if ($required > $available) {
@@ -97,7 +104,7 @@ class StockController extends Controller
 
         $lot = $this->service->addLot($stock, $data);
 
-        // Update latest_price if not set
+        // Set latest_price if not set yet
         if (is_null($stock->latest_price)) {
             $stock->update(['latest_price' => $data['buy_price']]);
         }
@@ -115,5 +122,74 @@ class StockController extends Controller
 
         $stock = $this->service->updateLatestPrice($stock, (float) $data['latest_price']);
         return $this->respondSuccess(new StockResource($stock), 'Latest price updated successfully');
+    }
+
+    // ── Sell shares ──────────────────────────────────────────────────────────
+
+    public function sell(Request $request, Stock $stock): JsonResponse
+    {
+        abort_if($stock->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+
+        $data = $request->validate([
+            'shares_sold' => ['required', 'numeric', 'min:0.0001'],
+            'sell_price'  => ['required', 'numeric', 'min:0'],
+            'sold_at'     => ['nullable', 'date'],
+        ]);
+
+        $data['sold_at'] = $data['sold_at'] ?? now()->toDateString();
+
+        // Validate: cannot sell more than net available shares for this stock
+        $btId       = $this->budget($request)->id;
+        $totalLots  = (float) ($stock->lots()->sum('shares') ?? 0);
+        $totalSold  = (float) (StockSale::where('stock_id', $stock->id)->sum('shares_sold') ?? 0);
+        $netShares  = max(0, $totalLots - $totalSold);
+
+        if ((float) $data['shares_sold'] > $netShares) {
+            return $this->respondError(
+                'Insufficient shares. Available to sell: ' . number_format($netShares, 4) .
+                ', Requested: ' . number_format((float) $data['shares_sold'], 4),
+                422
+            );
+        }
+
+        $data['proceeds'] = round((float) $data['shares_sold'] * (float) $data['sell_price'], 2);
+
+        $sale = $this->service->recordSale($stock, $data);
+
+        $summary = $this->service->getPortfolioSummary($this->budget($request));
+        return $this->respondCreated([
+            'sale'      => $sale,
+            'portfolio' => $summary,
+        ], 'Sale recorded. Proceeds added to available balance.');
+    }
+
+    // ── Dividend ─────────────────────────────────────────────────────────────
+
+    public function storeDividend(Request $request, Stock $stock): JsonResponse
+    {
+        abort_if($stock->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+
+        $data = $request->validate([
+            'amount'  => ['required', 'numeric', 'min:0.01'],
+            'paid_at' => ['nullable', 'date'],
+            'notes'   => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $data['paid_at'] = $data['paid_at'] ?? now()->toDateString();
+
+        $dividend = $this->service->recordDividend($stock, $data);
+
+        $summary = $this->service->getPortfolioSummary($this->budget($request));
+        return $this->respondCreated([
+            'dividend'  => $dividend,
+            'portfolio' => $summary,
+        ], 'Dividend recorded. Amount added to available balance.');
+    }
+
+    public function getDividends(Request $request, Stock $stock): JsonResponse
+    {
+        abort_if($stock->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        $dividends = $this->service->getDividends($stock);
+        return $this->respondSuccess(['dividends' => $dividends]);
     }
 }

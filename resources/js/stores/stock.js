@@ -63,5 +63,30 @@ export const useStockStore = defineStore('stock', () => {
         return data.data;
     }
 
-    return { items, loading, pagination, portfolio, fetchAll, fetchPortfolio, create, update, remove, fetchLots, addLot, updatePrice };
+    async function fetchDividends(stockId) {
+        const { data } = await stockService.getDividends(stockId);
+        return data.data.dividends ?? [];
+    }
+
+    async function sell(stockId, formData) {
+        const { data } = await stockService.sell(stockId, formData);
+        if (data.data?.portfolio) portfolio.value = data.data.portfolio;
+        // Refresh items to get updated net_shares
+        await fetchAll();
+        return data.data;
+    }
+
+    async function storeDividend(stockId, formData) {
+        const { data } = await stockService.storeDividend(stockId, formData);
+        if (data.data?.portfolio) portfolio.value = data.data.portfolio;
+        // Refresh items to get updated net_shares and dividend counts
+        await fetchAll();
+        return data.data;
+    }
+
+    return {
+        items, loading, pagination, portfolio,
+        fetchAll, fetchPortfolio, create, update, remove,
+        fetchLots, addLot, updatePrice, sell, fetchDividends, storeDividend,
+    };
 });

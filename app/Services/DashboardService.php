@@ -57,7 +57,7 @@ class DashboardService
         $totalInsurancePayments = (float) InsurancePayment::where('budget_tracking_id', $btId)->sum('amount');
 
         $totalOutgoingTransfers = (float) ModuleTransfer::where('budget_tracking_id', $btId)
-            ->whereIn('module', ['investment', 'stock', 'crypto'])->sum('total');
+            ->whereIn('module', ['investment', 'stock', 'crypto', 'saving'])->sum('total');
 
         $totalIncomingTransfers = (float) ModuleTransfer::where('budget_tracking_id', $btId)
             ->where('module', 'income')->sum('amount');
@@ -65,25 +65,41 @@ class DashboardService
         // Deployed amounts per module (cost basis / amount invested)
         $deployedAmounts = [
             'investment' => (float) Investment::where('budget_tracking_id', $btId)->sum('amount_invested'),
-            'stock'      => (float) \App\Models\StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(shares * buy_price) as total')->value('total'),
-            'crypto'     => (float) \App\Models\CryptoLot::whereHas('cryptoAsset', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(quantity * buy_price) as total')->value('total'),
+            'stock'      => (float) (\App\Models\StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(shares * buy_price) as total')->value('total') ?? 0),
+            'crypto'     => (float) (\App\Models\CryptoLot::whereHas('cryptoAsset', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(quantity * buy_price) as total')->value('total') ?? 0),
+            'saving'     => 0,
         ];
 
         $transferSummary = [];
-        foreach (['investment', 'stock', 'crypto'] as $mod) {
+        foreach (['investment', 'stock', 'crypto', 'saving'] as $mod) {
+            // All money transferred INTO this fund (from any source)
             $rows          = ModuleTransfer::where('budget_tracking_id', $btId)->where('module', $mod)->get();
-            $transferred   = round($rows->sum('amount'), 2);
-            $transferredOut = round(
-                ModuleTransfer::where('budget_tracking_id', $btId)
-                    ->where('transfer_from', $mod)->where('module', 'income')->sum('total'),
-                2
-            );
+            $transferredIn = round($rows->sum('amount'), 2);
+
+            // All money transferred OUT of this fund (to any destination, full total incl. fee)
+            $outRows        = ModuleTransfer::where('budget_tracking_id', $btId)->where('transfer_from', $mod)->get();
+            $transferredOut = round($outRows->sum('total'), 2);
+
+            // Deployed = money already committed to assets in this fund (cannot be re-transferred)
+            $deployed = $deployedAmounts[$mod] ?? 0;
+
+            // Available = incoming − outgoing − deployed (true spendable/transferable balance)
+            $availableBalance = round($transferredIn - $transferredOut - $deployed, 2);
+
+            // Latest single transfer INTO this fund
+            $latest = $rows->sortByDesc('transfer_date')->first();
+
             $transferSummary[$mod] = [
-                'total_transferred'  => $transferred,
-                'total_fees'         => round($rows->sum('transfer_fee'), 2),
-                'total_deducted'     => round($rows->sum('total'), 2),
-                'available_balance'  => round($transferred - $transferredOut - $deployedAmounts[$mod], 2),
-                'count'              => $rows->count(),
+                'total_transferred'   => $transferredIn,
+                'total_outgoing'      => $transferredOut,
+                'deployed'            => round($deployed, 2),
+                'available_balance'   => $availableBalance,
+                'count'               => $rows->count(),
+                // Latest transfer details
+                'latest_amount'       => $latest ? round((float) $latest->amount, 2) : null,
+                'latest_fee'          => $latest ? round((float) $latest->transfer_fee, 2) : null,
+                'latest_total'        => $latest ? round((float) $latest->total, 2) : null,
+                'latest_date'         => $latest?->transfer_date?->toDateString(),
             ];
         }
 

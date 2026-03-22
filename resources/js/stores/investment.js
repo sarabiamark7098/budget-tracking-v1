@@ -70,9 +70,21 @@ export const useInvestmentStore = defineStore('investment', () => {
         return data.data;
     }
 
+    async function fetchDividends(id) {
+        const { data } = await investmentService.getDividends(id);
+        return data.data.dividends ?? [];
+    }
+
+    async function storeDividend(id, formData) {
+        const { data } = await investmentService.storeDividend(id, formData);
+        if (data.data?.portfolio) portfolio.value = data.data.portfolio;
+        await fetchPortfolio();
+        return data.data;
+    }
+
     return {
         items, loading, pagination, portfolio,
         fetchAll, fetchPortfolio, create, update, remove,
-        fetchPayments, addPayment, markDone,
+        fetchPayments, addPayment, markDone, fetchDividends, storeDividend,
     };
 });

@@ -23,6 +23,12 @@ class StoreExpenseRequest extends FormRequest
                 Rule::exists('budgets', 'id')
                     ->whereNull('deleted_at')
                     ->where('budget_tracking_id', $this->attributes->get('budgetTracking')?->id),
+                function ($attribute, $value, $fail) {
+                    $budget = Budget::find($value);
+                    if ($budget && $budget->start_date && now()->toDateString() < $budget->start_date->toDateString()) {
+                        $fail("The budget \"{$budget->name}\" hasn't started yet. It starts on {$budget->start_date->toDateString()}.");
+                    }
+                },
             ],
             'title'    => ['required', 'string', 'max:255'],
             'amount'   => [
@@ -33,16 +39,6 @@ class StoreExpenseRequest extends FormRequest
                     $available = $tracker->availableBalance();
                     if ((float) $value > $available) {
                         $fail('Insufficient income balance. Available: ₱' . number_format($available, 2) . '.');
-                    }
-                },
-            ],
-            'spent_at' => [
-                'required',
-                'date',
-                function ($attribute, $value, $fail) {
-                    $budget = Budget::find($this->input('budget_id'));
-                    if ($budget && $budget->start_date && $value < $budget->start_date->toDateString()) {
-                        $fail("The expense date cannot be before the budget's start date ({$budget->start_date->toDateString()}).");
                     }
                 },
             ],

@@ -37,4 +37,14 @@ class CryptoAsset extends Model
     {
         return $this->hasMany(CryptoLot::class);
     }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(CryptoSale::class);
+    }
+
+    public function dividends(): HasMany
+    {
+        return $this->hasMany(CryptoDividend::class);
+    }
 }

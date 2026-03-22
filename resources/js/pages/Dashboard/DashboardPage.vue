@@ -490,49 +490,52 @@
           </button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           <div
-            v-for="mod in ['investment', 'stock', 'crypto']"
+            v-for="mod in ['investment', 'stock', 'crypto', 'saving']"
             :key="mod"
             class="rounded-xl border-2 p-4"
             :class="{
               'border-emerald-200 bg-emerald-50/40': mod === 'investment',
               'border-blue-200   bg-blue-50/40':     mod === 'stock',
-              'border-purple-200 bg-purple-50/40':   mod === 'crypto',
+              'border-yellow-200 bg-yellow-50/40':   mod === 'crypto',
+              'border-teal-200   bg-teal-50/40':     mod === 'saving',
             }"
           >
             <!-- Card header -->
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
-                <span class="text-base leading-none">{{ mod === 'investment' ? '📈' : mod === 'stock' ? '📊' : '₿' }}</span>
-                <span class="text-sm font-bold text-gray-700">{{ mod === 'stock' ? 'Stocks' : mod === 'crypto' ? 'Crypto' : 'Investment' }}</span>
+                <span class="text-base leading-none">{{ { investment: '📈', stock: '📊', crypto: '₿', saving: '🏦' }[mod] }}</span>
+                <span class="text-sm font-bold text-gray-700">{{ { investment: 'Investment', stock: 'Stocks', crypto: 'Crypto', saving: 'Saving' }[mod] }}</span>
               </div>
               <span class="text-xs px-2 py-0.5 rounded-full font-medium"
                 :class="{
                   'bg-emerald-100 text-emerald-600': mod === 'investment',
                   'bg-blue-100   text-blue-600':     mod === 'stock',
-                  'bg-purple-100 text-purple-600':   mod === 'crypto',
+                  'bg-yellow-100 text-yellow-600':   mod === 'crypto',
+                  'bg-teal-100   text-teal-600':     mod === 'saving',
                 }"
               >
                 {{ transferSummary[mod]?.count ?? 0 }} transfer{{ (transferSummary[mod]?.count ?? 0) !== 1 ? 's' : '' }}
               </span>
             </div>
 
-            <!-- Rows -->
+            <!-- Fund balance rows -->
             <div class="space-y-1.5 text-sm">
               <div class="flex justify-between">
-                <span class="text-gray-500">Total Transferred</span>
-                <span class="font-medium text-gray-700">{{ fmt(transferSummary[mod]?.total_transferred ?? 0) }}</span>
+                <span class="text-gray-500">Total In</span>
+                <span class="font-medium text-green-600">{{ fmt(transferSummary[mod]?.total_transferred ?? 0) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-500">Transfer Fee</span>
-                <span class="font-medium text-orange-500">{{ fmt(transferSummary[mod]?.total_fees ?? 0) }}</span>
+                <span class="text-gray-500">Total Out</span>
+                <span class="font-medium text-red-500">{{ fmt(transferSummary[mod]?.total_outgoing ?? 0) }}</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-gray-500">Total Deducted</span>
-                <span class="font-medium text-red-500">{{ fmt(transferSummary[mod]?.total_deducted ?? 0) }}</span>
+              <div v-if="mod !== 'saving'" class="flex justify-between">
+                <span class="text-gray-500">Deployed</span>
+                <span class="font-medium text-orange-500">{{ fmt(transferSummary[mod]?.deployed ?? 0) }}</span>
               </div>
             </div>
+            <div v-if="transferSummary[mod]?.count === 0" class="text-xs text-gray-400 pt-1">No transfers yet</div>
 
             <!-- Available Funds -->
             <div class="mt-3 pt-3 border-t border-dashed border-gray-200">
@@ -637,10 +640,11 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Transfer From *</label>
           <select v-model="transferForm.transfer_from" required
             class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option v-if="transferForm.module !== 'income'" value="income">Income (Dashboard)</option>
-            <option value="investment">Investment</option>
-            <option value="stock">Stocks</option>
-            <option value="crypto">Crypto</option>
+            <option v-if="transferForm.module !== 'income'"  value="income">Income (Dashboard)</option>
+            <option v-if="transferForm.module !== 'investment'" value="investment">Investment</option>
+            <option v-if="transferForm.module !== 'stock'"   value="stock">Stocks</option>
+            <option v-if="transferForm.module !== 'crypto'"  value="crypto">Crypto</option>
+            <option v-if="transferForm.module !== 'saving'"  value="saving">Saving</option>
           </select>
         </div>
 
@@ -649,10 +653,11 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Transfer To *</label>
           <select v-model="transferForm.module" required
             class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="investment">Investment</option>
-            <option value="stock">Stocks</option>
-            <option value="crypto">Crypto</option>
-            <option value="income">Income (Dashboard)</option>
+            <option v-if="transferForm.transfer_from !== 'investment'" value="investment">Investment</option>
+            <option v-if="transferForm.transfer_from !== 'stock'"  value="stock">Stocks</option>
+            <option v-if="transferForm.transfer_from !== 'crypto'" value="crypto">Crypto</option>
+            <option v-if="transferForm.transfer_from !== 'saving'" value="saving">Saving</option>
+            <option v-if="transferForm.transfer_from !== 'income'" value="income">Income (Dashboard)</option>
           </select>
         </div>
 
@@ -777,7 +782,7 @@ const purchaseTotals = computed(() => ({
 }));
 
 const transferSummary = computed(() =>
-  store.summary?.transfer_summary ?? { investment: {}, stock: {}, crypto: {} }
+  store.summary?.transfer_summary ?? { investment: {}, stock: {}, crypto: {}, saving: {} }
 );
 
 // ── Transfer Modal ─────────────────────────────────────────────────────────
@@ -793,10 +798,19 @@ const transferForm      = ref({
   note:           '',
 });
 
-// When Transfer To = Income, Transfer From cannot be income — auto-reset to investment
+// Prevent same-fund selection: auto-fix transfer_from when it matches the destination
 watch(() => transferForm.value.module, (mod) => {
-  if (mod === 'income' && transferForm.value.transfer_from === 'income') {
-    transferForm.value.transfer_from = 'investment';
+  if (transferForm.value.transfer_from === mod) {
+    // Pick the first fund that is not the destination
+    const options = ['income', 'investment', 'stock', 'crypto', 'saving'];
+    transferForm.value.transfer_from = options.find(o => o !== mod) ?? 'income';
+  }
+});
+// Also fix module (destination) when transfer_from changes to match it
+watch(() => transferForm.value.transfer_from, (from) => {
+  if (transferForm.value.module === from) {
+    const options = ['investment', 'stock', 'crypto', 'saving', 'income'];
+    transferForm.value.module = options.find(o => o !== from) ?? 'investment';
   }
 });
 
@@ -807,7 +821,7 @@ const sourceAvailableBalance = computed(() => {
 });
 
 function moduleLabel(mod) {
-  return { income: 'Income', investment: 'Investment', stock: 'Stocks', crypto: 'Crypto' }[mod] ?? mod;
+  return { income: 'Income', investment: 'Investment', stock: 'Stocks', crypto: 'Crypto', saving: 'Saving' }[mod] ?? mod;
 }
 
 const transferTotal = computed(() => {

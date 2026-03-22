@@ -83,6 +83,8 @@ export const investmentService = {
     getPayments: (id) => api.get(`/investments/${id}/payments`),
     addPayment: (id, data) => api.post(`/investments/${id}/payments`, data),
     markDone: (id) => api.patch(`/investments/${id}/done`),
+    getDividends: (id) => api.get(`/investments/${id}/dividends`),
+    storeDividend: (id, data) => api.post(`/investments/${id}/dividends`, data),
 };
 
 // Stocks
@@ -96,6 +98,9 @@ export const stockService = {
     getLots: (id) => api.get(`/stocks/${id}/lots`),
     addLot: (id, data) => api.post(`/stocks/${id}/lots`, data),
     updatePrice: (id, data) => api.patch(`/stocks/${id}/price`, data),
+    sell: (id, data) => api.post(`/stocks/${id}/sell`, data),
+    getDividends: (id) => api.get(`/stocks/${id}/dividends`),
+    storeDividend: (id, data) => api.post(`/stocks/${id}/dividends`, data),
 };
 
 // Crypto
@@ -109,6 +114,9 @@ export const cryptoService = {
     getLots: (id) => api.get(`/crypto/${id}/lots`),
     addLot: (id, data) => api.post(`/crypto/${id}/lots`, data),
     updatePrice: (id, data) => api.patch(`/crypto/${id}/price`, data),
+    sell: (id, data) => api.post(`/crypto/${id}/sell`, data),
+    getDividends: (id) => api.get(`/crypto/${id}/dividends`),
+    storeDividend: (id, data) => api.post(`/crypto/${id}/dividends`, data),
 };
 
 // Financial Plans

@@ -177,21 +177,12 @@
               Amount exceeds available income balance ({{ formatCurrency(availableBalance) }}).
             </p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Date Spent *</label>
-            <input
-              v-model="form.spent_at"
-              type="date"
-              required
-              :min="selectedBudget?.start_date?.split('T')[0] ?? selectedBudget?.start_date ?? undefined"
-              class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-            <p v-if="selectedBudget?.start_date && form.spent_at && form.spent_at < (selectedBudget.start_date?.split('T')[0] ?? selectedBudget.start_date)" class="text-xs text-red-500 mt-1">
-              Date cannot be before the budget start date ({{ formatDate(selectedBudget.start_date) }})
-            </p>
-            <p v-else-if="selectedBudget?.start_date" class="text-xs text-gray-400 mt-1">
-              Earliest date: {{ formatDate(selectedBudget.start_date) }}
-            </p>
+          <!-- Budget start date notice (no date input — expense is recorded as today) -->
+          <div v-if="selectedBudget?.start_date" class="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Expense will be recorded as today · Budget started {{ formatDate(selectedBudget.start_date) }}
           </div>
 
           <div v-if="formError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ formError }}</div>
@@ -255,7 +246,6 @@ const defaultForm = () => ({
   budget_id: '',
   title:     '',
   amount:    '',
-  spent_at:  new Date().toISOString().split('T')[0],
 });
 
 const form = ref(defaultForm());
@@ -273,7 +263,6 @@ function openModal(item = null) {
         budget_id: item.budget_id,
         title:     item.title,
         amount:    item.amount,
-        spent_at:  item.spent_at?.split('T')[0] ?? item.spent_at,
       }
     : defaultForm();
   formError.value = '';

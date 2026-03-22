@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BudgetTracking;
 use App\Models\Investment;
+use App\Models\InvestmentDividend;
 use App\Models\InvestmentPayment;
 use App\Models\ModuleTransfer;
 use App\Models\User;
@@ -44,6 +45,29 @@ class InvestmentService
         return $investment->delete();
     }
 
+    public function recordDividend(Investment $investment, array $data): InvestmentDividend
+    {
+        return $investment->dividends()->create(array_merge($data, [
+            'budget_tracking_id' => $investment->budget_tracking_id,
+        ]));
+    }
+
+    public function getDividends(Investment $investment): array
+    {
+        return $investment->dividends()
+            ->orderBy('paid_at', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn($d) => [
+                'id'         => $d->id,
+                'amount'     => (float) $d->amount,
+                'paid_at'    => $d->paid_at?->toDateString(),
+                'notes'      => $d->notes,
+                'created_at' => $d->created_at,
+            ])
+            ->toArray();
+    }
+
     public function getPortfolioSummary(BudgetTracking $budget): array
     {
         $btId        = $budget->id;
@@ -65,7 +89,16 @@ class InvestmentService
 
         $totalTransferred = (float) ModuleTransfer::where('budget_tracking_id', $btId)
             ->where('module', 'investment')->sum('amount');
-        $availableBalance = $totalTransferred - $totalInvested;
+
+        // All outgoing from investment to ANY fund (full total incl. fee)
+        $transferredOut = (float) ModuleTransfer::where('budget_tracking_id', $btId)
+            ->where('transfer_from', 'investment')
+            ->sum('total');
+
+        // Total dividends received — credited to available balance
+        $totalDividends = (float) InvestmentDividend::where('budget_tracking_id', $btId)->sum('amount');
+
+        $availableBalance = $totalTransferred - $transferredOut - $totalInvested + $totalDividends;
 
         // Payment obligations (real_estate + other only — mutual_fund has no fixed ceiling)
         $payableInvestments = $investments->whereIn('type', ['real_estate', 'other']);
@@ -84,6 +117,7 @@ class InvestmentService
             'total_roi_amount'     => round($totalROIAmount, 2),
             'total_roi_percentage' => round($totalROIPercent, 2),
             'total_transferred'    => round($totalTransferred, 2),
+            'total_dividends'      => round($totalDividends, 2),
             'available_balance'    => round($availableBalance, 2),
             'by_type'              => $byType,
             'count'                => $investments->count(),
@@ -91,7 +125,7 @@ class InvestmentService
             'total_obligations'      => round($totalObligations, 2),
             'total_paid_all'         => round($totalPaidAll, 2),
             'remaining_obligations'  => round(max(0, $totalObligations - $totalPaidAll), 2),
-            'available_for_payments' => round(max(0, $totalTransferred - $totalPaidAll), 2),
+            'available_for_payments' => round(max(0, $totalTransferred - $transferredOut - $totalPaidAll + $totalDividends), 2),
         ];
     }
 }

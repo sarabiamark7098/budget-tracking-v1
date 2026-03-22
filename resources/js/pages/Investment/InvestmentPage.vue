@@ -6,120 +6,160 @@
     </div>
 
     <!-- Portfolio Summary -->
-    <div v-if="store.portfolio" class="space-y-3 lg:space-y-4">
-      <!-- Row 1: Market / ROI stats -->
+    <div v-if="store.portfolio" class="space-y-4">
+
+      <!-- Summary Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Total Invested</p>
-          <p class="text-lg lg:text-2xl font-bold text-blue-600 leading-tight">{{ fmt(store.portfolio.total_invested) }}</p>
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Invested</p>
+          <p class="text-lg lg:text-2xl font-bold text-blue-600">{{ fmt(store.portfolio.total_invested) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">{{ store.portfolio.count }} investment{{ store.portfolio.count !== 1 ? 's' : '' }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Current Value</p>
-          <p class="text-lg lg:text-2xl font-bold text-green-600 leading-tight">{{ fmt(store.portfolio.total_current_value) }}</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Gain / Loss</p>
-          <p class="text-lg lg:text-2xl font-bold leading-tight" :class="store.portfolio.total_roi_amount >= 0 ? 'text-green-600' : 'text-red-600'">
-            {{ store.portfolio.total_roi_amount >= 0 ? '+' : '' }}{{ fmt(store.portfolio.total_roi_amount) }}
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Current Value</p>
+          <p class="text-lg lg:text-2xl font-bold text-green-600">{{ fmt(store.portfolio.total_current_value) }}</p>
+          <p class="text-[10px] mt-1" :class="portfolioGainLoss >= 0 ? 'text-green-500' : 'text-red-500'">
+            {{ portfolioGainLoss >= 0 ? '+' : '' }}{{ fmt(portfolioGainLoss) }} unrealized
           </p>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Overall ROI</p>
-          <p class="text-lg lg:text-2xl font-bold leading-tight" :class="store.portfolio.total_roi_percentage >= 0 ? 'text-green-600' : 'text-red-600'">
-            {{ store.portfolio.total_roi_percentage >= 0 ? '+' : '' }}{{ Number(store.portfolio.total_roi_percentage || 0).toFixed(2) }}%
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Available Balance</p>
+          <p class="text-lg lg:text-2xl font-bold" :class="(store.portfolio.available_balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">
+            {{ fmt(store.portfolio.available_balance ?? 0) }}
           </p>
+          <p class="text-[10px] text-gray-400 mt-1">In − Out − Invested + Div</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Total Dividends</p>
+          <p class="text-lg lg:text-2xl font-bold text-amber-600">{{ fmt(store.portfolio.total_dividends ?? 0) }}</p>
+          <p class="text-[10px] text-gray-400 mt-1">Cash income received</p>
         </div>
       </div>
 
-      <!-- Row 2: Transfers + Payment Obligations -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
-        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Transferred In</p>
-          <p class="text-lg lg:text-2xl font-bold text-indigo-600 leading-tight">{{ fmt(store.portfolio.total_transferred ?? 0) }}</p>
-          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">From dashboard</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Available</p>
-          <p class="text-lg lg:text-2xl font-bold leading-tight" :class="(store.portfolio.available_balance ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600'">
-            {{ fmt(store.portfolio.available_balance ?? 0) }}
-          </p>
-          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">Transferred − Invested</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Obligations</p>
-          <p class="text-lg lg:text-2xl font-bold text-orange-500 leading-tight">{{ fmt(store.portfolio.total_obligations ?? 0) }}</p>
-          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">RE + Other payables</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Total Paid</p>
-          <p class="text-lg lg:text-2xl font-bold text-emerald-600 leading-tight">{{ fmt(store.portfolio.total_paid_all ?? 0) }}</p>
-          <p class="text-[10px] lg:text-xs text-gray-400 mt-1">All payment types</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wide mb-1 leading-tight">Remaining</p>
-          <p class="text-lg lg:text-2xl font-bold text-rose-600 leading-tight">{{ fmt(store.portfolio.remaining_obligations ?? 0) }}</p>
-          <!-- mini progress bar -->
-          <div v-if="store.portfolio.total_obligations > 0" class="mt-2 w-full bg-gray-200 rounded-full h-1.5">
-            <div
-              class="bg-emerald-500 h-1.5 rounded-full transition-all"
-              :style="{ width: obligationProgress + '%' }"
-            ></div>
+      <!-- Charts Row -->
+      <div v-if="typeChartSegments.length" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Donut: Allocation by Type -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <h3 class="text-sm font-semibold text-gray-700 mb-4">Allocation by Type</h3>
+          <div class="flex items-center gap-6">
+            <DonutChart :segments="typeChartSegments" :size="150">
+              <span class="text-xs text-gray-400 leading-tight text-center">By Type</span>
+            </DonutChart>
+            <div class="flex-1 space-y-2 min-w-0">
+              <div v-for="(seg, i) in typeChartSegments" :key="i" class="text-sm">
+                <div class="flex items-center gap-2 mb-0.5">
+                  <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ background: seg.color }"></span>
+                  <span class="font-medium text-gray-700 truncate">{{ seg.label }}</span>
+                  <span class="ml-auto text-gray-500 flex-shrink-0 text-xs">{{ seg.pct.toFixed(1) }}%</span>
+                </div>
+                <div class="ml-4 flex justify-between text-xs text-gray-400">
+                  <span>{{ fmt(seg.amount) }}</span>
+                  <span>{{ seg.count }} item{{ seg.count !== 1 ? 's' : '' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <p v-if="store.portfolio.total_obligations > 0" class="text-[10px] lg:text-xs text-gray-400 mt-1">{{ obligationProgress }}% paid</p>
+        </div>
+
+        <!-- Obligations Tracker -->
+        <div class="bg-white rounded-xl shadow-sm p-5">
+          <h3 class="text-sm font-semibold text-gray-700 mb-4">Payment Obligations</h3>
+          <template v-if="store.portfolio.total_obligations > 0">
+            <!-- Overall stacked bar -->
+            <div class="mb-4">
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Overall Progress</span>
+                <span class="font-semibold">{{ obligationProgress }}% paid</span>
+              </div>
+              <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  class="h-3 rounded-full transition-all duration-500"
+                  :class="obligationProgress >= 100 ? 'bg-green-500' : 'bg-emerald-400'"
+                  :style="{ width: obligationProgress + '%' }"
+                />
+              </div>
+            </div>
+            <!-- Stats grid -->
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="bg-orange-50 rounded-lg p-3">
+                <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Obligations</p>
+                <p class="text-sm font-bold text-orange-600">{{ fmt(store.portfolio.total_obligations) }}</p>
+              </div>
+              <div class="bg-emerald-50 rounded-lg p-3">
+                <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Paid</p>
+                <p class="text-sm font-bold text-emerald-600">{{ fmt(store.portfolio.total_paid_all) }}</p>
+              </div>
+              <div class="bg-rose-50 rounded-lg p-3">
+                <p class="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Remaining</p>
+                <p class="text-sm font-bold text-rose-600">{{ fmt(store.portfolio.remaining_obligations) }}</p>
+              </div>
+            </div>
+            <!-- Available for payments -->
+            <div class="mt-3 flex items-center justify-between rounded-lg px-3 py-2 text-xs"
+              :class="(store.portfolio.available_for_payments ?? 0) > 0 ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-500'">
+              <span>Available for payments</span>
+              <span class="font-semibold">{{ fmt(store.portfolio.available_for_payments ?? 0) }}</span>
+            </div>
+          </template>
+          <div v-else class="flex flex-col items-center justify-center h-32 text-gray-300 text-sm">
+            <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            No payment obligations
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Table -->
+    <!-- Investments Table -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b">
+        <h3 class="text-sm font-semibold text-gray-700">All Investments</h3>
+        <span class="text-xs text-gray-400">{{ store.pagination?.total ?? store.items.length }} records</span>
+      </div>
       <div v-if="store.loading" class="text-center py-10 text-gray-400">Loading...</div>
-      <div class="overflow-x-auto">
-        <table v-if="!store.loading" class="w-full text-sm">
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b">
             <tr>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Name</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium">Type</th>
+              <th class="text-left px-4 py-3 text-gray-500 font-medium">Investment</th>
               <th class="text-right px-4 py-3 text-gray-500 font-medium">Amount</th>
-              <th class="text-left px-4 py-3 text-gray-500 font-medium min-w-[160px]">Progress / Value</th>
-              <th class="text-right px-4 py-3 text-gray-500 font-medium">Performance</th>
+              <th class="text-left px-4 py-3 text-gray-500 font-medium min-w-[180px]">Progress / Value</th>
+              <th class="text-left px-4 py-3 text-gray-500 font-medium">Schedule</th>
               <th class="text-left px-4 py-3 text-gray-500 font-medium">Status</th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="store.items.length === 0">
-              <td colspan="7" class="text-center py-10 text-gray-400">No investment records found</td>
+              <td colspan="6" class="text-center py-10 text-gray-400">No investment records found.</td>
             </tr>
             <tr v-for="item in store.items" :key="item.id" class="border-b last:border-0 hover:bg-gray-50">
 
-              <!-- Name -->
-              <td class="px-4 py-3 font-medium text-gray-700">
-                {{ item.name }}
-                <span v-if="item.type === 'other' && item.other_investment_title" class="block text-xs text-gray-400">{{ item.other_investment_title }}</span>
-              </td>
-
-              <!-- Type badge -->
+              <!-- Investment (name + type badge) -->
               <td class="px-4 py-3">
-                <span class="text-xs px-2 py-1 rounded-full" :class="typeBadgeClass(item.type)">{{ typeLabel(item) }}</span>
+                <div class="font-medium text-gray-800 leading-tight">{{ item.name }}</div>
+                <div class="flex items-center gap-1.5 mt-1">
+                  <span class="text-[11px] px-1.5 py-0.5 rounded-full font-medium" :class="typeBadgeClass(item.type)">{{ typeLabel(item) }}</span>
+                </div>
               </td>
 
               <!-- Amount (context-aware) -->
               <td class="px-4 py-3 text-right">
                 <template v-if="item.type === 'real_estate'">
-                  <span class="text-xs text-gray-400 block">Property Value</span>
                   <span class="font-semibold text-blue-600">{{ fmt(item.total_value) }}</span>
+                  <span class="block text-[10px] text-gray-400">property value</span>
                 </template>
                 <template v-else-if="item.type === 'other'">
-                  <span class="text-xs text-gray-400 block">Total Expected</span>
                   <span class="font-semibold text-blue-600">{{ fmt((item.months_of_payment || 0) * (item.amount_per_payment || 0)) }}</span>
+                  <span class="block text-[10px] text-gray-400">total expected</span>
                 </template>
                 <template v-else-if="item.type === 'mutual_fund'">
-                  <span class="text-xs text-gray-400 block">Total Paid</span>
                   <span class="font-semibold text-blue-600">{{ fmt(item.total_paid ?? 0) }}</span>
+                  <span class="block text-[10px] text-gray-400">total paid</span>
                 </template>
                 <template v-else>
-                  <span class="text-xs text-gray-400 block">Invested</span>
                   <span class="font-semibold text-blue-600">{{ fmt(item.amount_invested) }}</span>
+                  <span class="block text-[10px] text-gray-400">invested</span>
                 </template>
               </td>
 
@@ -127,46 +167,39 @@
               <td class="px-4 py-3">
                 <!-- Real Estate + Other: progress bar -->
                 <template v-if="['real_estate', 'other'].includes(item.type)">
-                  <div class="text-xs mb-1">
+                  <div class="flex justify-between text-xs mb-1">
                     <span class="font-medium text-emerald-600">{{ fmt(item.total_paid ?? 0) }}</span>
-                    <span class="text-gray-400"> / {{ fmt((item.months_of_payment || 0) * (item.amount_per_payment || 0)) }}</span>
+                    <span class="text-gray-400">{{ payProgress(item) }}%</span>
                   </div>
-                  <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="w-full bg-gray-100 rounded-full h-2">
                     <div
-                      class="h-2 rounded-full transition-all"
+                      class="h-2 rounded-full transition-all duration-500"
                       :class="item.payment_status === 'paid' ? 'bg-green-500' : 'bg-emerald-400'"
                       :style="{ width: payProgress(item) + '%' }"
-                    ></div>
+                    />
                   </div>
-                  <span class="text-xs text-gray-400 mt-0.5 block">{{ payProgress(item) }}% paid</span>
+                  <span class="text-[10px] text-gray-400 mt-0.5 block">of {{ fmt((item.months_of_payment || 0) * (item.amount_per_payment || 0)) }}</span>
                 </template>
                 <!-- Mutual Fund: running total -->
                 <template v-else-if="item.type === 'mutual_fund'">
-                  <span class="text-xs text-gray-400 block">Running total</span>
                   <span class="font-semibold text-emerald-600">{{ fmt(item.total_paid ?? 0) }}</span>
+                  <span class="block text-[10px] text-gray-400">running total</span>
                 </template>
-                <!-- Standard types: current value -->
+                <!-- Standard types: current value + gain/loss -->
                 <template v-else>
-                  <span class="text-xs text-gray-400 block">Current Value</span>
-                  <span class="font-semibold text-gray-700">{{ fmt(item.current_value) }}</span>
+                  <span class="font-semibold text-gray-800">{{ fmt(item.current_value) }}</span>
+                  <span class="block text-[11px] font-medium mt-0.5" :class="gainLoss(item) >= 0 ? 'text-green-600' : 'text-red-500'">
+                    {{ gainLoss(item) >= 0 ? '+' : '' }}{{ fmt(gainLoss(item)) }}
+                    ({{ roi(item) >= 0 ? '+' : '' }}{{ roi(item).toFixed(1) }}%)
+                  </span>
                 </template>
               </td>
 
-              <!-- Performance -->
-              <td class="px-4 py-3 text-right">
-                <!-- Standard: Gain/Loss + ROI -->
-                <template v-if="!isPayableType(item)">
-                  <div class="font-semibold" :class="gainLoss(item) >= 0 ? 'text-green-600' : 'text-red-600'">
-                    {{ gainLoss(item) >= 0 ? '+' : '' }}{{ fmt(gainLoss(item)) }}
-                  </div>
-                  <div class="text-xs" :class="roi(item) >= 0 ? 'text-green-500' : 'text-red-500'">
-                    {{ roi(item) >= 0 ? '+' : '' }}{{ roi(item).toFixed(2) }}%
-                  </div>
-                </template>
-                <!-- Real Estate + Other: period · payment -->
-                <template v-else-if="['real_estate', 'other'].includes(item.type) && item.period">
-                  <span class="text-xs text-gray-500 capitalize block">{{ periodLabel(item.period) }}</span>
-                  <span class="font-semibold text-gray-700">{{ fmt(item.amount_per_payment) }}</span>
+              <!-- Schedule -->
+              <td class="px-4 py-3">
+                <template v-if="['real_estate', 'other'].includes(item.type) && item.period">
+                  <span class="text-xs text-gray-500 block">{{ periodLabel(item.period) }}</span>
+                  <span class="font-semibold text-gray-700 text-sm">{{ fmt(item.amount_per_payment) }}</span>
                 </template>
                 <span v-else class="text-xs text-gray-300">—</span>
               </td>
@@ -181,17 +214,25 @@
 
               <!-- Actions -->
               <td class="px-4 py-3">
-                <div class="flex gap-2 justify-end flex-wrap">
+                <div class="flex gap-1.5 justify-end flex-wrap">
                   <button
                     v-if="isPayableType(item) && item.payment_status === 'active'"
                     @click="openPayModal(item)"
-                    class="text-emerald-600 hover:text-emerald-800 text-xs px-2 py-1 border border-emerald-300 rounded"
+                    class="text-emerald-600 hover:text-emerald-800 text-xs px-2 py-1 border border-emerald-300 rounded bg-emerald-50 hover:bg-emerald-100"
                   >Pay</button>
+                  <button
+                    @click="openDividendModal(item)"
+                    class="text-amber-600 hover:text-amber-800 text-xs px-2 py-1 border border-amber-300 rounded bg-amber-50 hover:bg-amber-100"
+                  >Dividend</button>
                   <button
                     v-if="isPayableType(item)"
                     @click="openHistoryModal(item)"
                     class="text-indigo-500 hover:text-indigo-700 text-xs px-2 py-1 border rounded"
                   >History</button>
+                  <button
+                    @click="openDivHistoryModal(item)"
+                    class="text-amber-500 hover:text-amber-700 text-xs px-2 py-1 border border-amber-300 rounded"
+                  >Div History</button>
                   <button @click="openModal(item)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
                   <button @click="confirmDelete(item)" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 border rounded">Delete</button>
                 </div>
@@ -203,11 +244,10 @@
     </div>
 
     <!-- Pagination -->
-    <div v-if="store.pagination" class="flex justify-between items-center text-sm text-gray-500">
-      <span>{{ store.pagination.total }} records</span>
+    <div v-if="store.pagination && store.pagination.last_page > 1" class="flex justify-between items-center text-sm text-gray-500">
+      <span>Page {{ store.pagination.current_page }} of {{ store.pagination.last_page }}</span>
       <div class="flex gap-2">
         <button :disabled="store.pagination.current_page <= 1" @click="changePage(store.pagination.current_page - 1)" class="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100">Prev</button>
-        <span class="px-3 py-1">{{ store.pagination.current_page }} / {{ store.pagination.last_page }}</span>
         <button :disabled="store.pagination.current_page >= store.pagination.last_page" @click="changePage(store.pagination.current_page + 1)" class="px-3 py-1 border rounded disabled:opacity-40 hover:bg-gray-100">Next</button>
       </div>
     </div>
@@ -483,6 +523,98 @@
       </div>
     </div>
 
+    <!-- ───── Dividend Modal ───── -->
+    <div v-if="showDividendModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div class="flex items-center justify-between p-5 border-b">
+          <div>
+            <h2 class="font-semibold text-gray-800">Record Dividend — {{ dividendTarget?.name }}</h2>
+            <p class="text-xs text-gray-400 mt-0.5">{{ typeLabel(dividendTarget ?? {}) }}</p>
+          </div>
+          <button @click="showDividendModal = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <form @submit.prevent="handleDividend" class="p-5 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Dividend Amount *</label>
+            <input
+              v-model="dividendForm.amount"
+              type="number" min="0.01" step="0.01" required
+              class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="e.g. 2500.00"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Date Received</label>
+            <input v-model="dividendForm.paid_at" type="date" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Notes <span class="text-gray-400 font-normal">(optional)</span></label>
+            <input v-model="dividendForm.notes" type="text" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="e.g. Q3 2025 dividend payout" />
+          </div>
+          <div v-if="dividendForm.amount" class="bg-amber-50 rounded-lg px-4 py-3 text-sm flex justify-between">
+            <span class="text-gray-500">Amount to credit</span>
+            <span class="font-bold text-amber-600">+{{ fmt(dividendForm.amount) }}</span>
+          </div>
+          <p class="text-xs text-gray-400">Dividend will be added to your available investment balance.</p>
+          <div v-if="dividendFormError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ dividendFormError }}</div>
+          <div class="flex justify-end gap-3 pt-2">
+            <button type="button" @click="showDividendModal = false" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button type="submit" :disabled="dividendSaving" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-amber-600">
+              {{ dividendSaving ? 'Saving...' : 'Record Dividend' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ───── Dividend History Modal ───── -->
+    <div v-if="showDivHistoryModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-5 border-b sticky top-0 bg-white">
+          <div>
+            <h2 class="font-semibold text-gray-800">Dividend History — {{ divHistoryTarget?.name }}</h2>
+            <p class="text-xs text-gray-400 mt-0.5">{{ typeLabel(divHistoryTarget ?? {}) }}</p>
+          </div>
+          <button @click="showDivHistoryModal = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <div class="p-5">
+          <div v-if="divHistoryLoading" class="text-center py-8 text-gray-400">Loading...</div>
+          <div v-else-if="!divHistoryItems.length" class="text-center py-8 text-gray-400">No dividends recorded yet.</div>
+          <template v-else>
+            <div class="flex items-center gap-3 mb-4">
+              <span class="bg-amber-50 text-amber-700 text-sm font-semibold px-3 py-1.5 rounded-lg">
+                Total: {{ fmt(totalDivHistory) }}
+              </span>
+              <span class="text-xs text-gray-400">{{ divHistoryItems.length }} payment{{ divHistoryItems.length !== 1 ? 's' : '' }}</span>
+            </div>
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="text-left px-3 py-2 text-gray-500 font-medium">Date Received</th>
+                  <th class="text-right px-3 py-2 text-gray-500 font-medium">Amount</th>
+                  <th class="text-left px-3 py-2 text-gray-500 font-medium">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="div in divHistoryItems" :key="div.id" class="border-t hover:bg-gray-50">
+                  <td class="px-3 py-2 text-gray-600">{{ formatDate(div.paid_at) }}</td>
+                  <td class="px-3 py-2 text-right font-semibold text-amber-600">{{ fmt(div.amount) }}</td>
+                  <td class="px-3 py-2 text-gray-400 text-xs">{{ div.notes || '—' }}</td>
+                </tr>
+              </tbody>
+              <tfoot class="border-t bg-amber-50">
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-amber-700">Total</td>
+                  <td class="px-3 py-2 text-right font-bold text-amber-700">{{ fmt(totalDivHistory) }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </template>
+        </div>
+      </div>
+    </div>
+
     <!-- ───── Confirm Delete Dialog ───── -->
     <div v-if="deleteTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
@@ -500,6 +632,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useInvestmentStore } from '@/stores/investment';
+import DonutChart from '@/components/charts/DonutChart.vue';
 
 const store = useInvestmentStore();
 
@@ -516,6 +649,23 @@ const payTarget    = ref(null);
 const payingSaving = ref(false);
 const payError     = ref('');
 const payForm      = ref({ amount: '', payment_date: today(), notes: '' });
+
+// ── Dividend modal state ─────────────────────────────────────
+const showDividendModal = ref(false);
+const dividendTarget    = ref(null);
+const dividendSaving    = ref(false);
+const dividendFormError = ref('');
+const dividendForm      = ref({ amount: '', paid_at: today(), notes: '' });
+
+// ── Dividend History modal state ─────────────────────────────
+const showDivHistoryModal = ref(false);
+const divHistoryTarget    = ref(null);
+const divHistoryLoading   = ref(false);
+const divHistoryItems     = ref([]);
+
+const totalDivHistory = computed(() =>
+  divHistoryItems.value.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0)
+);
 
 // ── History modal state ──────────────────────────────────────
 const showHistoryModal = ref(false);
@@ -563,6 +713,41 @@ const obligationProgress = computed(() => {
 });
 
 const availableForPayments = computed(() => store.portfolio?.available_for_payments ?? 0);
+
+const portfolioGainLoss = computed(() =>
+  (store.portfolio?.total_current_value ?? 0) - (store.portfolio?.total_invested ?? 0)
+);
+
+const TYPE_PALETTE = {
+  real_estate: '#F97316',
+  mutual_fund: '#3B82F6',
+  other:       '#8B5CF6',
+  uitf:        '#6366F1',
+  bonds:       '#EAB308',
+  business:    '#14B8A6',
+  stocks:      '#10B981',
+  crypto:      '#EC4899',
+};
+const FALLBACK_COLORS = ['#6366F1','#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#14B8A6'];
+
+const typeChartSegments = computed(() => {
+  const byType = store.portfolio?.by_type;
+  if (!byType) return [];
+  const total = Object.values(byType).reduce((s, t) => s + (t.amount_invested ?? 0), 0);
+  if (total === 0) return [];
+  return Object.entries(byType).map(([type, t], i) => ({
+    label:  typeLabelFromType(type),
+    value:  t.amount_invested ?? 0,
+    pct:    total > 0 ? ((t.amount_invested ?? 0) / total) * 100 : 0,
+    amount: t.amount_invested ?? 0,
+    count:  t.count ?? 0,
+    color:  TYPE_PALETTE[type] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+  })).filter(s => s.value > 0);
+});
+
+function typeLabelFromType(type) {
+  return { real_estate: 'Real Estate', mutual_fund: 'Mutual Fund', other: 'Other', uitf: 'UITF', bonds: 'Bonds', business: 'Business', stocks: 'Stocks', crypto: 'Crypto' }[type] ?? type;
+}
 
 const payExceedsBalance = computed(() => {
   if (!payTarget.value) return false;
@@ -739,6 +924,40 @@ async function submitPayment() {
     payError.value = e.response?.data?.message ?? 'Failed to record payment.';
   } finally {
     payingSaving.value = false;
+  }
+}
+
+// ── Dividend ──────────────────────────────────────────────────
+function openDividendModal(item) {
+  dividendTarget.value    = item;
+  dividendForm.value      = { amount: '', paid_at: today(), notes: '' };
+  dividendFormError.value = '';
+  showDividendModal.value = true;
+}
+
+async function handleDividend() {
+  dividendSaving.value    = true;
+  dividendFormError.value = '';
+  try {
+    await store.storeDividend(dividendTarget.value.id, dividendForm.value);
+    showDividendModal.value = false;
+  } catch (e) {
+    dividendFormError.value = e.response?.data?.message ?? 'Failed to record dividend.';
+  } finally {
+    dividendSaving.value = false;
+  }
+}
+
+// ── Dividend History ──────────────────────────────────────────
+async function openDivHistoryModal(item) {
+  divHistoryTarget.value    = item;
+  divHistoryItems.value     = [];
+  showDivHistoryModal.value = true;
+  divHistoryLoading.value   = true;
+  try {
+    divHistoryItems.value = await store.fetchDividends(item.id);
+  } finally {
+    divHistoryLoading.value = false;
   }
 }
 

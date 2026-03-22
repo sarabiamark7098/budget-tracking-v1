@@ -29,8 +29,8 @@ class ModuleTransferController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'module'        => ['required', 'in:investment,stock,crypto,income'],
-            'transfer_from' => ['required', 'in:income,investment,stock,crypto'],
+            'module'        => ['required', 'in:investment,stock,crypto,saving,income'],
+            'transfer_from' => ['required', 'in:income,investment,stock,crypto,saving'],
             'amount'        => ['required', 'numeric', 'min:0.01'],
             'transfer_fee'  => ['required', 'numeric', 'min:0'],
             'note'          => ['nullable', 'string', 'max:255'],
@@ -41,12 +41,18 @@ class ModuleTransferController extends Controller
         $btId   = $budget->id;
         $total  = round($data['amount'] + $data['transfer_fee'], 2);
 
+        // Prevent same-fund transfers
+        if ($data['transfer_from'] === $data['module']) {
+            return $this->respondError('Cannot transfer to the same fund.', 422);
+        }
+
         // Compute available balance of the source account
         $sourceBalance = match ($data['transfer_from']) {
             'income'     => $budget->availableBalance(),
             'investment' => $this->moduleAvailableBalance($btId, 'investment'),
             'stock'      => $this->moduleAvailableBalance($btId, 'stock'),
             'crypto'     => $this->moduleAvailableBalance($btId, 'crypto'),
+            'saving'     => $this->moduleAvailableBalance($btId, 'saving'),
         };
 
         if ($total > $sourceBalance) {
@@ -69,20 +75,25 @@ class ModuleTransferController extends Controller
 
     private function moduleAvailableBalance(int $btId, string $module): float
     {
-        $transferred = (float) ModuleTransfer::where('budget_tracking_id', $btId)
-            ->where('module', $module)->sum('amount');
+        // All money transferred INTO this fund (from any source)
+        $transferredIn = (float) ModuleTransfer::where('budget_tracking_id', $btId)
+            ->where('module', $module)
+            ->sum('amount');
 
-        // Subtract transfers sent FROM this module back to income
+        // All money transferred OUT of this fund (to any destination, full total incl. fee)
         $transferredOut = (float) ModuleTransfer::where('budget_tracking_id', $btId)
-            ->where('transfer_from', $module)->where('module', 'income')->sum('total');
+            ->where('transfer_from', $module)
+            ->sum('total');
 
+        // Assets already deployed from this fund (cannot be re-transferred)
         $deployed = match ($module) {
             'investment' => (float) Investment::where('budget_tracking_id', $btId)->sum('amount_invested'),
-            'stock'      => (float) StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(shares * buy_price) as total')->value('total'),
-            'crypto'     => (float) CryptoLot::whereHas('cryptoAsset', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(quantity * buy_price) as total')->value('total'),
+            'stock'      => (float) (StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(shares * buy_price) as total')->value('total') ?? 0),
+            'crypto'     => (float) (CryptoLot::whereHas('cryptoAsset', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(quantity * buy_price) as total')->value('total') ?? 0),
+            'saving'     => 0, // saving has no deployed assets
             default      => 0,
         };
 
-        return $transferred - $transferredOut - $deployed;
+        return $transferredIn - $transferredOut - $deployed;
     }
 }

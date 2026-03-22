@@ -141,4 +141,34 @@ class InvestmentController extends Controller
         $investment->update(['payment_status' => 'done']);
         return $this->respondSuccess(new InvestmentResource($investment), 'Marked as done');
     }
+
+    // ── Dividends ─────────────────────────────────────────────────────────────
+
+    public function storeDividend(Request $request, Investment $investment): JsonResponse
+    {
+        abort_if($investment->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+
+        $data = $request->validate([
+            'amount'  => ['required', 'numeric', 'min:0.01'],
+            'paid_at' => ['nullable', 'date'],
+            'notes'   => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $data['paid_at'] = $data['paid_at'] ?? now()->toDateString();
+
+        $dividend = $this->service->recordDividend($investment, $data);
+        $summary  = $this->service->getPortfolioSummary($this->budget($request));
+
+        return $this->respondCreated([
+            'dividend'  => $dividend,
+            'portfolio' => $summary,
+        ], 'Dividend recorded. Amount added to available balance.');
+    }
+
+    public function getDividends(Request $request, Investment $investment): JsonResponse
+    {
+        abort_if($investment->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        $dividends = $this->service->getDividends($investment);
+        return $this->respondSuccess(['dividends' => $dividends]);
+    }
 }

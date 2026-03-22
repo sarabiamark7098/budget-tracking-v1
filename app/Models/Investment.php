@@ -62,6 +62,11 @@ class Investment extends Model
         return $this->hasMany(InvestmentPayment::class);
     }
 
+    public function dividends(): HasMany
+    {
+        return $this->hasMany(InvestmentDividend::class);
+    }
+
     public function getROIAttribute(): float
     {
         $invested = (float) $this->amount_invested;

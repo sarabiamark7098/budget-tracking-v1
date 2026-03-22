@@ -63,5 +63,30 @@ export const useCryptoStore = defineStore('crypto', () => {
         return data.data;
     }
 
-    return { items, loading, pagination, portfolio, fetchAll, fetchPortfolio, create, update, remove, fetchLots, addLot, updatePrice };
+    async function sell(cryptoId, formData) {
+        const { data } = await cryptoService.sell(cryptoId, formData);
+        if (data.data?.portfolio) portfolio.value = data.data.portfolio;
+        // Refresh items to get updated net_quantity
+        await fetchAll();
+        return data.data;
+    }
+
+    async function fetchDividends(cryptoId) {
+        const { data } = await cryptoService.getDividends(cryptoId);
+        return data.data.dividends ?? [];
+    }
+
+    async function storeDividend(cryptoId, formData) {
+        const { data } = await cryptoService.storeDividend(cryptoId, formData);
+        if (data.data?.portfolio) portfolio.value = data.data.portfolio;
+        // Refresh items to get updated net_quantity and reward counts
+        await fetchAll();
+        return data.data;
+    }
+
+    return {
+        items, loading, pagination, portfolio,
+        fetchAll, fetchPortfolio, create, update, remove,
+        fetchLots, addLot, updatePrice, sell, fetchDividends, storeDividend,
+    };
 });

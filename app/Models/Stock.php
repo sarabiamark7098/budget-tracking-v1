@@ -37,4 +37,14 @@ class Stock extends Model
     {
         return $this->hasMany(StockLot::class);
     }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(StockSale::class);
+    }
+
+    public function dividends(): HasMany
+    {
+        return $this->hasMany(StockDividend::class);
+    }
 }

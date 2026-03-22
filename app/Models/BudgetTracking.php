@@ -143,7 +143,8 @@ class BudgetTracking extends Model
             ->sum('amount');
 
         $purchasePayments    = (float) $this->purchasePayments()->sum('amount');
-        $moduleTransfersOut  = (float) $this->moduleTransfers()->whereIn('module', ['investment','stock','crypto'])->sum('total');
+        // Deduct ALL outgoing transfers to any fund (investment, stock, crypto, saving)
+        $moduleTransfersOut  = (float) $this->moduleTransfers()->whereIn('module', ['investment','stock','crypto','saving'])->sum('total');
         // Transfers from a module back to income — credit back to the income pool
         $moduleTransfersBack = (float) $this->moduleTransfers()->where('module', 'income')->sum('amount');
 

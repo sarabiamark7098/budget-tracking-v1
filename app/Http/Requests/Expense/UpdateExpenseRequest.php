@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Expense;
 
-use App\Models\Budget;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -38,18 +37,7 @@ class UpdateExpenseRequest extends FormRequest
                     }
                 },
             ],
-            'spent_at' => [
-                'nullable',
-                'date',
-                function ($attribute, $value, $fail) {
-                    $budgetId = $this->input('budget_id') ?? $this->route('expense')?->budget_id;
-                    $budget   = $budgetId ? Budget::find($budgetId) : null;
-
-                    if ($budget && $budget->start_date && $value < $budget->start_date->toDateString()) {
-                        $fail("The expense date cannot be before the budget's start date ({$budget->start_date->toDateString()}).");
-                    }
-                },
-            ],
+            // spent_at is not editable — date is locked to when the expense was created
         ];
     }
 

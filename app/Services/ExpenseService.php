@@ -41,6 +41,7 @@ class ExpenseService
     {
         $data['budget_tracking_id'] = $budget->id;
         $data['user_id']            = $user->id;
+        $data['spent_at']           = now()->toDateString(); // always recorded as today
 
         return Expense::create($data);
     }
