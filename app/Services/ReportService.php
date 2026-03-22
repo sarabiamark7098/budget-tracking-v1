@@ -264,6 +264,41 @@ class ReportService
 
     public function exportFullCsv(BudgetTracking $budget, array $filters = []): StreamedResponse
     {
+        $spreadsheet = $this->buildSpreadsheet($budget, $filters);
+        $dateFrom = $filters['date_from'] ?? now()->startOfYear()->toDateString();
+        $dateTo   = $filters['date_to']   ?? now()->endOfYear()->toDateString();
+
+        // ── Stream XLSX ───────────────────────────────────────────────────────
+        $filename = 'full_report_' . now()->format('Y_m_d') . '.xlsx';
+        $writer   = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'max-age=0',
+        ]);
+    }
+
+
+    /**
+     * Build and save the spreadsheet to an absolute file path on disk.
+     * Used by the background export job.
+     */
+    public function saveToFile(BudgetTracking $budget, array $filters, string $path): void
+    {
+        $spreadsheet = $this->buildSpreadsheet($budget, $filters);
+        $writer      = new Xlsx($spreadsheet);
+        $writer->save($path);
+    }
+
+    /**
+     * Build the Spreadsheet object without streaming it.
+     * Shared between exportFullCsv() (stream) and saveToFile() (queue).
+     */
+    public function buildSpreadsheet(BudgetTracking $budget, array $filters = []): Spreadsheet
+    {
         $ie       = $this->generateIncomeExpenseReport($budget, $filters);
         $nw       = $this->generateNetWorthReport($budget);
         $btId     = $budget->id;
@@ -297,15 +332,29 @@ class ReportService
         $stocks      = Stock::with('lots')->where('budget_tracking_id', $btId)->get();
         $cryptos     = CryptoAsset::with('lots')->where('budget_tracking_id', $btId)->get();
 
-        // ── Build workbook ────────────────────────────────────────────────────
+        $investmentDividends = InvestmentDividend::with('investment')
+            ->where('budget_tracking_id', $btId)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $stockDividends = StockDividend::with('stock')
+            ->where('budget_tracking_id', $btId)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
+        $cryptoRewards = CryptoDividend::with('cryptoAsset')
+            ->where('budget_tracking_id', $btId)
+            ->orderBy('paid_at', 'desc')
+            ->get();
+
         $spreadsheet = new Spreadsheet();
-        $spreadsheet->removeSheetByIndex(0); // remove default blank sheet
+        $spreadsheet->removeSheetByIndex(0);
 
         // 1. Summary
         $sh = $spreadsheet->createSheet();
         $sh->setTitle('Summary');
         $this->xlsxHeader($sh, ['Metric', 'Value'], 1);
-        $rows = [
+        $this->xlsxRows($sh, [
             ['Period',                $dateFrom . ' to ' . $dateTo],
             ['Total Income',          $ie['total_income']],
             ['Total Expenses',        $ie['total_expenses']],
@@ -320,8 +369,7 @@ class ReportService
             ['Outflow Ratio (%)',     $ie['outflow_ratio_pct']],
             ['Daily Burn Rate',       $ie['daily_burn_rate']],
             ['Savings Runway (days)', $ie['savings_runway_days'] ?? 'N/A'],
-        ];
-        $this->xlsxRows($sh, $rows, 2);
+        ], 2);
         $sh->getColumnDimension('A')->setWidth(28);
         $sh->getColumnDimension('B')->setWidth(22);
 
@@ -392,12 +440,7 @@ class ReportService
         $this->xlsxHeader($sh, ['Date', 'Title', 'Source', 'Amount'], 1);
         $incRows = [];
         foreach ($ie['incomes'] as $inc) {
-            $incRows[] = [
-                (string) $inc->received_at,
-                $inc->title ?? '',
-                $inc->source ?? '',
-                (float) $inc->amount,
-            ];
+            $incRows[] = [(string) $inc->received_at, $inc->title ?? '', $inc->source ?? '', (float) $inc->amount];
         }
         $this->xlsxRows($sh, $incRows, 2);
         $sh->getColumnDimension('A')->setWidth(14);
@@ -412,10 +455,8 @@ class ReportService
         $expRows = [];
         foreach ($ie['expenses'] as $exp) {
             $expRows[] = [
-                (string) $exp->spent_at,
-                $exp->description ?? '',
-                $exp->category?->name ?? 'Uncategorized',
-                (float) $exp->amount,
+                (string) $exp->spent_at, $exp->description ?? '',
+                $exp->category?->name ?? 'Uncategorized', (float) $exp->amount,
             ];
         }
         $this->xlsxRows($sh, $expRows, 2);
@@ -483,13 +524,10 @@ class ReportService
         $purRows = [];
         foreach ($purchases as $pu) {
             $purRows[] = [
-                (string) $pu->purchase_date,
-                $pu->item_name, $pu->payment_method,
-                (float) $pu->total_cost,
+                (string) $pu->purchase_date, $pu->item_name, $pu->payment_method, (float) $pu->total_cost,
                 $pu->is_installment ? $pu->installment_count : 'N/A',
                 $pu->is_installment ? (float) $pu->installment_amount : 'N/A',
-                (float) $pu->amount_paid,
-                (float) $pu->remaining_balance,
+                (float) $pu->amount_paid, (float) $pu->remaining_balance,
             ];
         }
         $this->xlsxRows($sh, $purRows, 2);
@@ -503,12 +541,7 @@ class ReportService
         $this->xlsxHeader($sh, ['Date', 'Item', 'Installment #', 'Amount'], 1);
         $ccRows = [];
         foreach ($purchasePayments as $pp) {
-            $ccRows[] = [
-                (string) $pp->paid_at,
-                $pp->purchase?->item_name ?? '',
-                $pp->installment_number,
-                (float) $pp->amount,
-            ];
+            $ccRows[] = [(string) $pp->paid_at, $pp->purchase?->item_name ?? '', $pp->installment_number, (float) $pp->amount];
         }
         $this->xlsxRows($sh, $ccRows, 2);
         $sh->getColumnDimension('A')->setWidth(14);
@@ -523,13 +556,8 @@ class ReportService
         $trRows = [];
         foreach ($transfers as $t) {
             $trRows[] = [
-                (string) $t->transfer_date,
-                strtoupper($t->module),
-                $t->transfer_from ?? 'Income',
-                (float) $t->amount,
-                (float) $t->transfer_fee,
-                (float) $t->total,
-                $t->note ?? '',
+                (string) $t->transfer_date, strtoupper($t->module), $t->transfer_from ?? 'Income',
+                (float) $t->amount, (float) $t->transfer_fee, (float) $t->total, $t->note ?? '',
             ];
         }
         $this->xlsxRows($sh, $trRows, 2);
@@ -549,8 +577,7 @@ class ReportService
                 $inv->name, $inv->type,
                 (float) $inv->amount_invested, (float) $inv->current_value,
                 (float) $inv->roi_amount, (float) $inv->roi,
-                (float) $inv->total_paid,
-                $inv->payment_status ?? '',
+                (float) $inv->total_paid, $inv->payment_status ?? '',
                 (string) ($inv->date_started ?? $inv->purchase_date ?? ''),
             ];
         }
@@ -574,11 +601,9 @@ class ReportService
             $currVal     = $totalShares * $latestPrice;
             $gain        = $currVal - $costBasis;
             $stRows[]    = [
-                $s->symbol, $s->company_name,
-                round($totalShares, 4),
+                $s->symbol, $s->company_name, round($totalShares, 4),
                 $totalShares > 0 ? round($costBasis / $totalShares, 4) : 0,
-                $latestPrice,
-                round($currVal, 2), round($costBasis, 2), round($gain, 2),
+                $latestPrice, round($currVal, 2), round($costBasis, 2), round($gain, 2),
                 $costBasis > 0 ? round($gain / $costBasis * 100, 2) : 0,
             ];
         }
@@ -603,11 +628,9 @@ class ReportService
             $currVal     = $totalQty * $latestPrice;
             $gain        = $currVal - $costBasis;
             $crRows[]    = [
-                $c->symbol, $c->coin_name,
-                round($totalQty, 8),
+                $c->symbol, $c->coin_name, round($totalQty, 8),
                 $totalQty > 0 ? round($costBasis / $totalQty, 6) : 0,
-                $latestPrice,
-                round($currVal, 2), round($costBasis, 2), round($gain, 2),
+                $latestPrice, round($currVal, 2), round($costBasis, 2), round($gain, 2),
                 $costBasis > 0 ? round($gain / $costBasis * 100, 2) : 0,
             ];
         }
@@ -619,22 +642,14 @@ class ReportService
         }
 
         // 15. Investment Dividends
-        $investmentDividends = InvestmentDividend::with('investment')
-            ->where('budget_tracking_id', $btId)
-            ->orderBy('paid_at', 'desc')
-            ->get();
-
         $sh = $spreadsheet->createSheet();
         $sh->setTitle('Investment Dividends');
         $this->xlsxHeader($sh, ['Date', 'Investment Name', 'Type', 'Amount', 'Notes'], 1);
         $idRows = [];
         foreach ($investmentDividends as $div) {
             $idRows[] = [
-                (string) $div->paid_at,
-                $div->investment?->name ?? '',
-                $div->investment?->type ?? '',
-                (float) $div->amount,
-                $div->notes ?? '',
+                (string) $div->paid_at, $div->investment?->name ?? '',
+                $div->investment?->type ?? '', (float) $div->amount, $div->notes ?? '',
             ];
         }
         $this->xlsxRows($sh, $idRows, 2);
@@ -645,22 +660,14 @@ class ReportService
         $sh->getColumnDimension('E')->setWidth(28);
 
         // 16. Stock Dividends
-        $stockDividends = StockDividend::with('stock')
-            ->where('budget_tracking_id', $btId)
-            ->orderBy('paid_at', 'desc')
-            ->get();
-
         $sh = $spreadsheet->createSheet();
         $sh->setTitle('Stock Dividends');
         $this->xlsxHeader($sh, ['Date', 'Symbol', 'Company', 'Amount', 'Notes'], 1);
         $sdRows = [];
         foreach ($stockDividends as $div) {
             $sdRows[] = [
-                (string) $div->paid_at,
-                $div->stock?->symbol ?? '',
-                $div->stock?->company_name ?? '',
-                (float) $div->amount,
-                $div->notes ?? '',
+                (string) $div->paid_at, $div->stock?->symbol ?? '',
+                $div->stock?->company_name ?? '', (float) $div->amount, $div->notes ?? '',
             ];
         }
         $this->xlsxRows($sh, $sdRows, 2);
@@ -671,17 +678,12 @@ class ReportService
         $sh->getColumnDimension('E')->setWidth(28);
 
         // 17. Crypto Rewards
-        $cryptoRewards = CryptoDividend::with('cryptoAsset')
-            ->where('budget_tracking_id', $btId)
-            ->orderBy('paid_at', 'desc')
-            ->get();
-
         $sh = $spreadsheet->createSheet();
         $sh->setTitle('Crypto Rewards');
         $this->xlsxHeader($sh, ['Date', 'Symbol', 'Coin Name', 'Qty Rewarded', 'Price at Reward', 'Est. Value (PHP)', 'Notes'], 1);
         $crwRows = [];
         foreach ($cryptoRewards as $rwd) {
-            $estValue = (float) $rwd->quantity_rewarded * (float) $rwd->price_at_reward;
+            $estValue  = (float) $rwd->quantity_rewarded * (float) $rwd->price_at_reward;
             $crwRows[] = [
                 (string) $rwd->paid_at,
                 $rwd->cryptoAsset?->symbol ?? '',
@@ -701,17 +703,7 @@ class ReportService
         $sh->getColumnDimension('F')->setWidth(20);
         $sh->getColumnDimension('G')->setWidth(28);
 
-        // ── Stream XLSX ────────────────────────────────────────────────────────
-        $filename = 'full_report_' . now()->format('Y_m_d') . '.xlsx';
-        $writer   = new Xlsx($spreadsheet);
-
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Cache-Control'       => 'max-age=0',
-        ]);
+        return $spreadsheet;
     }
 
     /** Write a styled header row (dark blue bg, white bold text). */

@@ -21,6 +21,7 @@ use App\Http\Controllers\API\V1\Plan\FinancialGoalController;
 use App\Http\Controllers\API\V1\Plan\FinancialPlanController;
 use App\Http\Controllers\API\V1\Purchase\PurchaseController;
 use App\Http\Controllers\API\V1\Report\ReportController;
+use App\Http\Controllers\API\V1\Report\ReportExportController;
 use App\Http\Controllers\API\V1\Stock\StockController;
 use App\Http\Controllers\API\V1\Transfer\ModuleTransferController;
 use Illuminate\Support\Facades\Route;
@@ -151,6 +152,11 @@ Route::prefix('v1')->group(function () {
             Route::get('export/csv',   [ReportController::class, 'exportCsv']);
             Route::get('export/excel', [ReportController::class, 'exportCsv']); // alias
             Route::get('export/pdf', [ReportController::class, 'exportPdf']);
+
+            // Queue-based async export (P-05)
+            Route::post('export/queue',                       [ReportExportController::class, 'queue']);
+            Route::get('export/{exportId}/status',            [ReportExportController::class, 'status']);
+            Route::get('export/{exportId}/download',          [ReportExportController::class, 'download']);
         });
     });
 });

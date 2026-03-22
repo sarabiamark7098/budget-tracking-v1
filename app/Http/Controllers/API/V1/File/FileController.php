@@ -48,14 +48,14 @@ class FileController extends Controller
 
     public function destroy(File $file): JsonResponse
     {
-        abort_if($file->user_id !== auth()->id(), 403, 'Unauthorized');
+        $this->authorize('delete', $file);
         $this->service->delete($file);
         return $this->respondSuccess(null, 'File deleted successfully');
     }
 
     public function download(File $file)
     {
-        abort_if($file->user_id !== auth()->id(), 403, 'Unauthorized');
+        $this->authorize('view', $file);
         return Storage::disk('public')->download($file->path, $file->original_name);
     }
 }

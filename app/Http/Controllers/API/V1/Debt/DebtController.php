@@ -34,21 +34,21 @@ class DebtController extends Controller
 
     public function show(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        $this->authorize('view', $debt);
         $debt->load('payments');
         return $this->respondSuccess(new DebtResource($debt));
     }
 
     public function update(UpdateDebtRequest $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        $this->authorize('update', $debt);
         $debt = $this->service->update($debt, $request->validated());
         return $this->respondSuccess(new DebtResource($debt), 'Debt updated successfully');
     }
 
     public function destroy(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        $this->authorize('delete', $debt);
         $this->service->delete($debt);
         return $this->respondSuccess(null, 'Debt deleted successfully');
     }
@@ -59,7 +59,7 @@ class DebtController extends Controller
      */
     public function balance(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        $this->authorize('pay', $debt);
         abort_if($debt->type !== 'business', 422, 'Balance calculation is only for business debts');
 
         return $this->respondSuccess($this->service->businessBalanceDue($debt));
@@ -75,7 +75,7 @@ class DebtController extends Controller
      */
     public function pay(Request $request, Debt $debt): JsonResponse
     {
-        abort_if($debt->budget_tracking_id !== $this->budget($request)->id, 403, 'Unauthorized');
+        $this->authorize('pay', $debt);
 
         if ($debt->status === 'paid') {
             return response()->json(['success' => false, 'message' => 'This debt is already fully paid.'], 422);

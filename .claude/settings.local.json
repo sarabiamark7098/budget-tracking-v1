@@ -61,7 +61,8 @@
       "Bash(sed -i \"s/;extension=pdo_sqlite/extension=pdo_sqlite/\" \"C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.ini\")",
       "Bash(sed -i \"s/;extension=sqlite3/extension=sqlite3/\" \"C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64\\\\php.ini\")",
       "Bash(taskkill /F /IM AcroRd32.exe /IM Acrobat.exe /IM SumatraPDF.exe)",
-      "Bash(del \"C:\\\\laragon\\\\www\\\\budget-tracking-v1\\\\storage\\\\app\\\\public\\\\BudgetTrack_Test_Report.pdf\")"
+      "Bash(del \"C:\\\\laragon\\\\www\\\\budget-tracking-v1\\\\storage\\\\app\\\\public\\\\BudgetTrack_Test_Report.pdf\")",
+      "Bash(find /c/laragon/www/budget-tracking-v1/database/migrations -type f -name *.php)"
     ]
   }
 }

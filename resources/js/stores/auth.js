@@ -1,49 +1,63 @@
+/**
+ * Auth store — S-02: migrated to Sanctum SPA cookie auth.
+ *
+ * No longer stores the token in localStorage. Authentication state is
+ * maintained by the HttpOnly laravel_session cookie set by the server.
+ * Axios sends this cookie automatically on every request (withCredentials: true).
+ *
+ * Flow:
+ *  1. App boot → fetchUser() probes /auth/me to restore session state.
+ *  2. Login/Register → call initCsrf() first to set XSRF-TOKEN cookie,
+ *     then hit the endpoint; the server sets the session cookie in the response.
+ *  3. Logout → server invalidates the session; local user state is cleared.
+ */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { authService } from '@/services/index';
+import { initCsrf } from '@/services/api';
 
 export const useAuthStore = defineStore('auth', () => {
     const user = ref(null);
-    const token = ref(localStorage.getItem('auth_token'));
 
-    const isAuthenticated = computed(() => !!token.value);
+    // Authentication is determined by whether the user object is set.
+    // The actual credential is the HttpOnly session cookie — not a localStorage token.
+    const isAuthenticated = computed(() => !!user.value);
 
     async function login(credentials) {
+        await initCsrf();  // Ensure XSRF-TOKEN cookie is set before mutation
         const { data } = await authService.login(credentials);
-        token.value = data.data.token;
         user.value = data.data;
-        localStorage.setItem('auth_token', token.value);
         return data;
     }
 
     async function register(userData) {
+        await initCsrf();  // Ensure XSRF-TOKEN cookie is set before mutation
         const { data } = await authService.register(userData);
-        token.value = data.data.token;
         user.value = data.data;
-        localStorage.setItem('auth_token', token.value);
         return data;
     }
 
     async function logout() {
         try { await authService.logout(); } catch {}
-        token.value = null;
         user.value = null;
-        localStorage.removeItem('auth_token');
     }
 
+    /**
+     * Probe the server to restore auth state on app load.
+     * If the session cookie is valid, the server returns the user.
+     * If not (session expired / no cookie), the user remains null.
+     */
     async function fetchUser() {
-        if (!token.value) return;
         try {
             const { data } = await authService.me();
             user.value = data.data;
         } catch {
-            token.value = null;
-            localStorage.removeItem('auth_token');
+            user.value = null;
         }
     }
 
-    async function updateProfile(data) {
-        const { data: res } = await authService.updateProfile(data);
+    async function updateProfile(profileData) {
+        const { data: res } = await authService.updateProfile(profileData);
         user.value = res.data;
         return res.data;
     }
@@ -52,5 +66,5 @@ export const useAuthStore = defineStore('auth', () => {
         await authService.changePassword(data);
     }
 
-    return { user, token, isAuthenticated, login, register, logout, fetchUser, updateProfile, changePassword };
+    return { user, isAuthenticated, login, register, logout, fetchUser, updateProfile, changePassword };
 });
