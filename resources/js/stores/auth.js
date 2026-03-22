@@ -44,16 +44,13 @@ export const useAuthStore = defineStore('auth', () => {
 
     /**
      * Probe the server to restore auth state on app load.
-     * If the session cookie is valid, the server returns the user.
-     * If not (session expired / no cookie), the user remains null.
+     * /auth/me always returns 200: data.data is the user object when a valid
+     * session exists, or null when there is no active session.
+     * No try/catch needed — the endpoint never returns 4xx/5xx for this case.
      */
     async function fetchUser() {
-        try {
-            const { data } = await authService.me();
-            user.value = data.data;
-        } catch {
-            user.value = null;
-        }
+        const { data } = await authService.me();
+        user.value = data.data ?? null;
     }
 
     async function updateProfile(profileData) {

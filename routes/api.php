@@ -38,11 +38,14 @@ Route::prefix('v1')->group(function () {
         Route::post('mp2/calculate', [MP2Controller::class, 'calculate']);
     });
 
+    // Session probe — no auth middleware so an unauthenticated boot check returns 200,
+    // not 401, avoiding a spurious red browser console error on every fresh page load.
+    Route::get('auth/me', [AuthController::class, 'me']);
+
     // Protected routes — authentication only
     Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
-            Route::get('me', [AuthController::class, 'me']);
             Route::put('profile', [AuthController::class, 'updateProfile']);
             Route::put('password', [AuthController::class, 'changePassword']);
         });

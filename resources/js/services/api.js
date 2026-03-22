@@ -36,7 +36,7 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Session expired — redirect to login.
+            // Session expired mid-use — redirect to login.
             window.location.href = '/login';
         }
         return Promise.reject(error);

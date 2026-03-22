@@ -62,9 +62,23 @@ class AuthController extends Controller
         return $this->respondSuccess(null, 'Logged out successfully');
     }
 
+    /**
+     * Session probe — intentionally public (no auth middleware).
+     *
+     * Returns 200 with the authenticated user when a valid session/token exists,
+     * or 200 with data: null when there is no active session.
+     * Keeping this 200-always prevents a red browser console error on every
+     * fresh page load when the SPA probes for an existing session at boot.
+     */
     public function me(): JsonResponse
     {
-        return $this->respondSuccess(new UserResource(auth()->user()), 'User retrieved successfully');
+        $user = auth()->user();
+
+        if (! $user) {
+            return $this->respondSuccess(null, 'Not authenticated');
+        }
+
+        return $this->respondSuccess(new UserResource($user), 'User retrieved successfully');
     }
 
     public function updateProfile(UpdateProfileRequest $request): JsonResponse

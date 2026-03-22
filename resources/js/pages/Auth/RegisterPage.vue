@@ -26,28 +26,28 @@
         <form @submit.prevent="handleRegister" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input v-model="form.name" type="text" required
+            <input v-model="form.name" type="text" required autocomplete="name"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Juan Dela Cruz" />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input v-model="form.email" type="email" required
+            <input v-model="form.email" type="email" required autocomplete="username"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="juan@example.com" />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input v-model="form.password" type="password" required minlength="8"
+            <input v-model="form.password" type="password" required minlength="8" autocomplete="new-password"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Min 8 characters" />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-            <input v-model="form.password_confirmation" type="password" required
+            <input v-model="form.password_confirmation" type="password" required autocomplete="new-password"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Repeat password" />
           </div>
