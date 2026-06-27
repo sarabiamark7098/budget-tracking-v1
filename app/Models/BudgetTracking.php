@@ -15,13 +15,6 @@ use App\Models\Expense;
 use App\Models\Budget;
 use App\Models\Debt;
 use App\Models\Payment;
-use App\Models\Investment;
-use App\Models\Stock;
-use App\Models\CryptoAsset;
-use App\Models\FinancialPlan;
-use App\Models\FinancialGoal;
-use App\Models\InsurancePlan;
-use App\Models\InsurancePayment;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\MP2Plan;
@@ -83,13 +76,6 @@ class BudgetTracking extends Model
     public function budgets(): HasMany       { return $this->hasMany(Budget::class); }
     public function debts(): HasMany         { return $this->hasMany(Debt::class); }
     public function payments(): HasMany      { return $this->hasMany(Payment::class); }
-    public function investments(): HasMany   { return $this->hasMany(Investment::class); }
-    public function stocks(): HasMany        { return $this->hasMany(Stock::class); }
-    public function cryptoAssets(): HasMany  { return $this->hasMany(CryptoAsset::class); }
-    public function financialPlans(): HasMany{ return $this->hasMany(FinancialPlan::class); }
-    public function financialGoals(): HasMany{ return $this->hasMany(FinancialGoal::class); }
-    public function insurancePlans(): HasMany{ return $this->hasMany(InsurancePlan::class); }
-    public function insurancePayments(): HasMany { return $this->hasMany(InsurancePayment::class); }
     public function purchases(): HasMany        { return $this->hasMany(Purchase::class); }
     public function purchasePayments(): HasMany { return $this->hasMany(PurchasePayment::class); }
     public function mp2Plans(): HasMany           { return $this->hasMany(MP2Plan::class); }
@@ -144,7 +130,7 @@ class BudgetTracking extends Model
 
         $purchasePayments    = (float) $this->purchasePayments()->sum('amount');
         // Only deduct transfers that originated FROM income. Cross-fund transfers
-        // (e.g. Investment → Stock) must NOT be counted here — they do not move
+        // (e.g. Income → Saving) going the other way must NOT be counted here — they do not move
         // money out of the income pool and double-deducting them is a bug.
         $moduleTransfersOut  = (float) $this->moduleTransfers()->where('transfer_from', 'income')->sum('total');
         // Transfers from any module back TO income — credit back to the income pool

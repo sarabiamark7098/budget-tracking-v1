@@ -62,7 +62,11 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4 pt-4 border-t border-indigo-400">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4 pt-4 border-t border-indigo-400">
+          <div>
+            <p class="text-indigo-200 text-xs">Available Cash</p>
+            <p class="font-semibold">{{ fmt(store.netWorth.available_cash) }}</p>
+          </div>
           <div>
             <p class="text-indigo-200 text-xs">Total Assets</p>
             <p class="font-semibold">{{ fmt(store.netWorth.total_assets) }}</p>
@@ -70,31 +74,6 @@
           <div>
             <p class="text-indigo-200 text-xs">Liabilities</p>
             <p class="font-semibold">{{ fmt(store.netWorth.total_liabilities) }}</p>
-          </div>
-          <div>
-            <p class="text-indigo-200 text-xs">Investments</p>
-            <p class="font-semibold">{{ fmt(store.netWorth.total_investments) }}</p>
-            <p class="text-xs mt-0.5" :class="store.netWorth.investment_gain >= 0 ? 'text-green-300' : 'text-red-300'">
-              {{ store.netWorth.investment_gain >= 0 ? '+' : '' }}{{ fmt(store.netWorth.investment_gain) }}
-            </p>
-          </div>
-          <div>
-            <p class="text-indigo-200 text-xs">Stocks</p>
-            <p class="font-semibold">{{ fmt(store.netWorth.total_stocks) }}</p>
-            <p class="text-xs mt-0.5" :class="store.netWorth.stock_gain >= 0 ? 'text-green-300' : 'text-red-300'">
-              {{ store.netWorth.stock_gain >= 0 ? '+' : '' }}{{ fmt(store.netWorth.stock_gain) }}
-            </p>
-          </div>
-          <div>
-            <p class="text-indigo-200 text-xs">Crypto</p>
-            <p class="font-semibold">{{ fmt(store.netWorth.total_crypto) }}</p>
-            <p class="text-xs mt-0.5" :class="store.netWorth.crypto_gain >= 0 ? 'text-green-300' : 'text-red-300'">
-              {{ store.netWorth.crypto_gain >= 0 ? '+' : '' }}{{ fmt(store.netWorth.crypto_gain) }}
-            </p>
-          </div>
-          <div>
-            <p class="text-indigo-200 text-xs">Total Cost Basis</p>
-            <p class="font-semibold">{{ fmt((store.netWorth.investment_cost || 0) + (store.netWorth.stock_cost || 0) + (store.netWorth.crypto_cost || 0)) }}</p>
           </div>
         </div>
       </div>

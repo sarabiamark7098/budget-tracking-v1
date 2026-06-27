@@ -457,7 +457,7 @@
                   >{{ member.role }}</span>
                 </div>
               </div>
-              <!-- 7-card stats grid -->
+              <!-- stats grid -->
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-center">
                 <div class="bg-green-50 rounded-lg p-3">
                   <p class="text-xs text-gray-500">Total Income</p>
@@ -470,22 +470,6 @@
                 <div class="bg-orange-50 rounded-lg p-3">
                   <p class="text-xs text-gray-500">Total Debt</p>
                   <p class="font-bold text-orange-700 mt-0.5">{{ fmt(member.total_debt) }}</p>
-                </div>
-                <div class="bg-blue-50 rounded-lg p-3">
-                  <p class="text-xs text-gray-500">Invested</p>
-                  <p class="font-bold text-blue-700 mt-0.5">{{ fmt(member.total_invested) }}</p>
-                </div>
-                <div class="bg-indigo-50 rounded-lg p-3">
-                  <p class="text-xs text-gray-500">Invest. Value</p>
-                  <p class="font-bold text-indigo-700 mt-0.5">{{ fmt(member.total_invest_val) }}</p>
-                </div>
-                <div class="bg-violet-50 rounded-lg p-3">
-                  <p class="text-xs text-gray-500">Stocks Value</p>
-                  <p class="font-bold text-violet-700 mt-0.5">{{ fmt(member.total_stocks_val) }}</p>
-                </div>
-                <div class="bg-yellow-50 rounded-lg p-3">
-                  <p class="text-xs text-gray-500">Crypto Value</p>
-                  <p class="font-bold text-yellow-700 mt-0.5">{{ fmt(member.total_crypto_val) }}</p>
                 </div>
                 <div class="bg-gray-50 rounded-lg p-3">
                   <p class="text-xs text-gray-500">Net (Inc−Exp)</p>
@@ -609,137 +593,6 @@
                       >{{ row.status }}</span>
                     </td>
                     <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(row.due_date) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- ── INVESTMENTS sub-tab ────────────────────────────────────── -->
-          <div v-if="consolidatedSubTab === 'investments'" class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="px-5 py-3 border-b flex items-center justify-between">
-              <span class="text-sm font-semibold text-gray-700">Investments</span>
-              <span class="text-xs text-gray-400">{{ store.consolidated.investments.length }} records</span>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 border-b">
-                  <tr>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Name</th>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Type</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Invested</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Value</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">ROI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="!store.consolidated.investments.length">
-                    <td colspan="6" class="text-center py-8 text-gray-400">No investment records</td>
-                  </tr>
-                  <tr v-for="(row, i) in store.consolidated.investments" :key="i" class="border-b last:border-0 hover:bg-gray-50">
-                    <td class="px-4 py-3">
-                      <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
-                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
-                      </span>
-                    </td>
-                    <td class="px-4 py-3 font-medium text-gray-700">{{ row.name }}</td>
-                    <td class="px-4 py-3 text-gray-500 text-xs capitalize">{{ row.type ?? '—' }}</td>
-                    <td class="px-4 py-3 text-right text-gray-600">{{ fmt(row.amount_invested) }}</td>
-                    <td class="px-4 py-3 text-right font-semibold text-blue-600">{{ fmt(row.current_value) }}</td>
-                    <td class="px-4 py-3 text-right font-semibold text-xs" :class="row.roi >= 0 ? 'text-green-600' : 'text-red-600'">
-                      {{ row.roi >= 0 ? '+' : '' }}{{ Number(row.roi || 0).toFixed(2) }}%
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- ── STOCKS sub-tab ─────────────────────────────────────────── -->
-          <div v-if="consolidatedSubTab === 'stocks'" class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="px-5 py-3 border-b flex items-center justify-between">
-              <span class="text-sm font-semibold text-gray-700">Stock Holdings</span>
-              <span class="text-xs text-gray-400">{{ store.consolidated.stocks.length }} lots</span>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 border-b">
-                  <tr>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Symbol</th>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Company</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Shares</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Buy</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Current</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">P&amp;L</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="!store.consolidated.stocks.length">
-                    <td colspan="7" class="text-center py-8 text-gray-400">No stock records</td>
-                  </tr>
-                  <tr v-for="(row, i) in store.consolidated.stocks" :key="i" class="border-b last:border-0 hover:bg-gray-50">
-                    <td class="px-4 py-3">
-                      <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
-                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
-                      </span>
-                    </td>
-                    <td class="px-4 py-3 font-bold text-indigo-600">{{ row.symbol }}</td>
-                    <td class="px-4 py-3 text-gray-600 text-xs">{{ row.company_name ?? '—' }}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">{{ Number(row.shares).toLocaleString() }}</td>
-                    <td class="px-4 py-3 text-right text-gray-500">{{ fmt(row.buy_price) }}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">{{ fmt(row.current_price) }}</td>
-                    <td class="px-4 py-3 text-right font-semibold text-xs" :class="(row.current_price - row.buy_price) * row.shares >= 0 ? 'text-green-600' : 'text-red-600'">
-                      {{ fmt((Number(row.current_price) - Number(row.buy_price)) * Number(row.shares)) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- ── CRYPTO sub-tab ─────────────────────────────────────────── -->
-          <div v-if="consolidatedSubTab === 'crypto'" class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="px-5 py-3 border-b flex items-center justify-between">
-              <span class="text-sm font-semibold text-gray-700">Crypto Holdings</span>
-              <span class="text-xs text-gray-400">{{ store.consolidated.crypto.length }} records</span>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 border-b">
-                  <tr>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Member</th>
-                    <th class="text-left px-4 py-3 text-gray-500 font-medium">Coin</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Qty</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Buy</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">Current</th>
-                    <th class="text-right px-4 py-3 text-gray-500 font-medium">P&amp;L</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="!store.consolidated.crypto.length">
-                    <td colspan="6" class="text-center py-8 text-gray-400">No crypto records</td>
-                  </tr>
-                  <tr v-for="(row, i) in store.consolidated.crypto" :key="i" class="border-b last:border-0 hover:bg-gray-50">
-                    <td class="px-4 py-3">
-                      <span class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: consolidatedMemberColors[row.user_name] }"></span>
-                        <span class="text-xs font-medium text-gray-700">{{ row.user_name }}</span>
-                      </span>
-                    </td>
-                    <td class="px-4 py-3">
-                      <span class="font-bold text-yellow-600 uppercase">{{ row.symbol }}</span>
-                      <span class="text-xs text-gray-400 ml-1">{{ row.coin_name }}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right text-gray-700">{{ Number(row.quantity).toLocaleString('en-PH', { minimumFractionDigits: 4 }) }}</td>
-                    <td class="px-4 py-3 text-right text-gray-500">{{ fmt(row.buy_price) }}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">{{ fmt(row.current_price) }}</td>
-                    <td class="px-4 py-3 text-right font-semibold text-xs" :class="(row.current_price - row.buy_price) * row.quantity >= 0 ? 'text-green-600' : 'text-red-600'">
-                      {{ fmt((Number(row.current_price) - Number(row.buy_price)) * Number(row.quantity)) }}
-                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1344,15 +1197,12 @@ async function handleRemoveMember() {
 // ── Consolidated tab ──────────────────────────────────────────────────────
 const consolidatedSubTab = ref('overview');
 const consolidatedSubTabs = [
-  { value: 'overview',     label: 'Overview' },
-  { value: 'income',       label: 'Income' },
-  { value: 'expenses',     label: 'Expenses' },
-  { value: 'debts',        label: 'Debts' },
-  { value: 'investments',  label: 'Investments' },
-  { value: 'stocks',       label: 'Stocks' },
-  { value: 'crypto',       label: 'Crypto' },
-  { value: 'payments',     label: 'Payments' },
-  { value: 'purchases',    label: 'Purchases' },
+  { value: 'overview',  label: 'Overview' },
+  { value: 'income',    label: 'Income' },
+  { value: 'expenses',  label: 'Expenses' },
+  { value: 'debts',     label: 'Debts' },
+  { value: 'payments',  label: 'Payments' },
+  { value: 'purchases', label: 'Purchases' },
 ];
 
 async function loadConsolidated() {

@@ -67,41 +67,6 @@ class User extends Authenticatable
         return $this->hasMany(Payment::class);
     }
 
-    public function investments(): HasMany
-    {
-        return $this->hasMany(Investment::class);
-    }
-
-    public function stocks(): HasMany
-    {
-        return $this->hasMany(Stock::class);
-    }
-
-    public function cryptoAssets(): HasMany
-    {
-        return $this->hasMany(CryptoAsset::class);
-    }
-
-    public function financialPlans(): HasMany
-    {
-        return $this->hasMany(FinancialPlan::class);
-    }
-
-    public function financialGoals(): HasMany
-    {
-        return $this->hasMany(FinancialGoal::class);
-    }
-
-    public function insurancePlans(): HasMany
-    {
-        return $this->hasMany(InsurancePlan::class);
-    }
-
-    public function insurancePayments(): HasMany
-    {
-        return $this->hasMany(InsurancePayment::class);
-    }
-
     public function purchases(): HasMany
     {
         return $this->hasMany(Purchase::class);

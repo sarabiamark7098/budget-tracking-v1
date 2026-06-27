@@ -7,14 +7,11 @@ use App\Models\BudgetTrackingAllocation;
 use App\Models\BudgetTrackingHistory;
 use App\Models\BudgetTrackingMember;
 use App\Models\BudgetTrackingTransaction;
-use App\Models\CryptoAsset;
 use App\Models\Debt;
 use App\Models\Expense;
 use App\Models\Income;
-use App\Models\Investment;
 use App\Models\Payment;
 use App\Models\Purchase;
-use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -481,7 +478,7 @@ class BudgetTrackingService
 
     /**
      * Return a full consolidated view of every member's financial data:
-     * income, expenses, budgets, debts, investments, stocks, crypto, payments, purchases.
+     * income, expenses, debts, payments, purchases.
      * Every record includes a `user_name` key for attribution.
      */
     public function getConsolidatedData(BudgetTracking $budget): array
@@ -507,36 +504,23 @@ class BudgetTrackingService
         };
 
         // ── Fetch from every module scoped to the budget tracking ────────────────
-        $btId        = $budget->id;
-        $incomes     = Income::where('budget_tracking_id', $btId)->latest('received_at')->get();
-        $expenses    = Expense::where('budget_tracking_id', $btId)->latest('spent_at')->get();
-        $debts       = Debt::where('budget_tracking_id', $btId)->get();
-        $investments = Investment::where('budget_tracking_id', $btId)->get();
-        $stocks      = Stock::where('budget_tracking_id', $btId)->get();
-        $crypto      = CryptoAsset::where('budget_tracking_id', $btId)->get();
-        $payments    = Payment::with('debt')->where('budget_tracking_id', $btId)->latest()->get();
-        $purchases   = Purchase::where('budget_tracking_id', $btId)->get();
+        $btId      = $budget->id;
+        $incomes   = Income::where('budget_tracking_id', $btId)->latest('received_at')->get();
+        $expenses  = Expense::where('budget_tracking_id', $btId)->latest('spent_at')->get();
+        $debts     = Debt::where('budget_tracking_id', $btId)->get();
+        $payments  = Payment::with('debt')->where('budget_tracking_id', $btId)->latest()->get();
+        $purchases = Purchase::where('budget_tracking_id', $btId)->get();
 
         // ── Per-member summary for the overview panel ────────────────────────────
-        $memberSummary = $members->map(function ($m) use (
-            $incomes, $expenses, $debts, $investments, $stocks, $crypto
-        ) {
+        $memberSummary = $members->map(function ($m) use ($incomes, $expenses, $debts) {
             $uid = $m['user_id'];
             return [
-                'user_id'          => $uid,
-                'name'             => $m['name'],
-                'role'             => $m['role'],
-                'total_income'     => round((float) $incomes->where('user_id', $uid)->sum('amount'), 2),
-                'total_expenses'   => round((float) $expenses->where('user_id', $uid)->sum('amount'), 2),
-                'total_debt'       => round((float) $debts->where('user_id', $uid)->sum('remaining_balance'), 2),
-                'total_invested'   => round((float) $investments->where('user_id', $uid)->sum('amount_invested'), 2),
-                'total_invest_val' => round((float) $investments->where('user_id', $uid)->sum('current_value'), 2),
-                'total_stocks_val' => round((float) $stocks->where('user_id', $uid)->sum(
-                    fn($s) => (float) $s->shares * (float) $s->current_price
-                ), 2),
-                'total_crypto_val' => round((float) $crypto->where('user_id', $uid)->sum(
-                    fn($a) => (float) $a->quantity * (float) $a->current_price
-                ), 2),
+                'user_id'        => $uid,
+                'name'           => $m['name'],
+                'role'           => $m['role'],
+                'total_income'   => round((float) $incomes->where('user_id', $uid)->sum('amount'), 2),
+                'total_expenses' => round((float) $expenses->where('user_id', $uid)->sum('amount'), 2),
+                'total_debt'     => round((float) $debts->where('user_id', $uid)->sum('remaining_balance'), 2),
             ];
         })->values()->toArray();
 
@@ -546,9 +530,6 @@ class BudgetTrackingService
             'income'         => $tag($incomes),
             'expenses'       => $tag($expenses),
             'debts'          => $tag($debts),
-            'investments'    => $tag($investments),
-            'stocks'         => $tag($stocks),
-            'crypto'         => $tag($crypto),
             'payments'       => $tag($payments),
             'purchases'      => $tag($purchases),
         ];

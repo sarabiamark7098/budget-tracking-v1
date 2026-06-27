@@ -72,82 +72,6 @@ export const paymentService = {
     delete: (id) => api.delete(`/payments/${id}`),
 };
 
-// Investments
-export const investmentService = {
-    getAll: (params) => api.get('/investments', { params }),
-    getPortfolio: () => api.get('/investments/portfolio'),
-    create: (data) => api.post('/investments', data),
-    show: (id) => api.get(`/investments/${id}`),
-    update: (id, data) => api.put(`/investments/${id}`, data),
-    delete: (id) => api.delete(`/investments/${id}`),
-    getPayments: (id) => api.get(`/investments/${id}/payments`),
-    addPayment: (id, data) => api.post(`/investments/${id}/payments`, data),
-    markDone: (id) => api.patch(`/investments/${id}/done`),
-    getDividends: (id) => api.get(`/investments/${id}/dividends`),
-    storeDividend: (id, data) => api.post(`/investments/${id}/dividends`, data),
-};
-
-// Stocks
-export const stockService = {
-    getAll: (params) => api.get('/stocks', { params }),
-    getPortfolio: () => api.get('/stocks/portfolio'),
-    create: (data) => api.post('/stocks', data),
-    show: (id) => api.get(`/stocks/${id}`),
-    update: (id, data) => api.put(`/stocks/${id}`, data),
-    delete: (id) => api.delete(`/stocks/${id}`),
-    getLots: (id) => api.get(`/stocks/${id}/lots`),
-    addLot: (id, data) => api.post(`/stocks/${id}/lots`, data),
-    updatePrice: (id, data) => api.patch(`/stocks/${id}/price`, data),
-    sell: (id, data) => api.post(`/stocks/${id}/sell`, data),
-    getDividends: (id) => api.get(`/stocks/${id}/dividends`),
-    storeDividend: (id, data) => api.post(`/stocks/${id}/dividends`, data),
-};
-
-// Crypto
-export const cryptoService = {
-    getAll: (params) => api.get('/crypto', { params }),
-    getPortfolio: () => api.get('/crypto/portfolio'),
-    create: (data) => api.post('/crypto', data),
-    show: (id) => api.get(`/crypto/${id}`),
-    update: (id, data) => api.put(`/crypto/${id}`, data),
-    delete: (id) => api.delete(`/crypto/${id}`),
-    getLots: (id) => api.get(`/crypto/${id}/lots`),
-    addLot: (id, data) => api.post(`/crypto/${id}/lots`, data),
-    updatePrice: (id, data) => api.patch(`/crypto/${id}/price`, data),
-    sell: (id, data) => api.post(`/crypto/${id}/sell`, data),
-    getDividends: (id) => api.get(`/crypto/${id}/dividends`),
-    storeDividend: (id, data) => api.post(`/crypto/${id}/dividends`, data),
-};
-
-// Financial Plans
-export const financialPlanService = {
-    getAll: (params) => api.get('/financial-plans', { params }),
-    create: (data) => api.post('/financial-plans', data),
-    show: (id) => api.get(`/financial-plans/${id}`),
-    update: (id, data) => api.put(`/financial-plans/${id}`, data),
-    delete: (id) => api.delete(`/financial-plans/${id}`),
-};
-
-// Financial Goals
-export const financialGoalService = {
-    getAll: (params) => api.get('/financial-goals', { params }),
-    create: (data) => api.post('/financial-goals', data),
-    update: (id, data) => api.put(`/financial-goals/${id}`, data),
-    updateProgress: (id, amount) => api.patch(`/financial-goals/${id}/progress`, { amount }),
-    delete: (id) => api.delete(`/financial-goals/${id}`),
-};
-
-// Insurance
-export const insuranceService = {
-    getAll: (params) => api.get('/insurance-plans', { params }),
-    create: (data) => api.post('/insurance-plans', data),
-    show: (id) => api.get(`/insurance-plans/${id}`),
-    update: (id, data) => api.put(`/insurance-plans/${id}`, data),
-    delete: (id) => api.delete(`/insurance-plans/${id}`),
-    pay: (id, data) => api.post(`/insurance-plans/${id}/pay`, data),
-    getPlanPayments: (id, params) => api.get(`/insurance-plans/${id}/payments`, { params }),
-};
-
 // Purchases
 export const purchaseService = {
     getAll:          (params) => api.get('/purchases', { params }),
@@ -192,7 +116,7 @@ export const budgetTrackingService = {
     deleteTransaction:    (id)       => api.delete(`/budget-tracking/transactions/${id}`),
 };
 
-// Module Transfers (Investment / Stock / Crypto)
+// Module Transfers (Income / Saving)
 export const moduleTransferService = {
     getAll:  (params) => api.get('/module-transfers', { params }),
     create:  (data)   => api.post('/module-transfers', data),

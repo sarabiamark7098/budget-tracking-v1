@@ -50,11 +50,6 @@ class Category extends Model
         return $this->hasMany(Budget::class);
     }
 
-    public function investments(): HasMany
-    {
-        return $this->hasMany(Investment::class);
-    }
-
     public function purchases(): HasMany
     {
         return $this->hasMany(Purchase::class);

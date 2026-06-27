@@ -54,12 +54,6 @@ class CategoryService
             ['name' => 'Bills', 'type' => 'expense', 'color' => '#009688', 'icon' => 'file-text', 'is_system' => true],
             ['name' => 'Education', 'type' => 'expense', 'color' => '#00BCD4', 'icon' => 'book', 'is_system' => true],
             ['name' => 'Other Expense', 'type' => 'expense', 'color' => '#9E9E9E', 'icon' => 'more-horizontal', 'is_system' => true],
-            // Investment categories
-            ['name' => 'Stocks', 'type' => 'investment', 'color' => '#4CAF50', 'icon' => 'bar-chart-2', 'is_system' => true],
-            ['name' => 'Cryptocurrency', 'type' => 'investment', 'color' => '#FF9800', 'icon' => 'cpu', 'is_system' => true],
-            ['name' => 'Real Estate', 'type' => 'investment', 'color' => '#2196F3', 'icon' => 'building', 'is_system' => true],
-            ['name' => 'Business Investment', 'type' => 'investment', 'color' => '#9C27B0', 'icon' => 'briefcase', 'is_system' => true],
-            ['name' => 'Mutual Fund', 'type' => 'investment', 'color' => '#607D8B', 'icon' => 'pie-chart', 'is_system' => true],
         ];
 
         // Only create if not already existing for this budget tracker

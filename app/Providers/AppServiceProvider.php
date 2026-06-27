@@ -34,14 +34,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(\App\Models\Budget::class,        \App\Policies\BudgetPolicy::class);
         Gate::policy(\App\Models\Debt::class,          \App\Policies\DebtPolicy::class);
         Gate::policy(\App\Models\Payment::class,       \App\Policies\PaymentPolicy::class);
-        Gate::policy(\App\Models\Investment::class,    \App\Policies\InvestmentPolicy::class);
-        Gate::policy(\App\Models\Stock::class,         \App\Policies\StockPolicy::class);
-        Gate::policy(\App\Models\CryptoAsset::class,   \App\Policies\CryptoAssetPolicy::class);
         Gate::policy(\App\Models\File::class,          \App\Policies\FilePolicy::class);
         Gate::policy(\App\Models\Category::class,      \App\Policies\CategoryPolicy::class);
         Gate::policy(\App\Models\Purchase::class,      \App\Policies\PurchasePolicy::class);
-        Gate::policy(\App\Models\FinancialPlan::class,  \App\Policies\FinancialPlanPolicy::class);
-        Gate::policy(\App\Models\FinancialGoal::class,  \App\Policies\FinancialGoalPolicy::class);
-        Gate::policy(\App\Models\InsurancePlan::class,  \App\Policies\InsurancePlanPolicy::class);
     }
 }

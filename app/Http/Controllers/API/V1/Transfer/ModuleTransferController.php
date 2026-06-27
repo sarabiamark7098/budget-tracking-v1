@@ -3,10 +3,7 @@
 namespace App\Http\Controllers\API\V1\Transfer;
 
 use App\Http\Controllers\Controller;
-use App\Models\CryptoLot;
-use App\Models\Investment;
 use App\Models\ModuleTransfer;
-use App\Models\StockLot;
 use App\Services\DashboardService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\JsonResponse;
@@ -30,8 +27,8 @@ class ModuleTransferController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'module'        => ['required', 'in:investment,stock,crypto,saving,income'],
-            'transfer_from' => ['required', 'in:income,investment,stock,crypto,saving'],
+            'module'        => ['required', 'in:saving,income'],
+            'transfer_from' => ['required', 'in:income,saving'],
             'amount'        => ['required', 'numeric', 'min:0.01'],
             'transfer_fee'  => ['required', 'numeric', 'min:0'],
             'note'          => ['nullable', 'string', 'max:255'],
@@ -49,11 +46,8 @@ class ModuleTransferController extends Controller
 
         // Compute available balance of the source account
         $sourceBalance = match ($data['transfer_from']) {
-            'income'     => $budget->availableBalance(),
-            'investment' => $this->moduleAvailableBalance($btId, 'investment'),
-            'stock'      => $this->moduleAvailableBalance($btId, 'stock'),
-            'crypto'     => $this->moduleAvailableBalance($btId, 'crypto'),
-            'saving'     => $this->moduleAvailableBalance($btId, 'saving'),
+            'income' => $budget->availableBalance(),
+            'saving' => $this->moduleAvailableBalance($btId, 'saving'),
         };
 
         if ($total > $sourceBalance) {
@@ -87,14 +81,7 @@ class ModuleTransferController extends Controller
             ->where('transfer_from', $module)
             ->sum('total');
 
-        // Assets already deployed from this fund (cannot be re-transferred)
-        $deployed = match ($module) {
-            'investment' => (float) Investment::where('budget_tracking_id', $btId)->sum('amount_invested'),
-            'stock'      => (float) (StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(shares * buy_price) as total')->value('total') ?? 0),
-            'crypto'     => (float) (CryptoLot::whereHas('cryptoAsset', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(quantity * buy_price) as total')->value('total') ?? 0),
-            'saving'     => 0, // saving has no deployed assets
-            default      => 0,
-        };
+        $deployed = 0; // saving has no deployed assets
 
         return $transferredIn - $transferredOut - $deployed;
     }

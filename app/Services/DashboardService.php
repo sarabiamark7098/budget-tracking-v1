@@ -8,12 +8,8 @@ use App\Models\BudgetTrackingTransaction;
 use App\Models\Debt;
 use App\Models\Expense;
 use App\Models\Income;
-use App\Models\CryptoAsset;
-use App\Models\Investment;
 use App\Models\Payment;
 use App\Models\ModuleTransfer;
-use App\Models\InsurancePayment;
-use App\Models\Stock;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\User;
@@ -28,7 +24,7 @@ class DashboardService
      * Clear the all-time totals cache for a budget tracker.
      * Call this from every service that creates, updates, or deletes a record
      * that contributes to the cached totals (Income, Expense, Payment,
-     * PurchasePayment, Purchase, InsurancePayment, ModuleTransfer).
+     * PurchasePayment, Purchase, ModuleTransfer).
      */
     public static function clearAllTimeCache(int $btId): void
     {
@@ -55,10 +51,7 @@ class DashboardService
                 'purchase_payments' => (float) PurchasePayment::where('budget_tracking_id', $btId)->sum('amount'),
                 'cash_purchases'    => (float) Purchase::where('budget_tracking_id', $btId)
                     ->whereIn('payment_method', ['cash', 'other'])->sum('total_cost'),
-                'insurance_payments'=> (float) InsurancePayment::where('budget_tracking_id', $btId)->sum('amount'),
                 // Only deduct transfers that actually LEFT the income pool.
-                // Cross-fund transfers (e.g. Investment → Stock) must NOT be
-                // counted here — they would double-deduct from income balance.
                 'outgoing_transfers'=> (float) ModuleTransfer::where('budget_tracking_id', $btId)
                     ->where('transfer_from', 'income')->sum('total'),
                 'incoming_transfers'=> (float) ModuleTransfer::where('budget_tracking_id', $btId)
@@ -73,17 +66,11 @@ class DashboardService
         $totalDebtPayments        = $totalPersonalDebtPayments;
         $totalPurchasePayments    = $allTimeTotals['purchase_payments'];
         $totalCashPurchases       = $allTimeTotals['cash_purchases'];
-        $totalInsurancePayments   = $allTimeTotals['insurance_payments'];
         $totalOutgoingTransfers   = $allTimeTotals['outgoing_transfers'];
         $totalIncomingTransfers   = $allTimeTotals['incoming_transfers'];
 
-        // Deployed amounts per module (cost basis / amount invested)
-        $deployedAmounts = [
-            'investment' => (float) Investment::where('budget_tracking_id', $btId)->sum('amount_invested'),
-            'stock'      => (float) (\App\Models\StockLot::whereHas('stock', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(shares * buy_price) as total')->value('total') ?? 0),
-            'crypto'     => (float) (\App\Models\CryptoLot::whereHas('cryptoAsset', fn($q) => $q->where('budget_tracking_id', $btId))->selectRaw('SUM(quantity * buy_price) as total')->value('total') ?? 0),
-            'saving'     => 0,
-        ];
+        // Deployed amounts per module (saving has no deployed assets)
+        $deployedAmounts = ['saving' => 0];
 
         // ── Transfer summary: 2 GROUP BY queries instead of 8 individual queries ─────
         $transferIn  = ModuleTransfer::where('budget_tracking_id', $btId)
@@ -113,7 +100,7 @@ class DashboardService
             ->map(fn($rows) => $rows->first());
 
         $transferSummary = [];
-        foreach (['investment', 'stock', 'crypto', 'saving'] as $mod) {
+        foreach (['saving'] as $mod) {
             $transferredIn    = round((float) ($transferIn[$mod]  ?? 0), 2);
             $transferredOut   = round((float) ($transferOut[$mod] ?? 0), 2);
             $deployed         = $deployedAmounts[$mod] ?? 0;
@@ -163,7 +150,6 @@ class DashboardService
         $balance = $totalIncome + $totalBusinessDebtReceived
                  - $totalExpenses - $totalPersonalDebtPayments
                  - $totalPurchasePayments - $totalCashPurchases
-                 - $totalInsurancePayments
                  - $totalOutgoingTransfers + $totalIncomingTransfers;
 
         // Back-fill income fund's available_balance now that $balance is known
@@ -172,9 +158,6 @@ class DashboardService
         $totalDebt = (float) Debt::where('budget_tracking_id', $btId)
             ->where('status', '!=', 'paid')
             ->sum('remaining_balance');
-
-        $totalInvestments = (float) Investment::where('budget_tracking_id', $btId)
-            ->sum('current_value');
 
         // ── PERIOD-filtered income ────────────────────────────────────────────────
         $periodIncome = (float) Income::where('budget_tracking_id', $btId)
@@ -189,7 +172,7 @@ class DashboardService
         $categoryBreakdown  = $this->getCategoryBreakdown($budget, $dateFrom, $dateTo);
         $recentTransactions = $this->buildTransactions($budget, 10);
         $healthScore        = $this->calculateFinancialHealthScore(
-            $totalIncome, $totalOutgoing, $totalDebt, $totalInvestments
+            $totalIncome, $totalOutgoing, $totalDebt
         );
         $budgetMonitor         = $this->getBudgetMonitor($budget, $dateFrom, $dateTo, $periodIncome);
         $budgetList            = $this->getBudgetList($budget, $dateFrom, $dateTo);
@@ -212,7 +195,6 @@ class DashboardService
             'balance'                       => round($balance, 2),
             'total_savings'                 => max(0, round($balance, 2)),
             'total_debt'                => round($totalDebt, 2),
-            'total_investments'         => round($totalInvestments, 2),
             'financial_health'          => $healthScore,
             'budget_monitor'            => $budgetMonitor,
             'budget_list'               => $budgetList,
@@ -626,7 +608,6 @@ class DashboardService
             ->whereYear('purchase_date', $year)->whereMonth('purchase_date', $month)->sum('total_cost');
 
         $totalDebt        = (float) Debt::where('budget_tracking_id', $btId)->where('status', '!=', 'paid')->sum('remaining_balance');
-        $totalInvestments = (float) Investment::where('budget_tracking_id', $btId)->sum('current_value');
 
         $balance     = $income + $businessDebtReceived - $expenses - $personalDebtPayments - $purchasePayments - $cashPurchases;
         $savingsRate = $income > 0 ? round(($balance / $income) * 100, 2) : 0;
@@ -658,7 +639,6 @@ class DashboardService
             'cash_purchases'            => round($cashPurchases, 2),
             'balance'                   => round($balance, 2),
             'total_debt'                => round($totalDebt, 2),
-            'total_investments'         => round($totalInvestments, 2),
             'balance_remaining'         => round(max(0, $balance), 2),
             'savings_rate_pct'          => $savingsRate,
             'socioeconomic_class'       => $this->getSocioeconomicClass($avgMonthlyIncome, $monthsWithIncome),
@@ -685,7 +665,6 @@ class DashboardService
             ->whereIn('payment_method', ['cash', 'other'])
             ->whereYear('purchase_date', $year)->sum('total_cost');
         $totalDebt   = (float) Debt::where('budget_tracking_id', $btId)->where('status', '!=', 'paid')->sum('remaining_balance');
-        $totalInvest = (float) Investment::where('budget_tracking_id', $btId)->sum('current_value');
 
         $balance     = $income + $businessDebtReceived - $expenses - $personalDebtPayments - $purchasePayments - $cashPurchases;
         $savingsRate = $income > 0 ? round(($balance / $income) * 100, 2) : 0;
@@ -701,7 +680,6 @@ class DashboardService
             'cash_purchases'         => round($cashPurchases, 2),
             'balance'                => round($balance, 2),
             'total_debt'             => round($totalDebt, 2),
-            'total_investments'      => round($totalInvest, 2),
             'balance_remaining'      => round(max(0, $balance), 2),
             'savings_rate_pct'       => $savingsRate,
         ];
@@ -765,53 +743,45 @@ class DashboardService
     private function calculateFinancialHealthScore(
         float $income,
         float $expenses,
-        float $debt,
-        float $investments
+        float $debt
     ): array {
         if ($income <= 0) {
             return [
                 'score' => 0, 'grade' => 'N/A', 'grade_label' => 'No income data',
-                'savings_rate_pct' => 0, 'dti_pct' => 0,
-                'investment_rate_pct' => 0, 'expense_ratio_pct' => 0,
+                'savings_rate_pct' => 0, 'dti_pct' => 0, 'expense_ratio_pct' => 0,
                 'breakdown' => [],
             ];
         }
 
-        $savingsRate    = (($income - $expenses) / $income) * 100;
-        $dti            = ($debt / $income) * 100;
-        $investmentRate = ($investments / $income) * 100;
-        $expenseRatio   = ($expenses / $income) * 100;
+        $savingsRate  = (($income - $expenses) / $income) * 100;
+        $dti          = ($debt / $income) * 100;
+        $expenseRatio = ($expenses / $income) * 100;
 
         $savingsScore = match (true) {
-            $savingsRate >= 20 => 25, $savingsRate >= 10 => 15, $savingsRate > 0 => 8, default => 0,
+            $savingsRate >= 20 => 34, $savingsRate >= 10 => 20, $savingsRate > 0 => 10, default => 0,
         };
         $dtiScore = match (true) {
-            $dti < 20 => 25, $dti < 40 => 15, $dti < 80 => 8, default => 0,
-        };
-        $investmentScore = match (true) {
-            $investmentRate >= 20 => 25, $investmentRate >= 10 => 15, $investmentRate > 0 => 8, default => 0,
+            $dti < 20 => 33, $dti < 40 => 20, $dti < 80 => 10, default => 0,
         };
         $expenseScore = match (true) {
-            $expenseRatio <= 50 => 25, $expenseRatio <= 70 => 15, $expenseRatio <= 90 => 8, default => 0,
+            $expenseRatio <= 50 => 33, $expenseRatio <= 70 => 20, $expenseRatio <= 90 => 10, default => 0,
         };
 
-        $score = $savingsScore + $dtiScore + $investmentScore + $expenseScore;
+        $score = $savingsScore + $dtiScore + $expenseScore;
         $grade = match (true) { $score >= 80 => 'A', $score >= 60 => 'B', $score >= 40 => 'C', default => 'D' };
         $gradeLabel = match ($grade) { 'A' => 'Excellent', 'B' => 'Good', 'C' => 'Fair', default => 'Needs Improvement' };
 
         return [
-            'score'               => $score,
-            'grade'               => $grade,
-            'grade_label'         => $gradeLabel,
-            'savings_rate_pct'    => round($savingsRate, 2),
-            'dti_pct'             => round($dti, 2),
-            'investment_rate_pct' => round($investmentRate, 2),
-            'expense_ratio_pct'   => round($expenseRatio, 2),
-            'breakdown'           => [
-                ['dimension' => 'Savings Rate',         'value_pct' => round($savingsRate, 2),    'score' => $savingsScore,    'max' => 25],
-                ['dimension' => 'Debt-to-Income (DTI)', 'value_pct' => round($dti, 2),            'score' => $dtiScore,        'max' => 25],
-                ['dimension' => 'Investment Rate',      'value_pct' => round($investmentRate, 2), 'score' => $investmentScore, 'max' => 25],
-                ['dimension' => 'Expense Ratio',        'value_pct' => round($expenseRatio, 2),   'score' => $expenseScore,    'max' => 25],
+            'score'            => $score,
+            'grade'            => $grade,
+            'grade_label'      => $gradeLabel,
+            'savings_rate_pct' => round($savingsRate, 2),
+            'dti_pct'          => round($dti, 2),
+            'expense_ratio_pct'=> round($expenseRatio, 2),
+            'breakdown'        => [
+                ['dimension' => 'Savings Rate',         'value_pct' => round($savingsRate, 2),  'score' => $savingsScore, 'max' => 34],
+                ['dimension' => 'Debt-to-Income (DTI)', 'value_pct' => round($dti, 2),          'score' => $dtiScore,     'max' => 33],
+                ['dimension' => 'Expense Ratio',        'value_pct' => round($expenseRatio, 2), 'score' => $expenseScore, 'max' => 33],
             ],
         ];
     }
