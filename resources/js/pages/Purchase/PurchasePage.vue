@@ -201,18 +201,6 @@
                 @input="autoCalcMonthly"
               />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Monthly Cost</label>
-              <input
-                v-model.number="form.installment_amount"
-                type="number" min="0" step="0.01"
-                class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Auto-calculated"
-              />
-              <p v-if="computedMonthly" class="text-xs text-gray-400 mt-1">
-                Auto: {{ formatCurrency(computedMonthly) }}/month
-              </p>
-            </div>
             <div class="bg-blue-50 rounded-lg px-3 py-2 text-xs space-y-1 text-gray-600">
               <div class="flex justify-between">
                 <span>Total cost</span>

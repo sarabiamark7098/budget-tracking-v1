@@ -562,15 +562,17 @@ class DashboardService
             ->limit(10)
             ->get()
             ->map(fn(Purchase $p) => [
-                'id'               => $p->id,
-                'title'            => $p->item_name,
-                'mode'             => $p->payment_method,
-                'total_amount'     => round((float) $p->total_cost, 2),
-                'paid'             => round($p->amount_paid, 2),
-                'unpaid'           => round($p->remaining_balance, 2),
-                'installment_count'=> (int) $p->installment_count,
-                'installments_paid'=> (int) $p->installments_paid,
-                'purchase_date'    => $p->purchase_date?->toDateString(),
+                'id'                     => $p->id,
+                'title'                  => $p->item_name,
+                'mode'                   => $p->payment_method,
+                'total_amount'           => round((float) $p->total_cost, 2),
+                'paid'                   => round($p->amount_paid, 2),
+                'unpaid'                 => round($p->remaining_balance, 2),
+                'installment_count'      => (int) $p->installment_count,
+                'installments_paid'      => (int) $p->installments_paid,
+                'remaining_installments' => max(0, (int) $p->installment_count - (int) $p->installments_paid),
+                'installment_amount'     => round((float) $p->installment_amount, 2),
+                'purchase_date'          => $p->purchase_date?->toDateString(),
             ])
             ->values()
             ->toArray();

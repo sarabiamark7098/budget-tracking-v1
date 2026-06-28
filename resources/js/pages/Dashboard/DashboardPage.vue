@@ -187,43 +187,6 @@
               </div>
             </div>
 
-            <!-- ── Socioeconomic Class ──────────────────────────────────── -->
-            <div v-if="store.summary.month_report.socioeconomic_class" class="mt-2 pt-4 border-t">
-              <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Socioeconomic Class</p>
-              <div class="flex items-center gap-2 mb-1 flex-wrap">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold"
-                  :class="secoClass(store.summary.month_report.socioeconomic_class.color)">
-                  {{ store.summary.month_report.socioeconomic_class.label }}
-                </span>
-                <span class="text-xs text-gray-400">{{ store.summary.month_report.socioeconomic_class.range }}</span>
-              </div>
-              <p class="text-xs text-gray-500 mb-1">
-                Avg monthly income:
-                <span class="font-semibold text-gray-700">{{ fmt(store.summary.month_report.socioeconomic_class.avg_monthly_income) }}</span>
-                <span class="text-gray-400">
-                  ({{ store.summary.month_report.socioeconomic_class.months_count }}
-                  {{ store.summary.month_report.socioeconomic_class.months_count === 1 ? 'month' : 'months' }} with records)
-                </span>
-              </p>
-              <p v-if="store.summary.month_report.socioeconomic_class.gap_to_next !== null" class="text-xs text-gray-400 mb-3">
-                {{ fmt(store.summary.month_report.socioeconomic_class.gap_to_next) }} more avg/month to reach
-                <span class="font-medium text-gray-600">{{ store.summary.month_report.socioeconomic_class.next_class }}</span>
-              </p>
-              <p v-else class="text-xs text-gray-400 mb-3">You are in the highest income bracket.</p>
-              <div class="space-y-1">
-                <div v-for="tier in store.summary.month_report.socioeconomic_class.all_tiers" :key="tier.key"
-                  class="flex items-center gap-2 text-xs rounded-md px-2 py-1 transition-colors"
-                  :class="tier.key === store.summary.month_report.socioeconomic_class.key ? secoRowActive(tier.color) : 'text-gray-400 hover:bg-gray-50'">
-                  <span class="w-2 h-2 rounded-full shrink-0"
-                    :class="tier.key === store.summary.month_report.socioeconomic_class.key ? secoDot(tier.color) : 'bg-gray-200'" />
-                  <span class="flex-1 font-medium">{{ tier.label }}</span>
-                  <span>{{ tier.range }}</span>
-                </div>
-              </div>
-              <p class="text-[10px] text-gray-300 mt-2 text-right">Based on PSA Philippines income thresholds</p>
-            </div>
-            <!-- ── /Socioeconomic Class ─────────────────────────────────── -->
-
           </div>
         </div>
 
@@ -551,7 +514,8 @@
                 <th class="text-center py-2 px-3 text-gray-500 font-medium">Mode</th>
                 <th class="text-right py-2 px-3 text-gray-500 font-medium">Total</th>
                 <th class="text-right py-2 px-3 text-gray-500 font-medium">Paid</th>
-                <th class="text-right py-2 px-5 text-gray-500 font-medium">Unpaid</th>
+                <th class="text-right py-2 px-3 text-gray-500 font-medium">Unpaid</th>
+                <th class="text-center py-2 px-5 text-gray-500 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
@@ -567,7 +531,17 @@
                 </td>
                 <td class="py-3 px-3 text-right text-gray-700 font-medium">{{ fmt(p.total_amount) }}</td>
                 <td class="py-3 px-3 text-right text-green-600 font-medium">{{ fmt(p.paid) }}</td>
-                <td class="py-3 px-5 text-right text-red-600 font-semibold">{{ fmt(p.unpaid) }}</td>
+                <td class="py-3 px-3 text-right text-red-600 font-semibold">{{ fmt(p.unpaid) }}</td>
+                <td class="py-3 px-5 text-center">
+                  <div class="flex gap-2 justify-center">
+                    <button
+                      v-if="(p.remaining_installments ?? 0) > 0"
+                      @click="openDashPayInstallment(p)"
+                      class="text-green-600 hover:text-green-800 text-xs px-2 py-1 border border-green-300 rounded bg-green-50 hover:bg-green-100"
+                    >Pay Month</button>
+                    <button @click="openDashEdit(p)" class="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border rounded">Edit</button>
+                  </div>
+                </td>
               </tr>
             </tbody>
             <tfoot class="border-t-2 border-gray-200 bg-gray-50">
@@ -576,7 +550,8 @@
                 <td class="py-2 px-3"></td>
                 <td class="py-2 px-3 text-right text-sm font-semibold text-gray-700">{{ fmt(purchaseTotals.total) }}</td>
                 <td class="py-2 px-3 text-right text-sm font-semibold text-green-600">{{ fmt(purchaseTotals.paid) }}</td>
-                <td class="py-2 px-5 text-right text-sm font-semibold text-red-600">{{ fmt(purchaseTotals.unpaid) }}</td>
+                <td class="py-2 px-3 text-right text-sm font-semibold text-red-600">{{ fmt(purchaseTotals.unpaid) }}</td>
+                <td class="py-2 px-5"></td>
               </tr>
             </tfoot>
           </table>
@@ -863,6 +838,100 @@
 
   </div>
 
+  <!-- ── Dashboard: Pay Month Modal ───────────────────────────────────────── -->
+  <div v-if="dashPayTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800">Record Monthly Payment</h3>
+          <p class="text-xs text-gray-400 mt-0.5">Installment #{{ (dashPayTarget.installments_paid ?? 0) + 1 }} of {{ dashPayTarget.installment_count }}</p>
+        </div>
+      </div>
+      <div class="bg-gray-50 rounded-lg px-4 py-3 mb-4 space-y-1.5 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-500">Item</span>
+          <span class="font-medium text-gray-700">{{ dashPayTarget.title }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Amount to pay</span>
+          <span class="font-semibold text-green-600">{{ fmt(dashPayTarget.installment_amount) }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Remaining after</span>
+          <span class="font-medium text-gray-700">{{ (dashPayTarget.remaining_installments ?? 1) - 1 }} months</span>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button @click="dashPayTarget = null" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button @click="handleDashPayInstallment" :disabled="dashPaying" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
+          {{ dashPaying ? 'Processing...' : 'Confirm Payment' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Dashboard: Edit Purchase Modal ────────────────────────────────────── -->
+  <div v-if="dashShowEditModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between p-5 border-b">
+        <h2 class="font-semibold text-gray-800">Edit Purchase</h2>
+        <button @click="dashShowEditModal = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+      </div>
+      <form @submit.prevent="handleDashEditSubmit" class="p-5 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
+          <input v-model="dashEditForm.item_name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Laptop, Refrigerator" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Date *</label>
+          <input v-model="dashEditForm.purchase_date" type="date" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button v-for="m in dashPaymentMethods" :key="m.value" type="button" @click="dashEditForm.payment_method = m.value"
+              :class="['px-3 py-2 rounded-lg text-sm font-medium border transition-colors', dashEditForm.payment_method === m.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400']"
+            >{{ m.label }}</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Total Cost *</label>
+          <input v-model="dashEditForm.total_cost" type="number" min="0" step="0.01" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <template v-if="dashEditForm.payment_method === 'credit_card'">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Months to Pay *</label>
+            <input v-model.number="dashEditForm.installment_count" type="number" min="1" required class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 12" @input="dashAutoCalcMonthly" />
+          </div>
+          <div class="bg-blue-50 rounded-lg px-3 py-2 text-xs space-y-1 text-gray-600">
+            <div class="flex justify-between"><span>Total cost</span><span class="font-medium">{{ fmt(dashEditForm.total_cost) }}</span></div>
+            <div class="flex justify-between"><span>Monthly payment</span><span class="font-medium">{{ fmt(dashEditForm.installment_amount || dashComputedMonthly) }}/mo</span></div>
+            <div class="flex justify-between font-semibold text-blue-700 border-t pt-1">
+              <span>Total over {{ dashEditForm.installment_count || 0 }} months</span>
+              <span>{{ fmt((dashEditForm.installment_amount || dashComputedMonthly) * (dashEditForm.installment_count || 0)) }}</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Months Already Paid</label>
+            <input v-model.number="dashEditForm.installments_paid" type="number" min="0" :max="dashEditForm.installment_count" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" />
+          </div>
+        </template>
+        <div v-if="dashEditError" class="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{{ dashEditError }}</div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" @click="dashShowEditModal = false" class="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+          <button type="submit" :disabled="dashEditSaving" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-blue-700">
+            {{ dashEditSaving ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ── Transfer Income Modal ────────────────────────────────────────────── -->
   <div v-if="showTransferModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -979,8 +1048,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useDashboardStore } from '@/stores/dashboard';
 import { formatDate } from '@/utils/date';
-import { moduleTransferService } from '@/services';
-import DonutChart from '@/components/charts/DonutChart.vue';
+import { moduleTransferService, purchaseService } from '@/services';
 
 // ── Store ─────────────────────────────────────────────────────────────────
 const store = useDashboardStore();
@@ -1322,21 +1390,84 @@ function savingsColor(pct) {
   return 'bg-red-500';
 }
 
-// ── Socioeconomic class helpers ───────────────────────────────────────────
-const secoColorMap = {
-  red:    { badge: 'bg-red-100 text-red-700',       active: 'bg-red-50 text-red-700 font-semibold',       dot: 'bg-red-500' },
-  orange: { badge: 'bg-orange-100 text-orange-700', active: 'bg-orange-50 text-orange-700 font-semibold', dot: 'bg-orange-500' },
-  amber:  { badge: 'bg-amber-100 text-amber-700',   active: 'bg-amber-50 text-amber-700 font-semibold',   dot: 'bg-amber-500' },
-  blue:   { badge: 'bg-blue-100 text-blue-700',     active: 'bg-blue-50 text-blue-700 font-semibold',     dot: 'bg-blue-500' },
-  indigo: { badge: 'bg-indigo-100 text-indigo-700', active: 'bg-indigo-50 text-indigo-700 font-semibold', dot: 'bg-indigo-500' },
-  violet: { badge: 'bg-violet-100 text-violet-700', active: 'bg-violet-50 text-violet-700 font-semibold', dot: 'bg-violet-500' },
-  green:  { badge: 'bg-green-100 text-green-700',   active: 'bg-green-50 text-green-700 font-semibold',   dot: 'bg-green-500' },
-};
+// ── Dashboard: Pay Month & Edit Purchase ─────────────────────────────────
+const dashPayTarget   = ref(null);
+const dashPaying      = ref(false);
+const dashShowEditModal = ref(false);
+const dashEditTarget  = ref(null);
+const dashEditSaving  = ref(false);
+const dashEditError   = ref('');
 
-function secoClass(color)      { return secoColorMap[color]?.badge      ?? 'bg-gray-100 text-gray-700'; }
-function secoRowActive(color)  { return secoColorMap[color]?.active     ?? 'bg-gray-50 text-gray-700 font-semibold'; }
-function secoDot(color)        { return secoColorMap[color]?.dot        ?? 'bg-gray-400'; }
+const dashPaymentMethods = [
+  { value: 'cash',        label: 'Cash'        },
+  { value: 'credit_card', label: 'Credit Card' },
+  { value: 'other',       label: 'Other'       },
+];
 
+const dashEditForm = ref({
+  item_name: '', total_cost: '', payment_method: 'credit_card',
+  purchase_date: '', installment_count: '', installment_amount: '', installments_paid: 0,
+});
+
+const dashComputedMonthly = computed(() => {
+  const total  = parseFloat(dashEditForm.value.total_cost)       || 0;
+  const months = parseInt(dashEditForm.value.installment_count)  || 0;
+  return (total > 0 && months > 0) ? total / months : 0;
+});
+
+function dashAutoCalcMonthly() {
+  if (dashEditForm.value.installment_amount) dashEditForm.value.installment_amount = '';
+}
+
+function openDashPayInstallment(p) {
+  dashPayTarget.value = p;
+}
+
+async function handleDashPayInstallment() {
+  dashPaying.value = true;
+  try {
+    await purchaseService.payInstallment(dashPayTarget.value.id);
+    dashPayTarget.value = null;
+    await store.fetchSummary();
+  } catch (e) {
+    alert(e.response?.data?.message ?? 'Failed to record payment.');
+  } finally {
+    dashPaying.value = false;
+  }
+}
+
+function openDashEdit(p) {
+  dashEditTarget.value = p;
+  dashEditForm.value = {
+    item_name:          p.title,
+    total_cost:         p.total_amount,
+    payment_method:     p.mode ?? 'credit_card',
+    purchase_date:      p.purchase_date ?? '',
+    installment_count:  p.installment_count ?? '',
+    installment_amount: p.installment_amount ?? '',
+    installments_paid:  p.installments_paid ?? 0,
+  };
+  dashEditError.value = '';
+  dashShowEditModal.value = true;
+}
+
+async function handleDashEditSubmit() {
+  dashEditSaving.value = true;
+  dashEditError.value  = '';
+  try {
+    const payload = { ...dashEditForm.value };
+    if (payload.payment_method === 'credit_card' && !payload.installment_amount && dashComputedMonthly.value) {
+      payload.installment_amount = dashComputedMonthly.value;
+    }
+    await purchaseService.update(dashEditTarget.value.id, payload);
+    dashShowEditModal.value = false;
+    await store.fetchSummary();
+  } catch (e) {
+    dashEditError.value = e.response?.data?.message ?? 'Failed to save. Please try again.';
+  } finally {
+    dashEditSaving.value = false;
+  }
+}
 
 // ── Actions ───────────────────────────────────────────────────────────────
 function loadData() {

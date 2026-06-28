@@ -28,7 +28,9 @@ class PurchaseService
         }
 
         $perPage = $filters['per_page'] ?? 15;
-        return $query->with('payments')->orderBy('purchase_date', 'desc')->paginate($perPage);
+        return $query->with('payments')
+            ->orderByRaw("CASE WHEN payment_method = 'credit_card' AND COALESCE(installments_paid,0) < COALESCE(installment_count,0) THEN 0 ELSE 1 END, created_at DESC")
+            ->paginate($perPage);
     }
 
     public function create(BudgetTracking $budget, User $user, array $data): Purchase
